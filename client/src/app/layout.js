@@ -14,7 +14,7 @@ const geistMono = localFont({
 
 export const metadata = {
   title: "Home / ITER Connect",
-  description: "Connect, Collaborate, and Grow ",
+  description: "Connect, Collaborate, and Grow",
 };
 
 export default function RootLayout({ children }) {
