@@ -3,10 +3,8 @@ export const metadata = {
   description: "Connect, Collaborate, and Grow",
 };
 
-export default function RootLayout({ children }) {
-  return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
-  );
-}
+const ExploreLayout = (props) => {
+  return <>{props.children}</>;
+};
+
+export default ExploreLayout;
