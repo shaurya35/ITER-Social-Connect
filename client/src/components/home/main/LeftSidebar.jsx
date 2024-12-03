@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import NextImage from "next/image"
 import {
   BookMarked,
   FileText,
@@ -16,12 +17,13 @@ export default function LeftSidebar() {
         <Card className="bg-white dark:bg-gray-800 overflow-hidden mb-4">
           <CardContent className="p-0">
             <div className="relative h-32">
-              <Image
+              <NextImage
                 src="/placeholder.svg"
                 alt="Cover"
-                //   height={128}
-                //   width={256}
+                  // height={128}
+                  // width={256}
                 priority
+                // style={{ objectFit: "cover" }}
                 layout="fill"
                 objectFit="cover"
               />

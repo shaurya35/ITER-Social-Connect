@@ -1,40 +1,46 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Logo } from "./logo";
 import { LogoMobile } from "./logoMobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   Users,
   Bell,
-  Calendar,
   Settings,
   Search,
+  MessageCircle,
   Menu,
   Moon,
   Sun,
   User,
-  Home,
   X,
-  BookMarked,
-  FileText,
+  Bookmark,
 } from "lucide-react";
 
 export default function Navbar() {
   const { isDarkMode, toggleDarkMode } = useTheme();
-  // const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
+  const [renderInput, setRenderInput] = useState(false);
+  const searchInputRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => setRenderInput(true), 200);
+    } else {
+      setRenderInput(false);
+    }
+  }, [isOpen]);
 
   const menuItems = [
-    // { icon: Home, label: "Home" },
-    { icon: User, label: "Profile" },
     { icon: Users, label: "Connections" },
+    { icon: MessageCircle, label: "Messages" },
+    { icon: Bookmark, label: "Saved Events" },
     { icon: Bell, label: "Notifications" },
-    // { icon: Calendar, label: "Events" },
-    { icon: FileText, label: "My Posts" },
-    { icon: BookMarked, label: "Saved Events" },
+    { icon: User, label: "Profile" },
     { icon: Settings, label: "Settings" },
   ];
 
@@ -63,7 +69,7 @@ export default function Navbar() {
                 <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
               </div>
             </div>
-            {menuItems.slice(0, 3).map((item, index) => (
+            {menuItems.slice(0, 6).map((item, index) => (
               <Button
                 key={index}
                 variant="ghost"
@@ -89,43 +95,60 @@ export default function Navbar() {
               )}
               <span className="sr-only">Toggle dark mode</span>
             </Button>
-            {/* <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="lg:hidden ml-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="lg:hidden ml-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                >
                   <Menu className="h-6 w-6" />
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                <nav className="flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-8">
-                    <Logo />
-                    <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)} className="text-gray-500">
-                      <X className="h-6 w-6" />
-                      <span className="sr-only">Close menu</span>
-                    </Button>
-                  </div>
+                <nav className="flex flex-col justify-between h-full">
                   <div className="space-y-4">
-                    <div className="relative">
-                      <Input
-                        type="search"
-                        placeholder="Search..."
-                        className="w-full pl-10 pr-4 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                      />
+                    <div className="relative mb-7 mt-4">
+                      {renderInput && (
+                        <Input
+                          ref={searchInputRef}
+                          type="search"
+                          placeholder="Search..."
+                          className="w-full pl-10 pr-4 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                          // onFocus={(e) => e.target.blur()}
+                        />
+                      )}
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                       </div>
                     </div>
                     {menuItems.map((item, index) => (
-                      <Button key={index} variant="ghost" size="lg" className="w-full justify-start text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100">
+                      <Button
+                        key={index}
+                        variant="ghost"
+                        size="lg"
+                        className="w-full justify-start text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                      >
                         <item.icon className="h-5 w-5 mr-3" />
                         {item.label}
                       </Button>
                     ))}
                   </div>
+                  <div className="flex items-end justify-center mb-10">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsOpen(false)}
+                      className="text-gray-500"
+                    >
+                      <X className="h-6 w-6" />
+                      <span className="sr-only">Close menu</span>
+                    </Button>
+                  </div>
                 </nav>
               </SheetContent>
-            </Sheet> */}
+            </Sheet>
           </div>
         </div>
       </header>

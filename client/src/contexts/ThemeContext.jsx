@@ -10,22 +10,14 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     const isDark = localStorage.getItem("darkMode") === "true";
     setIsDarkMode(isDark);
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark", isDark);
   }, []);
 
   const toggleDarkMode = () => {
     setIsDarkMode((prev) => {
       const newMode = !prev;
       localStorage.setItem("darkMode", newMode);
-      if (newMode) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
+      document.documentElement.classList.toggle("dark", newMode);
       return newMode;
     });
   };
@@ -40,7 +32,7 @@ export function ThemeProvider({ children }) {
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (context === undefined) {
-    throw new Error("UseTheme must be used within ThemeProvider");
+    throw new Error("useTheme must be used within ThemeProvider");
   }
   return context;
 }
