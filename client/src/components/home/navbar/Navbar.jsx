@@ -69,7 +69,7 @@ export default function Navbar() {
                 <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
               </div>
             </div>
-            {menuItems.slice(0, 6).map((item, index) => (
+            {menuItems.slice(1, 4).map((item, index) => (
               <Button
                 key={index}
                 variant="ghost"
@@ -82,11 +82,28 @@ export default function Navbar() {
             ))}
           </div>
           <div className="flex items-center">
+            <Link href="/signin" passHref>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 hidden lg:block"
+              >
+                Sign in
+              </Button>
+            </Link>
+            <Link href="/signup" passHref>
+              <Button
+                size="sm"
+                className="ml-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white hidden lg:block"
+              >
+                Sign Up
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               size="sm"
               onClick={toggleDarkMode}
-              className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+              className="ml-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
             >
               {isDarkMode ? (
                 <Sun className="h-5 w-5" />
@@ -135,7 +152,28 @@ export default function Navbar() {
                       </Button>
                     ))}
                   </div>
-                  <div className="flex items-end justify-center mb-10">
+                  
+
+                  <div className="flex items-center justify-center flex-col mb-10">
+                  <div className="flex justify-center items-center pb-5">
+                    <Link href="/signin" passHref>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 "
+                      >
+                        Sign in?
+                      </Button>
+                    </Link>
+                    {/* <Link href="/signup" passHref>
+                      <Button
+                        size="sm"
+                        className="ml-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
+                      >
+                        Sign Up
+                      </Button>
+                    </Link> */}
+                  </div>
                     <Button
                       variant="ghost"
                       size="sm"

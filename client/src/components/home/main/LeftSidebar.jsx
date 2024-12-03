@@ -30,7 +30,7 @@ export default function LeftSidebar() {
             </div>
             <div className="p-4 pt-14 relative">
               <div className="absolute -top-12 left-4 w-20 h-20 rounded-full overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg">
-                <Image
+                <NextImage
                   src="/placeholder.svg"
                   alt="Avatar"
                   //   height={80}
