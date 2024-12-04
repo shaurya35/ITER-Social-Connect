@@ -1,6 +1,8 @@
+// --- Required Imports --- 
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
+// --- fill the purpose of this function ---
 const isLoggedIn = (req, res, next) => {
   const authHeader = req.header("Authorization");
   if (!authHeader) {
@@ -16,6 +18,7 @@ const isLoggedIn = (req, res, next) => {
   }
 };
 
+// --- Export the function ---
 module.exports = {
   isLoggedIn,
 };

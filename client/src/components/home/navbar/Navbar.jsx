@@ -69,7 +69,7 @@ export default function Navbar() {
                 <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
               </div>
             </div>
-            {menuItems.slice(1, 4).map((item, index) => (
+            {menuItems.slice(0, 6).map((item, index) => (
               <Button
                 key={index}
                 variant="ghost"

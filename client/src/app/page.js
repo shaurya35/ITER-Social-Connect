@@ -1,10 +1,12 @@
 "use client";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
   useEffect(() => {
-    window.location.href = "/explore";
-  }, []);
+    router.replace("/explore"); 
+  }, [router]);
 
-  return <div>Redirecting to explore page...</div>;
+  return <>Redirecting...</>;
 }

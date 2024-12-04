@@ -12,7 +12,7 @@ export function SignupForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [regNo, setRegNo] = useState('')
-  const [idCard, setIdCard] = useState<File | null>(null)
+  const [idCard, setIdCard] = useState(null)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -38,7 +38,7 @@ export function SignupForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    (<form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">Email address</Label>
         <Input
@@ -49,10 +49,8 @@ export function SignupForm() {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-        />
+          className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
       </div>
-
       <div>
         <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">Password</Label>
         <Input
@@ -63,10 +61,8 @@ export function SignupForm() {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-        />
+          className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
       </div>
-
       <div>
         <Label htmlFor="regNo" className="text-gray-700 dark:text-gray-300">Registration Number</Label>
         <Input
@@ -76,10 +72,8 @@ export function SignupForm() {
           required
           value={regNo}
           onChange={(e) => setRegNo(e.target.value)}
-          className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-        />
+          className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
       </div>
-
       <div>
         <Label htmlFor="idCard" className="text-gray-700 dark:text-gray-300">ID Card Photo</Label>
         <Input
@@ -89,10 +83,8 @@ export function SignupForm() {
           accept="image/*"
           required
           onChange={(e) => setIdCard(e.target.files ? e.target.files[0] : null)}
-          className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-        />
+          className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
       </div>
-
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -100,9 +92,11 @@ export function SignupForm() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-
       <div>
-        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white" disabled={isLoading}>
+        <Button
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
+          disabled={isLoading}>
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -113,7 +107,7 @@ export function SignupForm() {
           )}
         </Button>
       </div>
-    </form>
-  )
+    </form>)
+  );
 }
 
