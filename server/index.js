@@ -3,11 +3,14 @@ const express = require("express");
 const app = express();
 const port = 3000;
 const authRoutes = require("./routes/authRoutes");
+const feedRoutes = require("./routes/feedRoutes");
+const { isLoggedIn } = require("./middlewares/authMiddlewares");
 
 app.use(express.json());
-app.use("/", authRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/", feedRoutes);
 
-app.get("/", (req, res) => {
+app.get("/", isLoggedIn, (req, res) => {
   res.send("Aaoge Tum Kabhi");
 });
 
