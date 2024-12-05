@@ -1,4 +1,25 @@
 {
+  "name": "iter-social-connect",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shaurya35/ITER-Social-Connect.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/shaurya35/ITER-Social-Connect/issues"
+  },
+  "homepage": "https://github.com/shaurya35/ITER-Social-Connect#readme",
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cloudinary": "^1.41.3",
@@ -12,5 +33,6 @@
     "multer": "^1.4.5-lts.1",
     "multer-storage-cloudinary": "^4.0.0",
     "zod": "^3.23.8"
-  }
+  },
+  "description": ""
 }

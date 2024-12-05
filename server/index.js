@@ -15,10 +15,10 @@ app.use(cors({
 }));
 
 // --- .env Port ---
-const port = 3000 || process.env.PORT;
+const port = 8080 || process.env.PORT;
 
 // --- Base Route ---
-app.get("/", isLoggedIn, (req, res) => {
+app.get("/", (req, res) => {
   res.json("Test Api!!");
 });
 
