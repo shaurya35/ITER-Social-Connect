@@ -1,18 +1,20 @@
 // --- Express config ---
 const express = require("express");
-const cors = require('cors');
-require('dotenv').config();
+const cors = require("cors");
+require("dotenv").config();
 
-// --- Express parse --- 
+// --- Express parse ---
 const app = express();
-app.use(express.json()); 
+app.use(express.json());
 
 // --- CORS config ---
-app.use(cors({
-  origin: 'https://localhost:3000/', 
-  methods: 'GET,POST,PUT,DELETE', 
-  allowedHeaders: 'Content-Type, Authorization', 
-}));
+app.use(
+  cors({
+    origin: "https://localhost:3000/",
+    methods: "GET,POST,PUT,DELETE",
+    allowedHeaders: "Content-Type, Authorization",
+  })
+);
 
 // --- .env Port ---
 const port = 8080 || process.env.PORT;
@@ -23,13 +25,14 @@ app.get("/", (req, res) => {
 });
 
 // --- Route Imports ---
-const { isLoggedIn } = require("./middlewares/authMiddlewares");
 const authRoutes = require("./routes/authRoutes");
 const feedRoutes = require("./routes/feedRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 // --- Use Routes ---
 app.use("/api/auth", authRoutes);
 app.use("/api/feed", feedRoutes);
+app.use("/api/user", userRoutes);
 
 // --- Start the Server ---
 app.listen(port, () => {

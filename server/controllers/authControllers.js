@@ -11,91 +11,98 @@ const bcrypt = require("bcrypt");
 const {
   userSignupSchema,
   userSigninSchema,
-} = require("../validations/validations");
+} = require("../validations/userValidations");
 
 const signup = async (req, res) => {
   try {
-    if (!userSignupSchema.safeParse(req.body).success) {
-      return res.status(411).json({
-        message: "Input validation failed",
-      });
+    const validationResult = userSignupSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res
+        .status(400)
+        .json({ message: validationResult.error.errors[0].message });
     }
-    const { email, password, name } = req.body;
-    const q = query(collection(db, "users"), where("email", "==", email));
-    const querySnapshot = await getDocs(q);
 
-    if (querySnapshot.size > 0) {
-      return res.status(400).send("Email already registered...");
+    const { email, password, regNo } = req.body;
+
+    const userQuery = query(
+      collection(db, "users"),
+      where("email", "==", email)
+    );
+    const querySnapshot = await getDocs(userQuery);
+
+    if (!querySnapshot.empty) {
+      return res.status(409).json({ message: "Email already registered" });
     }
-    const salt = await bcrypt.genSalt(parseInt(process.env.SALT_ROUNDS, 10));
-    const hash = await bcrypt.hash(password, salt);
-    const docRef = await addDoc(collection(db, "users"), {
-      email: email,
-      password: hash,
-      name: name,
+
+    const regNoQuery = query(
+      collection(db, "users"),
+      where("regNo", "==", regNo)
+    );
+    const regNoSnapshot = await getDocs(regNoQuery);
+    if (!regNoSnapshot.empty) {
+      return res
+        .status(409)
+        .json({ message: "Registration number already registered" });
+    }
+
+    const saltRounds = parseInt(process.env.SALT_ROUNDS, 10) || 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    const userDoc = await addDoc(collection(db, "users"), {
+      email,
+      password: hashedPassword,
+      regNo,
     });
-    let token = jwt.sign({ email: email }, process.env.JWT_SECRET, {
+
+    const token = jwt.sign({ userId: userDoc.id }, process.env.JWT_SECRET, {
       expiresIn: "24h",
     });
-    res.status(200).json({
-      message: "user signup successfull",
-      token: token,
-    });
-  } catch (e) {
-    res.status(411).json({
-      message: "Error while Signup",
-    });
+
+    res.status(201).json({ message: "User Signup Successful", token });
+  } catch (error) {
+    console.error("Signup Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
 const signin = async (req, res) => {
-  if (!userSigninSchema.safeParse(req.body).success) {
-    return res.status(411).json({
-      message: "Input validation failed",
-    });
-  }
   try {
-    const { email, password } = req.body;
-
-    const q = query(collection(db, "users"), where("email", "==", email));
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.size == 0) {
-      return res.status(400).json({
-        message: "User not found",
-      });
+    const validationResult = userSigninSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res
+        .status(400)
+        .json({ message: validationResult.error.errors[0].message });
     }
 
-    querySnapshot.forEach(async (doc) => {
-      const userData = doc.data();
-      const passCheck = await bcrypt.compare(password, userData.password);
+    const { email, password } = req.body;
 
-      if (passCheck) {
-        let token = jwt.sign(
-          { email: userData.email },
-          process.env.JWT_SECRET,
-          {
-            expiresIn: "24h",
-          }
-        );
-        res.status(200).json({
-          message: "user signin successfull",
-          token: token,
-        });
-      } else {
-        res.status(400).json({
-          message: "Incorrect Password",
-        });
-      }
+    const userQuery = query(
+      collection(db, "users"),
+      where("email", "==", email)
+    );
+    const querySnapshot = await getDocs(userQuery);
+
+    if (querySnapshot.empty) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const userDoc = querySnapshot.docs[0];
+    const userData = userDoc.data();
+
+    const passwordMatch = await bcrypt.compare(password, userData.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ message: "Incorrect password" });
+    }
+
+    const token = jwt.sign({ email: userData.email }, process.env.JWT_SECRET, {
+      expiresIn: "24h",
     });
+
+    res.status(200).json({ message: "User signin successful", token });
   } catch (error) {
-    res.status(411).json({
-      message: "Error while Signin",
-    });
+    console.error("Signin Error:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
-module.exports = {
-  signup,
-  signin,
-};
+module.exports = { signup, signin };
