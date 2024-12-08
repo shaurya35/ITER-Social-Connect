@@ -51,7 +51,7 @@ export default function MainFeed() {
       <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200">
         <CardHeader className="flex-row items-center gap-4 p-4">
           <NextImage
-            src="/placeholder.svg"
+            src="https://media.discordapp.net/attachments/1315342834278207540/1315347576207179818/3.jpg?ex=67571464&is=6755c2e4&hm=84f20787ffddff9bf39c06a190a05ddd1e7146403cbb09f5d1f0ece68a792de6&=&format=webp&width=460&height=465"
             alt="Avatar"
             width={48}
             height={48}
@@ -59,7 +59,7 @@ export default function MainFeed() {
           />
           <div>
             <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
-              Jane Smith
+              Shaurya Jha
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               2 hours ago
@@ -115,7 +115,7 @@ export default function MainFeed() {
           />
           <div>
             <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
-              Jane Smith
+              Satyam Kumar
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               2 hours ago
