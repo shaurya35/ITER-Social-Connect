@@ -57,20 +57,20 @@ const signup = async (req, res) => {
     }
 
     // Validate and upload ID card photo
-    if (!req.file) {
-      return res.status(400).json({ message: "ID card photo is required" });
-    }
+    // if (!req.file) {
+    //   return res.status(400).json({ message: "ID card photo is required" });
+    // }
 
-    if (req.file.size > 2 * 1024 * 1024) {
-      return res.status(400).json({ message: "ID card photo must not exceed 2 MB" });
-    }
+    // if (req.file.size > 2 * 1024 * 1024) {
+    //   return res.status(400).json({ message: "ID card photo must not exceed 2 MB" });
+    // }
 
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: "iter_id_cards",
-      allowedFormats: ["png", "jpg", "jpeg"],
-    });
+    // const result = await cloudinary.uploader.upload(req.file.path, {
+    //   folder: "iter_id_cards",
+    //   allowedFormats: ["png", "jpg", "jpeg"],
+    // });
 
-    const idCardPhotoUrl = result.secure_url;
+    // const idCardPhotoUrl = result.secure_url;
 
     // Hashed the password
     const saltRounds = parseInt(process.env.SALT_ROUNDS, 10) || 10;
