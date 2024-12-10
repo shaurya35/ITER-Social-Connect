@@ -7,13 +7,25 @@ import {
   Settings,
   Users,
   ChevronRight,
+  Bell,
+  MessageCircle,
+  User,
+  Bookmark,
 } from "lucide-react";
 
 export default function LeftSidebar() {
+  const menuItems = [
+    { icon: User, label: "Profile" },
+    { icon: MessageCircle, label: "Messages" },
+    { icon: Bell, label: "Notifications" },
+    { icon: Bookmark, label: "Saved Events" },
+    { icon: Users, label: "Connections" },
+    { icon: Settings, label: "Settings" },
+  ];
   return (
     <>
       <aside className="w-64 lg:flex-shrink-0">
-        <Card className="bg-white dark:bg-gray-800 overflow-hidden mb-4">
+        <Card className="bg-white dark:bg-gray-800 overflow-hidden mb-3">
           <CardContent className="p-0">
             <div className="relative h-32">
               <NextImage
@@ -54,6 +66,19 @@ export default function LeftSidebar() {
             </div>
           </CardContent>
         </Card>
+        <div className="h-11 dark:bg-gray-800 bg-white rounded-lg shadow mb-4 flex justify-evenly items-center">
+          {menuItems.slice(0, 4).map((item, index) => (
+            <Button
+              key={index}
+              variant="ghost"
+              size="sm"
+              className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="sr-only">{item.label}</span>
+            </Button>
+          ))}
+        </div>
         <nav className="space-y-1 bg-white dark:bg-gray-800 rounded-lg shadow">
           {[
             { icon: FileText, label: "My Posts" },
