@@ -39,7 +39,7 @@ export default function LeftSidebar() {
                 }}
               />
             </div>
-            <div className="p-4 pt-14 relative">
+            <div className="p-4 pt-12 relative">
               <div className="absolute -top-12 left-4 w-20 h-20 rounded-full overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg">
                 <NextImage
                   src="https://media.discordapp.net/attachments/1315342834278207540/1315347576207179818/3.jpg?ex=67590ea4&is=6757bd24&hm=bb7466b04c2baa14bf93ec2d056530e0cfc2c5346c8222b1c57bd59299e785e7&=&format=webp&width=460&height=465"
@@ -57,11 +57,11 @@ export default function LeftSidebar() {
                   }}
                 />
               </div>
-              <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
-                John Doe
+              <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100 ">
+                Explorer
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                500 Followers
+                No Followers
               </p>
             </div>
           </CardContent>
