@@ -20,6 +20,7 @@ export default function RightSidebar() {
             <div key={index} className="flex items-center gap-3">
               <Image
                 src="/placeholder.svg"
+                priority
                 alt={person.name}
                 width={40}
                 height={40}
