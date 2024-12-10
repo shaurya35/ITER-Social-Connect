@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import NextImage from "next/image"
+import NextImage from "next/image";
 import {
   BookMarked,
   FileText,
@@ -17,15 +17,14 @@ export default function LeftSidebar() {
           <CardContent className="p-0">
             <div className="relative h-32">
               <NextImage
-                src="https://media.discordapp.net/attachments/1315376796350283878/1315380709942366318/Black_and_White_Modern_Accountant_LinkedIn_Banner.png?ex=67592d7f&is=6757dbff&hm=e10411e89f9340755f084bc3b157bbe03618c6abe63f46df53639889893ec336&=&format=webp&quality=lossless&width=959&height=240"
+                src="/placeholder.svg"
                 alt="Cover"
-                width={959}
-                height={240}
                 priority
-                // priority
-                // style={{ objectFit: "cover" }}
-                // layout="fill"
-                // objectFit="cover"
+                fill
+                style={{
+                  objectFit: "cover",
+                  objectPosition: "center",
+                }}
               />
             </div>
             <div className="p-4 pt-14 relative">
@@ -33,12 +32,17 @@ export default function LeftSidebar() {
                 <NextImage
                   src="https://media.discordapp.net/attachments/1315342834278207540/1315347576207179818/3.jpg?ex=67590ea4&is=6757bd24&hm=bb7466b04c2baa14bf93ec2d056530e0cfc2c5346c8222b1c57bd59299e785e7&=&format=webp&width=460&height=465"
                   alt="Avatar"
-                  width={460}
-                  height={465}
+                  // width={460}
+                  // height={465}
                   priority
-                  // layout="fill"
-                  // objectFit="cover"
-                  // priority
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 460px"
+                  style={{
+                    objectFit: "cover",
+                    objectPosition: "center",
+                    // width: "80px",
+                    // height: "80px",
+                  }}
                 />
               </div>
               <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">

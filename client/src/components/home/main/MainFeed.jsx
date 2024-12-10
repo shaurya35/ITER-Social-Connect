@@ -16,12 +16,18 @@ export default function MainFeed() {
         <CardContent className="p-4">
           <div className="flex items-center gap-4">
             <NextImage
-              src="https://media.discordapp.net/attachments/1315342834278207540/1316064105588719707/pf2.jpg?ex=6759afb6&is=67585e36&hm=c74adb8fccdc099b5567f29ee46e26df2bacbb440f53b16aaee5618e4927fad9&=&format=webp&width=40&height=40"
+              src="https://media.discordapp.net/attachments/1315342834278207540/1316064105588719707/pf2.jpg?ex=6759afb6&is=67585e36&hm=c74adb8fccdc099b5567f29ee46e26df2bacbb440f53b16aaee5618e4927fad9&=&format=webp&width=460&height=465"
               alt="Avatar"
               width={40}
               height={40}
               className="rounded-full"
               priority
+              style={{
+                objectFit: 'cover', 
+                objectPosition: 'center',
+                width: '40px',
+                height: '40px'
+              }}
             />
             <div className="flex-1">
               <Textarea
@@ -52,12 +58,18 @@ export default function MainFeed() {
       <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200">
         <CardHeader className="flex-row items-center gap-4 p-4">
           <NextImage
-            src="https://media.discordapp.net/attachments/1315342834278207540/1316064150744465488/pf3.jpg?ex=6759afc0&is=67585e40&hm=23ad30767f15d0db1c126fefe50e09089995b066a4d4bb395659c74a269d27d1&=&format=webp&width=48&height=48"
+            src="https://media.discordapp.net/attachments/1315342834278207540/1316064150744465488/pf3.jpg?ex=6759afc0&is=67585e40&hm=23ad30767f15d0db1c126fefe50e09089995b066a4d4bb395659c74a269d27d1&=&format=webp&width=460&height=465"
             alt="Avatar"
             width={48}
             height={48}
             className="rounded-full"
             priority
+            style={{
+              objectFit: 'cover', 
+              objectPosition: 'center',
+              width: '48px',
+              height: '48px'
+            }}
           />
           <div>
             <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">

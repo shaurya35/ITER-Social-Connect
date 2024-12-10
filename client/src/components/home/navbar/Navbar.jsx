@@ -146,6 +146,7 @@ export default function Navbar() {
                         variant="ghost"
                         size="lg"
                         className="w-full justify-start text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                        onClick={() => setIsOpen(false)}
                       >
                         <item.icon className="h-5 w-5 mr-3" />
                         {item.label}
@@ -161,18 +162,11 @@ export default function Navbar() {
                         variant="ghost"
                         size="sm"
                         className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 "
+                        onClick={() => setIsOpen(false)}
                       >
                         Sign in?
                       </Button>
                     </Link>
-                    {/* <Link href="/signup" passHref>
-                      <Button
-                        size="sm"
-                        className="ml-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
-                      >
-                        Sign Up
-                      </Button>
-                    </Link> */}
                   </div>
                     <Button
                       variant="ghost"
