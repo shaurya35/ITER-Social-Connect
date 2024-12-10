@@ -8,5 +8,5 @@ export default function Home() {
     router.replace("/explore"); 
   }, [router]);
 
-  return <>Redirecting...</>;
+  return <div>Redirecting...</div>;
 }

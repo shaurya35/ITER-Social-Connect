@@ -8,7 +8,6 @@ import {
   Users,
   ChevronRight,
 } from "lucide-react";
-import Image from "next/image";
 
 export default function LeftSidebar() {
   return (
@@ -18,26 +17,28 @@ export default function LeftSidebar() {
           <CardContent className="p-0">
             <div className="relative h-32">
               <NextImage
-                src="/placeholder.svg"
+                src="https://media.discordapp.net/attachments/1315376796350283878/1315380709942366318/Black_and_White_Modern_Accountant_LinkedIn_Banner.png?ex=67592d7f&is=6757dbff&hm=e10411e89f9340755f084bc3b157bbe03618c6abe63f46df53639889893ec336&=&format=webp&quality=lossless&width=959&height=240"
                 alt="Cover"
-                  // height={128}
-                  // width={256}
+                width={959}
+                height={240}
                 priority
+                // priority
                 // style={{ objectFit: "cover" }}
-                layout="fill"
-                objectFit="cover"
+                // layout="fill"
+                // objectFit="cover"
               />
             </div>
             <div className="p-4 pt-14 relative">
               <div className="absolute -top-12 left-4 w-20 h-20 rounded-full overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg">
                 <NextImage
-                  src="/placeholder.svg"
+                  src="https://media.discordapp.net/attachments/1315342834278207540/1315347576207179818/3.jpg?ex=67590ea4&is=6757bd24&hm=bb7466b04c2baa14bf93ec2d056530e0cfc2c5346c8222b1c57bd59299e785e7&=&format=webp&width=460&height=465"
                   alt="Avatar"
-                  //   height={80}
-                  //   width={80}
-                  layout="fill"
-                  objectFit="cover"
+                  width={460}
+                  height={465}
                   priority
+                  // layout="fill"
+                  // objectFit="cover"
+                  // priority
                 />
               </div>
               <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">

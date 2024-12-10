@@ -10,14 +10,14 @@ app.use(express.json());
 // --- CORS config ---
 app.use(
   cors({
-    origin: "https://localhost:3000/",
+    origin: "http://localhost:3000/",
     methods: "GET,POST,PUT,DELETE",
-    allowedHeaders: "Content-Type, Authorization",
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
 // --- .env Port ---
-const port = 8080 || process.env.PORT;
+const port = process.env.PORT || 8080;
 
 // --- Base Route ---
 app.get("/", (req, res) => {

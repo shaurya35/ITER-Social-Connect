@@ -23,7 +23,7 @@ const {
 // --- Middleware Functions ---
 const { isLoggedIn } = require("../middlewares/authMiddlewares");
 // Import the file upload middleware
-const fileUploadMiddleware = require("../middlewares/fileMiddleware");
+const fileUploadMiddleware = require("../middlewares/fileMiddlewares");
 
 // --- Auth Routes ---
 router.post("/signup", fileUploadMiddleware, signup); // Signup with ID card photo

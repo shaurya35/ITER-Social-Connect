@@ -4,7 +4,7 @@ export const metadata = {
 };
 
 const ExploreLayout = (props) => {
-  return <>{props.children}</>;
+  return <div>{props.children}</div>;
 };
 
 export default ExploreLayout;
