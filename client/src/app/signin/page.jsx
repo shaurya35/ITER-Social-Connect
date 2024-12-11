@@ -1,5 +1,4 @@
 import { SigninForm } from '@/components/auth/SigninForm'
-import { Navbar } from '@/components/home/navbar/Navbar'
 
 export const metadata = {
   title: 'Signin / ITER Connect',
@@ -9,7 +8,6 @@ export const metadata = {
 export default function SigninPage() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-      {/* <Navbar /> */}
       <div className="flex-grow flex flex-col items-center justify-start pt-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div>

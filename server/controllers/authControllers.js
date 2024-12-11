@@ -11,7 +11,6 @@ const {
   doc,
 } = require("firebase/firestore");
 const { cloudinary } = require("../cloudConfig");
-// const { v4: uuidv4 } = require("uuid");
 const {
   userSignupSchema,
   userSigninSchema,
@@ -24,7 +23,23 @@ const isValidUrl = (url, platform) => {
     github: /^https?:\/\/(www\.)?github\.com\/.*$/i,
     twitter: /^https?:\/\/(www\.)?twitter\.com\/.*$/i,
   };
-  return regexes[platform].test(url);
+  return regexes[platform]?.test(url);
+};
+
+const generateAccessToken = (user) => {
+  return jwt.sign(
+    { userId: user.userId, email: user.email }, 
+    process.env.JWT_SECRET,
+    { expiresIn: "15m" }
+  );
+};
+
+const generateRefreshToken = (user) => {
+  return jwt.sign(
+    { userId: user.userId, email: user.email },
+    process.env.JWT_REFRESH_SECRET,
+    { expiresIn: "30d" }
+  );
 };
 
 const signup = async (req, res) => {
@@ -38,9 +53,16 @@ const signup = async (req, res) => {
 
     const { email, password, regNo } = req.body;
 
-    // Check for tyhe uniqueness of email and regd
-    const emailQuery = query(collection(db, "users"), where("email", "==", email));
-    const regNoQuery = query(collection(db, "users"), where("regNo", "==", regNo));
+    const emailQuery = query(
+      collection(db, "users"),
+      where("email", "==", email)
+    );
+
+    const regNoQuery = query(
+      collection(db, "users"),
+      where("regNo", "==", regNo)
+    );
+
     const [emailSnapshot, regNoSnapshot] = await Promise.all([
       getDocs(emailQuery),
       getDocs(regNoQuery),
@@ -56,64 +78,53 @@ const signup = async (req, res) => {
         .json({ message: "Registration number already registered" });
     }
 
-    // Validate and upload ID card photo
-    // if (!req.file) {
-    //   return res.status(400).json({ message: "ID card photo is required" });
-    // }
-
-    // if (req.file.size > 2 * 1024 * 1024) {
-    //   return res.status(400).json({ message: "ID card photo must not exceed 2 MB" });
-    // }
-
-    // const result = await cloudinary.uploader.upload(req.file.path, {
-    //   folder: "iter_id_cards",
-    //   allowedFormats: ["png", "jpg", "jpeg"],
-    // });
-
-    // const idCardPhotoUrl = result.secure_url;
-
-    // Hashed the password
     const saltRounds = parseInt(process.env.SALT_ROUNDS, 10) || 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Add user to db
     const userDoc = await addDoc(collection(db, "users"), {
       email,
       password: hashedPassword,
       regNo,
-      idCardPhoto: idCardPhotoUrl,
       profileCompleted: false,
     });
 
-    // Generate JWT token which expires after 24h
-    const token = jwt.sign({ userId: userDoc.id }, process.env.JWT_SECRET, {
-      expiresIn: "24h",
+    const accessToken = generateAccessToken({ userId: userDoc.id, email });
+    const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
     res.status(201).json({
-      message: "Signup successful. Please complete your profile.",
-      token,
+      message: "Signup successful.",
+      accessToken,
     });
   } catch (error) {
     console.error("Signup Error:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-//complete profile (added after signup and id card validation)
+
 const completeProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { username, about, github, linkedin, twitter } = req.body;
 
-    // Validating username uniqueness
-    const usernameQuery = query(collection(db, "users"), where("username", "==", username));
+    // Validate username uniqueness
+    const usernameQuery = query(
+      collection(db, "users"),
+      where("username", "==", username)
+    );
     const usernameSnapshot = await getDocs(usernameQuery);
 
     if (!usernameSnapshot.empty) {
       return res.status(409).json({ message: "Username already taken" });
     }
 
-    // Validating social media links (if provided)
+    // Validate social media links
     if (linkedin && !isValidUrl(linkedin, "linkedin")) {
       return res.status(400).json({ message: "Invalid LinkedIn URL" });
     }
@@ -139,7 +150,6 @@ const completeProfile = async (req, res) => {
       profilePhotoUrl = result.secure_url;
     }
 
-    // Update user profile in db
     const userRef = doc(db, "users", userId);
     await updateDoc(userRef, {
       username,
@@ -158,8 +168,6 @@ const completeProfile = async (req, res) => {
   }
 };
 
-
-//--signin function
 const signin = async (req, res) => {
   try {
     const validationResult = userSigninSchema.safeParse(req.body);
@@ -171,8 +179,10 @@ const signin = async (req, res) => {
 
     const { email, password } = req.body;
 
-    // Check if user exists
-    const userQuery = query(collection(db, "users"), where("email", "==", email));
+    const userQuery = query(
+      collection(db, "users"),
+      where("email", "==", email)
+    );
     const querySnapshot = await getDocs(userQuery);
 
     if (querySnapshot.empty) {
@@ -182,22 +192,24 @@ const signin = async (req, res) => {
     const userDoc = querySnapshot.docs[0];
     const userData = userDoc.data();
 
-    // Validate password
     const passwordMatch = await bcrypt.compare(password, userData.password);
     if (!passwordMatch) {
       return res.status(401).json({ message: "Incorrect password" });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: userDoc.id, email: userData.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "24h" }
-    );
+    const accessToken = generateAccessToken({ userId: userDoc.id, email });
+    const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
 
     res.status(200).json({
       message: "Signin successful",
-      token,
+      accessToken,
       profileCompleted: userData.profileCompleted,
     });
   } catch (error) {
@@ -206,4 +218,24 @@ const signin = async (req, res) => {
   }
 };
 
-module.exports = { signup, completeProfile, signin };
+const refreshAccessToken = (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: "Refresh token missing" });
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const newAccessToken = generateAccessToken({
+      userId: decoded.userId,
+      email: decoded.email,
+    });
+
+    res.status(200).json({ accessToken: newAccessToken });
+  } catch (error) {
+    res.status(401).json({ message: "Invalid or expired refresh token" });
+  }
+};
+
+module.exports = { signup, completeProfile, signin, refreshAccessToken };

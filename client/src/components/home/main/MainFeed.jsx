@@ -40,8 +40,13 @@ export default function MainFeed() {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const observer = useRef();
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const fetchPosts = useCallback(async () => {
     if (!hasMore) return;
@@ -79,8 +84,14 @@ export default function MainFeed() {
   );
 
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    if (isHydrated) {
+      fetchPosts();
+    }
+  }, [fetchPosts, isHydrated]);
+
+  if (!isHydrated) {
+    return null;
+  }
 
   return (
     <div className="flex-1 w-full max-w-2xl mx-auto space-y-4">
@@ -153,7 +164,9 @@ export default function MainFeed() {
       )}
 
       {/* Error message */}
-      {error && <p className="text-red-500">Error loading posts: {error.message}</p>}
+      {error && (
+        <p className="text-red-500">Error loading posts: {error.message}</p>
+      )}
 
       {/* Posts */}
       {posts.map((post, index) => {
