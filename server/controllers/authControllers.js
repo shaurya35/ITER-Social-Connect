@@ -13,7 +13,6 @@ const {
   getDoc,
   deleteDoc,
 } = require("firebase/firestore");
-const { cloudinary } = require("../cloudConfig");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const {
@@ -28,7 +27,23 @@ const isValidUrl = (url, platform) => {
     github: /^https?:\/\/(www\.)?github\.com\/.*$/i,
     twitter: /^https?:\/\/(www\.)?twitter\.com\/.*$/i,
   };
-  return regexes[platform].test(url);
+  return regexes[platform]?.test(url);
+};
+
+const generateAccessToken = (user) => {
+  return jwt.sign(
+    { userId: user.userId, email: user.email }, 
+    process.env.JWT_SECRET,
+    { expiresIn: "15m" }
+  );
+};
+
+const generateRefreshToken = (user) => {
+  return jwt.sign(
+    { userId: user.userId, email: user.email },
+    process.env.JWT_REFRESH_SECRET,
+    { expiresIn: "30d" }
+  );
 };
 
 const signup = async (req, res) => {
@@ -47,6 +62,7 @@ const signup = async (req, res) => {
       collection(db, "users"),
       where("email", "==", email)
     );
+
     const regNoQuery = query(
       collection(db, "users"),
       where("regNo", "==", regNo)
@@ -107,8 +123,7 @@ const signup = async (req, res) => {
 
     res.status(200).json({
       message:
-        "Signup initiated. Please verify your email to complete the process.",
-    });
+        "Signup initiated. Please verify your email to complete the process.",});
   } catch (error) {
     console.error("Signup Error:", error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -175,20 +190,7 @@ const completeProfile = async (req, res) => {
       return res.status(400).json({ message: "Invalid Twitter URL" });
     }
 
-    // Upload profile photo (if provided)
-    // let profilePhotoUrl = null;
-    // if (req.file) {
-    //   if (req.file.size > 2 * 1024 * 1024) {
-    //     return res
-    //       .status(400)
-    //       .json({ message: "Profile photo must not exceed 2 MB" });
-    //   }
-    //   const result = await cloudinary.uploader.upload(req.file.path, {
-    //     folder: "iter_profiles",
-    //     allowedFormats: ["png", "jpg", "jpeg"],
-    //   });
-    //   profilePhotoUrl = result.secure_url;
-    // }
+
 
     // Update user profile in Firestore
     await updateDoc(userRef, {
@@ -384,10 +386,19 @@ const signin = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
+    const accessToken = generateAccessToken({ userId: userDoc.id, email });
+    const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
 
     res.status(200).json({
       message: "Signin successful",
-      token,
+      accessToken,
       profileCompleted: userData.profileCompleted,
     });
   } catch (error) {
@@ -396,4 +407,24 @@ const signin = async (req, res) => {
   }
 };
 
-module.exports = { signup, completeProfile, signin, verifyOtp };
+const refreshAccessToken = (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: "Refresh token missing" });
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const newAccessToken = generateAccessToken({
+      userId: decoded.userId,
+      email: decoded.email,
+    });
+
+    res.status(200).json({ accessToken: newAccessToken });
+  } catch (error) {
+    res.status(401).json({ message: "Invalid or expired refresh token" });
+  }
+};
+
+module.exports = { signup, completeProfile, signin, verifyOtp,refreshAccessToken };

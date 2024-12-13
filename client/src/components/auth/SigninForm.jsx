@@ -1,39 +1,47 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { AlertCircle, Loader2 } from 'lucide-react'
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function SigninForm() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError('')
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
 
-    // Here you would typically make an API call to your backend
-    // For this example, we'll just simulate a signin process
     try {
-      // Simulated API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Send login credentials to the backend
+      const response = await axios.post(
+        'http://localhost:8080/api/auth/signin',
+        { email, password },
+        // { withCredentials: true }
+      );
 
-      // Simulated successful signin
-      router.push('/dashboard')
+      if (response.status === 200) {
+        // Redirect to explore page
+        router.push('/explore');
+      } else {
+        throw new Error('Unexpected response status');
+      }
     } catch (err) {
-      setError('Failed to sign in. Please check your credentials and try again.')
+      const errorMessage = err.response?.data?.message || 'Failed to sign in. Please check your credentials and try again.';
+      setError(errorMessage);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -74,7 +82,11 @@ export function SigninForm() {
       )}
 
       <div>
-        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white" disabled={isLoading}>
+        <Button
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
+          disabled={isLoading}
+        >
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -86,6 +98,5 @@ export function SigninForm() {
         </Button>
       </div>
     </form>
-  )
+  );
 }
-

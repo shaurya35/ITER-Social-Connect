@@ -12,6 +12,8 @@ const userSignupSchema = z.object({
   twitter: z.string().url("Invalid Twitter URL").optional(),
 });
 
+
+
 const userSigninSchema = z.object({
   email: z.string().email("Invalid email format."),
   password: z.string().min(6, "Password must be at least 6 characters long."),

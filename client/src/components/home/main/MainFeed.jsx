@@ -17,7 +17,7 @@ const timeAgo = (dateString) => {
   const now = new Date();
   const seconds = Math.floor((now - date) / 1000);
 
-  if (seconds < 60) return "1 min ago"; 
+  if (seconds < 60) return "1 min ago";
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes} min ago`;
 
@@ -40,18 +40,23 @@ export default function MainFeed() {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const observer = useRef();
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const fetchPosts = useCallback(async () => {
     if (!hasMore) return;
 
     setLoading(true);
     try {
+      // await new Promise(resolve => setTimeout(resolve, 10000));
       const response = await axios.get(`http://localhost:8080/api/feed`, {
         params: { page, limit: 10 },
       });
-
       const newPosts = response.data.posts || [];
       setPosts((prevPosts) => [...prevPosts, ...newPosts]);
       setHasMore(newPosts.length > 0);
@@ -79,10 +84,14 @@ export default function MainFeed() {
   );
 
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    if (isHydrated) {
+      fetchPosts();
+    }
+  }, [fetchPosts, isHydrated]);
 
-  if (error) return <p>Error: {error.message}</p>;
+  if (!isHydrated) {
+    return null;
+  }
 
   return (
     <div className="flex-1 w-full max-w-2xl mx-auto space-y-4">
@@ -130,7 +139,36 @@ export default function MainFeed() {
         </CardContent>
       </Card>
 
-      {/*posts */}
+      {/* Preloader */}
+      {loading && (
+        <div className="space-y-4">
+          {[...Array(3)].map((_, idx) => (
+            <Card
+              key={idx}
+              className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-700 animate-pulse"
+            >
+              <CardHeader className="flex-row items-center gap-4 p-4">
+                <div className="rounded-full bg-gray-300 dark:bg-gray-700 h-12 w-12"></div>
+                <div>
+                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-24 mb-2"></div>
+                  <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-16"></div>
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 py-2">
+                <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-full mb-2"></div>
+                <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Error message */}
+      {error && (
+        <p className="text-red-500">Error loading posts: {error.message}</p>
+      )}
+
+      {/* Posts */}
       {posts.map((post, index) => {
         const uniqueKey = post.id ? `${post.id}-${index}` : index;
 
@@ -200,7 +238,6 @@ export default function MainFeed() {
         );
       })}
 
-      {loading && <p>Loading more posts...</p>}
       {!hasMore && <p>No more posts to load.</p>}
     </div>
   );
