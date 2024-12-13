@@ -8,20 +8,10 @@ require("dotenv").config();
 const app = express();
 
 // --- CORS config ---
-// app.use(
-//   cors({
-//     origin: ["http://itersocialconnect.vercel.app","http://localhost:3000"],
-//     methods: "GET,POST,PUT,DELETE",
-//     credentials: true, 
-//     allowedHeaders: ["Content-Type", "Authorization"],
-//   })
-// );
-
-// --- Extra Configs ---
 const allowedOrigins = [
   "http://localhost:3000",
   "http://itersocialconnect.vercel.app",
-  // "https://itersocialconnect.vercel.app", 
+  "https://itersocialconnect.vercel.app", 
 ];
 
 app.use(
@@ -39,15 +29,6 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-// app.use(
-//   cors({
-//     origin: "http://localhost:3000",
-//     methods: "GET,POST,PUT,DELETE",
-//     credentials: true,
-//     allowedHeaders: ["Content-Type", "Authorization"],
-//   })
-// );
-// app.use(cors());
 
 // --- Body parser config ---
 app.use(express.json());
