@@ -181,7 +181,7 @@ export default function MainFeed() {
           >
             <CardHeader className="flex-row items-center gap-4 p-4">
               <NextImage
-                src="https://media.discordapp.net/attachments/1315342834278207540/1316064150744465488/pf3.jpg?ex=6759afc0&is=67585e40&hm=23ad30767f15d0db1c126fefe50e09089995b066a4d4bb395659c74a269d27d1&=&format=webp&width=460&height=465"
+                src="https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"
                 alt="Avatar"
                 width={48}
                 height={48}
