@@ -57,6 +57,7 @@ export default function MainFeed() {
         {
           method: "GET",
           credentials: "include",
+          mode: "no-cors",
         }
       );
 
