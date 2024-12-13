@@ -9,15 +9,19 @@ const {
   getDocs,
   updateDoc,
   doc,
+  setDoc,
+  getDoc,
+  deleteDoc,
 } = require("firebase/firestore");
 const { cloudinary } = require("../cloudConfig");
-// const { v4: uuidv4 } = require("uuid");
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const {
   userSignupSchema,
   userSigninSchema,
 } = require("../validations/userValidations");
 
-// URL validation function
+//URL validation function
 const isValidUrl = (url, platform) => {
   const regexes = {
     linkedin: /^https?:\/\/(www\.)?linkedin\.com\/.*$/i,
@@ -38,9 +42,15 @@ const signup = async (req, res) => {
 
     const { email, password, regNo } = req.body;
 
-    // Check for tyhe uniqueness of email and regd
-    const emailQuery = query(collection(db, "users"), where("email", "==", email));
-    const regNoQuery = query(collection(db, "users"), where("regNo", "==", regNo));
+    // Check for type uniqueness of email and regd
+    const emailQuery = query(
+      collection(db, "users"),
+      where("email", "==", email)
+    );
+    const regNoQuery = query(
+      collection(db, "users"),
+      where("regNo", "==", regNo)
+    );
     const [emailSnapshot, regNoSnapshot] = await Promise.all([
       getDocs(emailQuery),
       getDocs(regNoQuery),
@@ -56,64 +66,105 @@ const signup = async (req, res) => {
         .json({ message: "Registration number already registered" });
     }
 
-    // Validate and upload ID card photo
-    // if (!req.file) {
-    //   return res.status(400).json({ message: "ID card photo is required" });
-    // }
+    // Generate OTP for email verification
+    const otp = crypto.randomInt(100000, 999999);
 
-    // if (req.file.size > 2 * 1024 * 1024) {
-    //   return res.status(400).json({ message: "ID card photo must not exceed 2 MB" });
-    // }
-
-    // const result = await cloudinary.uploader.upload(req.file.path, {
-    //   folder: "iter_id_cards",
-    //   allowedFormats: ["png", "jpg", "jpeg"],
-    // });
-
-    // const idCardPhotoUrl = result.secure_url;
-
-    // Hashed the password
-    const saltRounds = parseInt(process.env.SALT_ROUNDS, 10) || 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Add user to db
-    const userDoc = await addDoc(collection(db, "users"), {
+    // Store OTP and hashed password temporarily in Firestore
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const tempUserRef = doc(db, "temp_users", email);
+    await setDoc(tempUserRef, {
       email,
       password: hashedPassword,
       regNo,
-      idCardPhoto: idCardPhotoUrl,
-      profileCompleted: false,
+      otp,
+      otpExpiresAt: Date.now() + 5 * 60 * 1000, // OTP valid for 5 minutes
     });
 
-    // Generate JWT token which expires after 24h
-    const token = jwt.sign({ userId: userDoc.id }, process.env.JWT_SECRET, {
-      expiresIn: "24h",
+    // Send OTP via email
+    const transporter = nodemailer.createTransport({
+      service: "gmail", // You can change this as needed
+      auth: {
+        user: process.env.EMAIL_USER, // Get email from .env
+        pass: process.env.EMAIL_PASS, // Get password from .env
+      },
     });
 
-    res.status(201).json({
-      message: "Signup successful. Please complete your profile.",
-      token,
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: email,
+      subject: "Email Verification OTP",
+      text: `Your OTP for email verification is ${otp}. It is valid for 5 minutes.`,
+    };
+
+    try {
+      // Send the email
+      const info = await transporter.sendMail(mailOptions);
+      console.log("Email sent successfully:", info.response);
+    } catch (error) {
+      console.log("Error occurred:", error);
+      res.status(500).send("Failed to send email.");
+    }
+
+    res.status(200).json({
+      message:
+        "Signup initiated. Please verify your email to complete the process.",
     });
   } catch (error) {
     console.error("Signup Error:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 //complete profile (added after signup and id card validation)
 const completeProfile = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    // Decode and verify the JWT token from the request headers
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ message: "Authorization token missing" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
+
+    const userId = decoded.userId;
     const { username, about, github, linkedin, twitter } = req.body;
 
-    // Validating username uniqueness
-    const usernameQuery = query(collection(db, "users"), where("username", "==", username));
+    // Fetch the user document
+    const userRef = doc(db, "users", userId);
+    const userSnapshot = await getDoc(userRef);
+
+    if (!userSnapshot.exists()) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const userData = userSnapshot.data();
+
+    // Check if the user's account is approved
+    if (userData.approvalStatus !== "approved") {
+      return res.status(403).json({
+        message:
+          "Your account is not approved. Profile completion is not allowed.",
+      });
+    }
+
+    // Validate username uniqueness
+    const usernameQuery = query(
+      collection(db, "users"),
+      where("username", "==", username)
+    );
     const usernameSnapshot = await getDocs(usernameQuery);
 
     if (!usernameSnapshot.empty) {
       return res.status(409).json({ message: "Username already taken" });
     }
 
-    // Validating social media links (if provided)
+    // Validate social media links (if provided)
     if (linkedin && !isValidUrl(linkedin, "linkedin")) {
       return res.status(400).json({ message: "Invalid LinkedIn URL" });
     }
@@ -125,22 +176,21 @@ const completeProfile = async (req, res) => {
     }
 
     // Upload profile photo (if provided)
-    let profilePhotoUrl = null;
-    if (req.file) {
-      if (req.file.size > 2 * 1024 * 1024) {
-        return res
-          .status(400)
-          .json({ message: "Profile photo must not exceed 2 MB" });
-      }
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "iter_profiles",
-        allowedFormats: ["png", "jpg", "jpeg"],
-      });
-      profilePhotoUrl = result.secure_url;
-    }
+    // let profilePhotoUrl = null;
+    // if (req.file) {
+    //   if (req.file.size > 2 * 1024 * 1024) {
+    //     return res
+    //       .status(400)
+    //       .json({ message: "Profile photo must not exceed 2 MB" });
+    //   }
+    //   const result = await cloudinary.uploader.upload(req.file.path, {
+    //     folder: "iter_profiles",
+    //     allowedFormats: ["png", "jpg", "jpeg"],
+    //   });
+    //   profilePhotoUrl = result.secure_url;
+    // }
 
-    // Update user profile in db
-    const userRef = doc(db, "users", userId);
+    // Update user profile in Firestore
     await updateDoc(userRef, {
       username,
       about: about || "",
@@ -151,17 +201,133 @@ const completeProfile = async (req, res) => {
       profileCompleted: true,
     });
 
-    res.status(200).json({ message: "Profile completed successfully" });
+    // Generate a new JWT token upon successful profile completion
+    const newToken = jwt.sign(
+      { userId, email: userData.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    res.status(200).json({
+      message: "Profile completed successfully",
+      token: newToken, // Include the new token in the response
+    });
   } catch (error) {
     console.error("Complete Profile Error:", error);
     res.status(500).json({ message: "Failed to complete profile" });
   }
 };
 
-
 //--signin function
+// const signin = async (req, res) => {
+//   try {
+//     const validationResult = userSigninSchema.safeParse(req.body);
+//     if (!validationResult.success) {
+//       return res
+//         .status(400)
+//         .json({ message: validationResult.error.errors[0].message });
+//     }
+
+//     const { email, password } = req.body;
+
+//     // Check if user exists
+//     const userQuery = query(
+//       collection(db, "users"),
+//       where("email", "==", email)
+//     );
+//     const querySnapshot = await getDocs(userQuery);
+
+//     if (querySnapshot.empty) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     const userDoc = querySnapshot.docs[0];
+//     const userData = userDoc.data();
+
+//     // Validate password
+//     const passwordMatch = await bcrypt.compare(password, userData.password);
+//     if (!passwordMatch) {
+//       return res.status(401).json({ message: "Incorrect password" });
+//     }
+
+//     // Generate JWT token
+//     const token = jwt.sign(
+//       { userId: userDoc.id, email: userData.email },
+//       process.env.JWT_SECRET,
+//       { expiresIn: "24h" }
+//     );
+
+//     res.status(200).json({
+//       message: "Signin successful",
+//       token,
+//       profileCompleted: userData.profileCompleted,
+//     });
+//   } catch (error) {
+//     console.error("Signin Error:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
+const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required." });
+    }
+
+    // Reference to the temp_users collection
+    const tempUserRef = doc(db, "temp_users", email);
+
+    // Fetch the document
+    const tempUserSnapshot = await getDoc(tempUserRef);
+
+    if (!tempUserSnapshot.exists()) {
+      return res
+        .status(404)
+        .json({ message: "No signup process found for this email." });
+    }
+
+    const tempUser = tempUserSnapshot.data();
+
+    // Check if OTP is correct and not expired
+    if (tempUser.otp !== parseInt(otp, 10)) {
+      return res.status(400).json({ message: "Invalid OTP." });
+    }
+
+    if (Date.now() > tempUser.otpExpiresAt) {
+      return res.status(400).json({ message: "OTP has expired." });
+    }
+
+    await addDoc(collection(db, "users"), {
+      email: tempUser.email,
+      password: tempUser.password,
+      regNo: tempUser.regNo,
+      profileCompleted: false,
+      approvalStatus: "pending",
+    });
+
+    await addDoc(collection(db, "verification_requests"), {
+      email: tempUser.email,
+      regNo: tempUser.regNo,
+      profileCompleted: false,
+      createdAt: new Date().toISOString(),
+      status: "pending",
+    });
+
+    await deleteDoc(tempUserRef);
+
+    res
+      .status(200)
+      .json({ message: "Verification request submitted successfully." });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to submit verification request." });
+  }
+};
+
 const signin = async (req, res) => {
   try {
+    // Validate the request body using zod or any schema validation library
     const validationResult = userSigninSchema.safeParse(req.body);
     if (!validationResult.success) {
       return res
@@ -171,8 +337,11 @@ const signin = async (req, res) => {
 
     const { email, password } = req.body;
 
-    // Check if user exists
-    const userQuery = query(collection(db, "users"), where("email", "==", email));
+    // Query Firestore to check if the user exists
+    const userQuery = query(
+      collection(db, "users"),
+      where("email", "==", email)
+    );
     const querySnapshot = await getDocs(userQuery);
 
     if (querySnapshot.empty) {
@@ -182,13 +351,34 @@ const signin = async (req, res) => {
     const userDoc = querySnapshot.docs[0];
     const userData = userDoc.data();
 
-    // Validate password
+    // Validate the password using bcrypt
     const passwordMatch = await bcrypt.compare(password, userData.password);
     if (!passwordMatch) {
       return res.status(401).json({ message: "Incorrect password" });
     }
 
-    // Generate JWT token
+    // Check if the account has been approved
+    if (userData.approvalStatus !== "approved") {
+      return res
+        .status(403)
+        .json({ message: "Your account has not been approved by the admin." });
+    }
+
+    // Check if the profile has been completed
+    if (!userData.profileCompleted) {
+      const tokenUserid = jwt.sign(
+        { userId: userDoc.id },
+        process.env.JWT_SECRET,
+        { expiresIn: "24h" }
+      );
+      return res.status(200).json({
+        message: "Your profile is not completed. Please complete it.",
+        requiresProfileCompletion: true,
+        userId: tokenUserid, // Send user ID for completing profile
+      });
+    }
+
+    // Generate a JWT token if everything is fine
     const token = jwt.sign(
       { userId: userDoc.id, email: userData.email },
       process.env.JWT_SECRET,
@@ -206,4 +396,4 @@ const signin = async (req, res) => {
   }
 };
 
-module.exports = { signup, completeProfile, signin };
+module.exports = { signup, completeProfile, signin, verifyOtp };

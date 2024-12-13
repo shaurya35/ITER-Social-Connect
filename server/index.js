@@ -28,11 +28,13 @@ app.get("/", (req, res) => {
 const authRoutes = require("./routes/authRoutes");
 const feedRoutes = require("./routes/feedRoutes");
 const userRoutes = require("./routes/userRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 // --- Use Routes ---
 app.use("/api/auth", authRoutes);
 app.use("/api/feed", feedRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/admin", adminRoutes);
 
 // --- Start the Server ---
 app.listen(port, () => {
