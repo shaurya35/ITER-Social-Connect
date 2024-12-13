@@ -21,7 +21,7 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "http://itersocialconnect.vercel.app",
-  "https://itersocialconnect.vercel.app", 
+  // "https://itersocialconnect.vercel.app", 
 ];
 
 app.use(
