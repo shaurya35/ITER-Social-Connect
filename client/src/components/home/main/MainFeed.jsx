@@ -58,6 +58,7 @@ export default function MainFeed() {
         params: { page, limit: 10 },
         withCredentials: true,
       });
+      console.log(response.data);
       const newPosts = response.data.posts || [];
       setPosts((prevPosts) => [...prevPosts, ...newPosts]);
       setHasMore(newPosts.length > 0);
