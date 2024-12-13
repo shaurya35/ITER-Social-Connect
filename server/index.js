@@ -10,7 +10,7 @@ const app = express();
 // --- CORS config ---
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://itersocialconnect.vercel.app"],
+    origin: ["http://itersocialconnect.vercel.app","http://localhost:3000"],
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
