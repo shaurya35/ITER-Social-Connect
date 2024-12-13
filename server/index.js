@@ -6,29 +6,35 @@ require("dotenv").config();
 
 // --- Express parse ---
 const app = express();
-app.use(express.json());
-
-// --- Cookie parse ---  
-app.use(cookieParser());
 
 // --- CORS config ---
-
-const allowedOrigins = ["http://localhost:3000","http://itersocialconnect.vercel.app"];
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (allowedOrigins.includes(origin) || !origin) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: ["http://localhost:3000", "http://itersocialconnect.vercel.app"],
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+// --- Body parser config ---
+app.use(express.json());
+
+// --- Extra Configs ---
+// const allowedOrigins = ["http://localhost:3000","http://itersocialconnect.vercel.app"];
+// app.use(
+//   cors({
+//     origin: (origin, callback) => {
+//       if (allowedOrigins.includes(origin) || !origin) {
+//         callback(null, true);
+//       } else {
+//         callback(new Error("Not allowed by CORS"));
+//       }
+//     },
+//     methods: "GET,POST,PUT,DELETE",
+//     credentials: true,
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//   })
+// );
 // app.use(
 //   cors({
 //     origin: "http://localhost:3000",
@@ -38,6 +44,9 @@ app.use(
 //   })
 // );
 // app.use(cors());
+
+// --- Cookie parse ---  
+app.use(cookieParser());
 
 // --- .env Port ---
 const port = process.env.PORT || 8080;
