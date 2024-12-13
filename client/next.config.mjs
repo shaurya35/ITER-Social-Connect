@@ -6,7 +6,7 @@ const nextConfig = {
         source: "/api/:path*",
         headers: [
           { key: "Access-Control-Allow-Credentials", value: "true" },
-          { key: "Access-Control-Allow-Origin", value: "*" }, 
+          { key: "Access-Control-Allow-Origin", value: "https://iter-social-connect-sv78.onrender.com/api/feed?page=1&limit=10" }, 
           {
             key: "Access-Control-Allow-Methods",
             value: "GET,DELETE,PATCH,POST,PUT",
