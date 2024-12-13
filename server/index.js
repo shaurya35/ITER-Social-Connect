@@ -8,33 +8,37 @@ require("dotenv").config();
 const app = express();
 
 // --- CORS config ---
-app.use(
-  cors({
-    origin: ["http://itersocialconnect.vercel.app","http://localhost:3000"],
-    methods: "GET,POST,PUT,DELETE",
-    credentials: true, 
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-// --- Body parser config ---
-app.use(express.json());
-
-// --- Extra Configs ---
-// const allowedOrigins = ["http://localhost:3000","http://itersocialconnect.vercel.app"];
 // app.use(
 //   cors({
-//     origin: (origin, callback) => {
-//       if (allowedOrigins.includes(origin) || !origin) {
-//         callback(null, true);
-//       } else {
-//         callback(new Error("Not allowed by CORS"));
-//       }
-//     },
+//     origin: ["http://itersocialconnect.vercel.app","http://localhost:3000"],
 //     methods: "GET,POST,PUT,DELETE",
-//     credentials: true,
+//     credentials: true, 
 //     allowedHeaders: ["Content-Type", "Authorization"],
 //   })
 // );
+
+// --- Extra Configs ---
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://itersocialconnect.vercel.app",
+  "https://itersocialconnect.vercel.app", 
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.error(`Blocked by CORS: ${origin}`);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: "GET,POST,PUT,DELETE",
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 // app.use(
 //   cors({
 //     origin: "http://localhost:3000",
@@ -45,8 +49,20 @@ app.use(express.json());
 // );
 // app.use(cors());
 
+// --- Body parser config ---
+app.use(express.json());
+
 // --- Cookie parse ---  
 app.use(cookieParser());
+
+// --- Global error handler ---
+app.use((err, req, res, next) => {
+  if (err instanceof Error && err.message === "Not allowed by CORS") {
+    res.status(403).json({ error: "CORS not allowed for this origin" });
+  } else {
+    next(err);
+  }
+});
 
 // --- .env Port ---
 const port = process.env.PORT || 8080;
