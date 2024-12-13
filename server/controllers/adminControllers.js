@@ -1,6 +1,4 @@
 require("dotenv").config();
-
-const cors = require("cors");
 const {
   collection,
   addDoc,
@@ -13,7 +11,6 @@ const {
   getDoc,
   orderBy,
 } = require("firebase/firestore");
-const { cloudinary } = require("../cloudConfig");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const db = require("../firebase/firebaseConfig");
@@ -39,11 +36,9 @@ const adminLogin = (req, res) => {
 
 const pendingRequest = async (req, res) => {
   try {
-    // Query to fetch pending requests sorted by `createdAt`
     const pendingQuery = query(
       collection(db, "verification_requests"),
       where("status", "==", "pending")
-      // orderBy("createdAt", "asc") // Sorting by `createdAt` in ascending order
     );
 
     const snapshot = await getDocs(pendingQuery);

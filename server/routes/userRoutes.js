@@ -13,27 +13,8 @@ const {
   deleteUserPost,
 } = require("../controllers/userControllers");
 
-// Import signup, signin, and completeProfile functions from authControllers
-const {
-  signup,
-  signin,
-  completeProfile,
-} = require("../controllers/authControllers");
-
 // --- Middleware Functions ---
 const { isLoggedIn } = require("../middlewares/authMiddlewares");
-// Import the file upload middleware
-const fileUploadMiddleware = require("../middlewares/fileMiddlewares");
-
-// --- Auth Routes ---
-router.post("/signup", fileUploadMiddleware, signup); // Signup with ID card photo
-router.post("/signin", signin); // Signin route
-router.put(
-  "/complete-profile",
-  isLoggedIn,
-  fileUploadMiddleware,
-  completeProfile
-); // Complete profile with optional photo
 
 // --- Post's Routes ---
 router.get("/posts", isLoggedIn, getAllUserPosts); // Get all posts of a user
