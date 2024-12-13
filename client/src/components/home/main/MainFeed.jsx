@@ -54,7 +54,7 @@ export default function MainFeed() {
     setLoading(true);
     try {
       // await new Promise(resolve => setTimeout(resolve, 10000));
-      const response = await axios.get(`https://iter-social-connect-sv78.onrender.com/`, {
+      const response = await axios.get(`https://iter-social-connect-sv78.onrender.com/api/feed`, {
         params: { page, limit: 10 },
       });
       const newPosts = response.data.posts || [];
