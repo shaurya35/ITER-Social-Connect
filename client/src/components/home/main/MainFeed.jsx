@@ -1,6 +1,7 @@
 "use client";
 import NextImage from "next/image";
 import { useEffect, useState, useRef, useCallback } from "react";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Image, MessageCircle, Share2, ThumbsUp } from "lucide-react";
@@ -52,21 +53,12 @@ export default function MainFeed() {
 
     setLoading(true);
     try {
-      const response = await fetch(
-        `https://itersocialconnect-backend.onrender.com/api/feed?page=${page}&limit=10`,
-        {
-          method: "GET",
-          credentials: "include",
-          mode: "no-cors",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const newPosts = data.posts || [];
+      // await new Promise(resolve => setTimeout(resolve, 10000));
+      const response = await axios.get(`https://itersocialconnect-backend.onrender.com/api/feed`, {
+        params: { page, limit: 10 },
+        withCredentials: true,
+      });
+      const newPosts = response.data.posts || [];
       setPosts((prevPosts) => [...prevPosts, ...newPosts]);
       setHasMore(newPosts.length > 0);
     } catch (err) {
