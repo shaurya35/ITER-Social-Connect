@@ -34,6 +34,8 @@ const timeAgo = (dateString) => {
   return `${years} years ago`;
 };
 
+axios.defaults.withCredentials = true;
+
 export default function MainFeed() {
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState(null);
@@ -54,10 +56,11 @@ export default function MainFeed() {
     setLoading(true);
     try {
       // await new Promise(resolve => setTimeout(resolve, 10000));
-      const response = await axios.get(`https://iter-social-connect-sv78.onrender.com/api/feed`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/feed`, {
         params: { page, limit: 10 },
-        withCredentials: true,
-      });
+        withCredentials: true, 
+      });      
+      console.log("API Response:", response.data);
       const newPosts = response.data.posts || [];
       setPosts((prevPosts) => [...prevPosts, ...newPosts]);
       setHasMore(newPosts.length > 0);
