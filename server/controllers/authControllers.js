@@ -117,7 +117,48 @@ const signup = async (req, res) => {
       console.log("Email sent successfully:", info.response);
     } catch (error) {
       console.log("Error occurred:", error);
-      res.status(500).send("Failed to send email.");
+      return res.status(500).json({ message: "Failed to send email." });
+    }
+
+    // First, hit the /test endpoint
+    const discordBotTestUrl = "https://iter-social-connect.onrender.com/test";
+    try {
+      const testResponse = await axios.get(discordBotTestUrl);
+      if (testResponse.status !== 200) {
+        return res
+          .status(500)
+          .json({ message: "Failed to connect to Discord bot /test endpoint." });
+      }
+      console.log("Successfully connected to Discord bot /test endpoint.");
+    } catch (error) {
+      console.error("Error hitting /test endpoint:", error);
+      return res
+        .status(500)
+        .json({ message: "Failed to connect to Discord bot /test endpoint." });
+    }
+
+    // Then, upload the ID card photo to /upload
+    if (!req.file) {
+      return res.status(400).json({ message: "ID card photo is required" });
+    }
+
+    const discordBotUploadUrl = "https://iter-social-connect.onrender.com/upload";
+    const formData = new FormData();
+    formData.append("file", req.file.buffer, req.file.originalname);
+    formData.append("email", email);
+
+    try {
+      await axios.post(discordBotUploadUrl, formData, {
+        headers: {
+          ...formData.getHeaders(),
+        },
+      });
+      console.log("ID card uploaded to Discord bot successfully.");
+    } catch (error) {
+      console.error("Error uploading ID card to Discord bot:", error);
+      return res
+        .status(500)
+        .json({ message: "Failed to upload ID card to Discord bot." });
     }
 
     res.status(200).json({
