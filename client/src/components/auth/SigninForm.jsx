@@ -1,42 +1,48 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthProvider";
+import { api } from "@/lib/api";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function SigninForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError("");
 
     try {
       // Send login credentials to the backend
       const response = await axios.post(
-        'http://localhost:8080/api/auth/signin',
+        "http://localhost:8080/api/auth/signin",
         { email, password },
-        // { withCredentials: true }
+        { withCredentials: true }
       );
 
       if (response.status === 200) {
-        // Redirect to explore page
-        router.push('/explore');
+        const { accessToken, user } = response.data;
+        login(user, accessToken);
+        router.push("/explore");
       } else {
-        throw new Error('Unexpected response status');
+        throw new Error("Unexpected response status");
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Failed to sign in. Please check your credentials and try again.';
+      const errorMessage =
+        err.response?.data?.message ||
+        "Failed to sign in. Please check your credentials and try again.";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -46,7 +52,9 @@ export function SigninForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">Email address</Label>
+        <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
+          Email address
+        </Label>
         <Input
           id="email"
           name="email"
@@ -60,7 +68,9 @@ export function SigninForm() {
       </div>
 
       <div>
-        <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">Password</Label>
+        <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">
+          Password
+        </Label>
         <Input
           id="password"
           name="password"
@@ -93,7 +103,7 @@ export function SigninForm() {
               Signing in...
             </>
           ) : (
-            'Sign in'
+            "Sign in"
           )}
         </Button>
       </div>

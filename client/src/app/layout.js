@@ -1,6 +1,7 @@
 import localFont from "next/font/local";
 import { Poppins } from "next/font/google";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { AuthProvider } from "@/contexts/AuthProvider";
 import Navbar from "@/components/home/navbar/Navbar";
 import "./globals.css";
 
@@ -33,10 +34,12 @@ export default function RootLayout({ children }) {
         className={`${poppins.className} ${geistMono.variable} ${geistSans.variable} antialiased`}
       >
         <ThemeProvider>
-          <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-            <Navbar />
-            {children}
-          </div>
+          <AuthProvider>
+            <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+              <Navbar />
+              {children}
+            </div>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
