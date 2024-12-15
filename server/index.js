@@ -11,7 +11,7 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "http://itersocialconnect.vercel.app",
-  "https://itersocialconnect.vercel.app", 
+  "https://itersocialconnect.vercel.app",
 ];
 
 app.use(
@@ -33,7 +33,7 @@ app.use(
 // --- Body parser config ---
 app.use(express.json());
 
-// --- Cookie parse ---  
+// --- Cookie parse ---
 app.use(cookieParser());
 
 // --- Global error handler ---
@@ -58,12 +58,16 @@ const authRoutes = require("./routes/authRoutes");
 const feedRoutes = require("./routes/feedRoutes");
 const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+// New connection routes
+const connectionRoutes = require("./routes/connectionRoutes"); 
 
 // --- Use Routes ---
 app.use("/api/auth", authRoutes);
 app.use("/api/feed", feedRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/admin", adminRoutes);
+// New connection routes
+app.use("/api/connections", connectionRoutes); 
 
 // --- Start the Server ---
 app.listen(port, () => {
