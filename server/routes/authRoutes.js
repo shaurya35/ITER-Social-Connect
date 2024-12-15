@@ -11,14 +11,12 @@ const {
   refreshAccessToken,
   verifyOtp,
   completeProfile,
-  upload,
-  verifyProfile,
 } = require("../controllers/authControllers");
 
 router.post("/signup",  signup);
 router.post("/signin", signin);
 router.post("/verify-otp", verifyOtp);
-router.post("/complete-profile",isLoggedIn, completeProfile);
+router.post("/complete-profile", completeProfile);
 router.post("/refresh", refreshAccessToken);
 
 // --- Export Router ---

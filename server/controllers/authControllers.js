@@ -68,7 +68,7 @@ const sendOtpEmail = async (email, otp) => {
   await transporter.sendMail(mailOptions);
 };
 
-// --- Signup Routes (takes email, pass and RegNo as fields) ---
+// --- Signup Routes (takes email, pass and RegNo and Url as fields) ---
 const signup = async (req, res) => {
   try {
     const { email, password, regNo, discordUrl } = req.body;
@@ -102,14 +102,15 @@ const signup = async (req, res) => {
     }
 
     const otp = crypto.randomInt(100000, 999999);
-    req.session.otpDetails = {
-      email,
-      password,   
-      regNo,
-      discordUrl,
+
+    await setDoc(doc(db, "otp_verifications", email), {
       otp,
       otpExpiresAt: Date.now() + 5 * 60 * 1000, 
-    };
+      email,
+      password,
+      regNo,
+      discordUrl,
+    });
 
     await sendOtpEmail(email, otp);
 
@@ -120,36 +121,37 @@ const signup = async (req, res) => {
   }
 };
 
-// --- Final Function to verify otp (keeping email, pass and regNo in session) ---
+// --- Final Function to verify otp (keeping email, pass in temp database) ---
 const verifyOtp = async (req, res) => {
   try {
-    const { otp } = req.body;
-    if (!otp) {
-      return res.status(400).json({ message: "OTP is required." });
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required." });
     }
-    const { otpDetails } = req.session;
-    if (!otpDetails) {
-      return res.status(404).json({ message: "No signup process found." });
-    }
-    if (Date.now() > otpDetails.otpExpiresAt) {
-      return res.status(400).json({ message: "OTP has expired." });
-    }
-    if (otpDetails.otp !== parseInt(otp, 10)) {
-      return res.status(400).json({ message: "Invalid OTP." });
-    }
-    if (!otpDetails.password) {
-      return res.status(400).json({ message: "Password not found in session." });
-    }
-    const hashedPassword = await bcrypt.hash(otpDetails.password, 10);
+     const otpDoc = await getDoc(doc(db, "otp_verifications", email));
+     if (!otpDoc.exists()) {
+       return res.status(404).json({ message: "OTP request not found. Please try signing up again." });
+     }
+ 
+     const { otp: storedOtp, otpExpiresAt, password, regNo, discordUrl } = otpDoc.data();
+ 
+     if (Date.now() > otpExpiresAt) {
+       return res.status(400).json({ message: "OTP has expired. Please try signing up again." });
+     }
+ 
+     if (parseInt(otp, 10) !== storedOtp) {
+       return res.status(400).json({ message: "Invalid OTP. Please try again." });
+     }
+ 
+     const hashedPassword = await bcrypt.hash(password, 10);
+     await addDoc(collection(db, "users"), {
+       email,
+       password: hashedPassword,
+       regNo,
+       discordUrl,
+     });
 
-    await addDoc(collection(db, "users"), {
-      email: otpDetails.email,
-      password: hashedPassword,
-      regNo: otpDetails.regNo,
-      discordUrl: otpDetails.discordUrl,
-      approved: false,
-    });
-    delete req.session.otpDetails;
+     await deleteDoc(doc(db, "otp_verifications", email));
     res.status(200).json({
       message: "OTP verified successfully. User created.",
     });
