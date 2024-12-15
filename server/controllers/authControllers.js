@@ -149,6 +149,7 @@ const verifyOtp = async (req, res) => {
        password: hashedPassword,
        regNo,
        discordUrl,
+       approved: false,
      });
 
      await deleteDoc(doc(db, "otp_verifications", email));
@@ -308,6 +309,7 @@ const signin = async (req, res) => {
       });
     }
 
+    // Refresh Token System
     const accessToken = generateAccessToken({ userId: userDoc.id, email });
     const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
 
@@ -321,7 +323,7 @@ const signin = async (req, res) => {
     res.status(200).json({
       message: "Signin successful",
       accessToken,
-      profileCompleted: userData.profileCompleted,
+      // profileCompleted: userData.profileCompleted,
     });
   } catch (error) {
     console.error("Signin Error:", error);
