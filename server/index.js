@@ -2,7 +2,6 @@
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const session = require("express-session");
 require("dotenv").config();
 
 // --- Express parse ---
@@ -28,20 +27,6 @@ app.use(
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-// --- Add Session Middleware ---
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "your-secret-key",
-    resave: false,
-    saveUninitialized: true,
-    // cookie: {
-    //   secure: false, // Set to `true` in production if using HTTPS
-    //   httpOnly: true,
-    //   maxAge: 15 * 60 * 1000, 
-    // },
   })
 );
 
