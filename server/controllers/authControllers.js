@@ -180,7 +180,7 @@ const completeProfile = async (req, res) => {
     }
 
     const userId = decoded.userId;
-    const { username, about, github, linkedin, twitter } = req.body;
+    const { name, about, github, linkedin, twitter } = req.body;
 
     // Fetch the user document
     const userRef = doc(db, "users", userId);
@@ -207,17 +207,6 @@ const completeProfile = async (req, res) => {
       });
     }
 
-    // Validate username uniqueness
-    const usernameQuery = query(
-      collection(db, "users"),
-      where("username", "==", username)
-    );
-    const usernameSnapshot = await getDocs(usernameQuery);
-
-    if (!usernameSnapshot.empty) {
-      return res.status(409).json({ message: "Username already taken" });
-    }
-
     // Validate social media links (if provided)
     if (linkedin && !isValidUrl(linkedin, "linkedin")) {
       return res.status(400).json({ message: "Invalid LinkedIn URL" });
@@ -231,7 +220,7 @@ const completeProfile = async (req, res) => {
 
     // Update user profile in Firestore
     await updateDoc(userRef, {
-      username,
+      name,
       about: about || "",
       github: github || "",
       linkedin: linkedin || "",
