@@ -24,7 +24,6 @@ export function SigninForm() {
     setError("");
 
     try {
-      // Send login credentials to the backend
       const response = await axios.post(
         `${process.env.BACKEND_URL}/api/auth/signin`,
         { email, password },
