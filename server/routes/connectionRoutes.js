@@ -1,15 +1,15 @@
 // routes/connectionRoutes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { 
-  sendConnectionRequest, 
-  getConnectionRequests, 
-  respondToConnectionRequest 
-} = require('../controllers/connectionControllers');
-const { protect } = require('../middleware/authMiddlewares'); // Auth middleware
+const {
+  sendConnectionRequest,
+  getConnectionRequests,
+  respondToConnectionRequest,
+} = require("../controllers/connectionControllers");
 
-router.post('/send', protect, sendConnectionRequest); // Send a connection request
-router.get('/requests', protect, getConnectionRequests); // Get pending connection requests
-router.post('/respond', protect, respondToConnectionRequest); // Accept or reject a request
+
+router.post('/send', sendConnectionRequest); // Send a connection request
+router.get('/requests', getConnectionRequests); // Get pending connection requests
+router.post('/respond', respondToConnectionRequest); // Accept or reject a request
 
 module.exports = router;
