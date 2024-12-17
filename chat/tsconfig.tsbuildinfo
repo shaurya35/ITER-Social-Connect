@@ -1,1 +1,1 @@
-{"root":["./src/index.ts","./src/controllers/chatcontrollers.ts","./src/middlewares/socketmiddleware.ts","./src/services/chatservice.ts","./src/utils/firebaseconfig.ts","./src/websockets/chatsocket.ts"],"version":"5.7.2"}
+{"root":["./src/index.ts","./src/controllers/chatcontrollers.ts","./src/routes/chatroutes.ts","./src/services/firestoreservices.ts","./src/utils/firebaseconfig.ts"],"version":"5.7.2"}

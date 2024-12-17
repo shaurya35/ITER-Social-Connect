@@ -1,6 +1,8 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import admin from "firebase-admin";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const firebaseConfig = {
     apiKey: process.env.apiKey,
@@ -12,11 +14,5 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault()
-  });
-}
-export const auth = admin.auth();
+export const db = getFirestore(app)
