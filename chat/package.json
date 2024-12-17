@@ -2,20 +2,18 @@
   "dependencies": {
     "@firebase/firestore": "^4.7.5",
     "@types/firebase": "^2.4.32",
+    "@types/ws": "^8.5.13",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "firebase": "^11.1.0",
-    "socket.io": "^4.8.1"
+    "ws": "^8.18.0"
   },
   "name": "chat",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "clean": "rimraf dist",
-    "build": "npm run clean && tsc -b",
-    "start": "node dist/index.js",
-    "dev": "npm run clean && tsc -b && nodemon --watch src --exec ts-node src/index.ts"
+    "dev": "tsc -b && node ./dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -31,7 +29,6 @@
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.2",
-    "@types/socket.io": "^3.0.1",
     "nodemon": "^3.1.9",
     "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",

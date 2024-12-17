@@ -1,22 +1,24 @@
-import express from "express";
-import { createServer } from "http";
-import { Server } from "socket.io";
-import dotenv from "dotenv";
-import chatRoutes from "./routes/chatRoutes";
-import { chatController } from "./controllers/chatControllers";
+import { WebSocketServer, WebSocket } from "ws";
 
-dotenv.config();
+const wss = new WebSocketServer({port: 5000});
 
-const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, { cors: { origin: "*" } });
+let userCount = 0;
+let allSockets: WebSocket[] = [];
 
-app.use(express.json());
-app.use("/api/chat", chatRoutes);
+wss.on("connection", (socket) => {
+  allSockets.push(socket);
 
-chatController(io);
+  userCount += 1;
+  console.log("User connected #", userCount);
 
-const PORT = process.env.PORT || 4000;
-httpServer.listen(PORT, () => {
-  console.log(`Chat service running on http://localhost:${PORT}`);
-});
+  socket.on("message", (message) => {
+    console.log("message received " + message.toString())
+    for(let i=0; i<allSockets.length; i++){
+      const s = allSockets[i];
+      s.send(message.toString() + ": sent from the server")
+    }
+  })
+})
+
+
+
