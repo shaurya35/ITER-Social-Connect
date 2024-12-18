@@ -7,8 +7,8 @@ const {
 const router = express.Router();
 const { authenticateAdmin } = require("../middlewares/authMiddlewares");
 
-router.post("/login", adminLogin);
+router.post("/signin", adminLogin);
 router.get("/pending-requests", authenticateAdmin, pendingRequest);
-router.get("/handle-request", authenticateAdmin, handleRequest);
+router.post("/handle-request", authenticateAdmin, handleRequest);
 
 module.exports = router;

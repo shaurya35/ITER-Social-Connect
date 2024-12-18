@@ -36,10 +36,7 @@ const adminLogin = (req, res) => {
 
 const pendingRequest = async (req, res) => {
   try {
-    const pendingQuery = query(
-      collection(db, "verification_requests"),
-      where("status", "==", "pending")
-    );
+    const pendingQuery = query(collection(db, "verification_requests"));
 
     const snapshot = await getDocs(pendingQuery);
 
@@ -57,10 +54,10 @@ const pendingRequest = async (req, res) => {
 
 const handleRequest = async (req, res) => {
   try {
-    const { requestId, action } = req.body;
+    const { requestId, approved } = req.body;
 
-    // Validate request
-    if (!requestId || !["approve", "reject"].includes(action)) {
+    // Validate input data
+    if (!requestId || typeof approved !== "boolean") {
       return res.status(400).json({ message: "Invalid request data." });
     }
 
@@ -78,14 +75,14 @@ const handleRequest = async (req, res) => {
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
-      return res
-        .status(404)
-        .json({ message: "User not found with the provided email." });
+      return res.status(404).json({ message: "User not found." });
     }
 
     const userDoc = querySnapshot.docs[0];
     const userId = userDoc.id;
+    const userRef = doc(db, "users", userId);
 
+    // Initialize the email transporter
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -94,11 +91,10 @@ const handleRequest = async (req, res) => {
       },
     });
 
-    const userRef = doc(db, "users", userId);
-
-    if (action === "approve") {
-      // Approve the request
+    // Handle approval
+    if (approved) {
       try {
+        // Send approval email
         await transporter.sendMail({
           from: process.env.EMAIL_USER,
           to: requestData.email,
@@ -106,58 +102,60 @@ const handleRequest = async (req, res) => {
           text: "Your account has been approved. You can now complete your profile and explore the app.",
         });
 
-        await updateDoc(userRef, { approvalStatus: "approved" });
-        await updateDoc(requestRef, {
-          status: "approved",
-          handledBy: process.env.ADMIN_EMAIL,
-          handledAt: new Date().toISOString(),
-        });
+        // Update user and delete the request
+        await updateDoc(userRef, { approved: true });
         await deleteDoc(requestRef);
 
-        res.status(200).json({
+        return res.status(200).json({
           message: "Request approved, email sent, and request deleted.",
         });
       } catch (emailError) {
         console.error("Email Error:", emailError);
-        res.status(500).json({
+        return res.status(500).json({
           message: "Failed to send approval email.",
         });
       }
-    } else if (action === "reject") {
-      // Reject the request
-      try {
-        await transporter.sendMail({
-          from: process.env.EMAIL_USER,
-          to: requestData.email,
-          subject: "Profile Rejection",
-          text: "Your account verification request has been rejected. Please contact support for more details.",
-        });
+    }
 
-        // Delete the user document
-        await deleteDoc(userRef);
+    // Handle rejection
+    try {
+      let { comment } = req.body;
 
-        // Update the request document to indicate rejection and delete it
-        await updateDoc(requestRef, {
-          status: "rejected",
-          handledBy: process.env.ADMIN_EMAIL,
-          handledAt: new Date().toISOString(),
-        });
-        await deleteDoc(requestRef);
+      // Send rejection email
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: requestData.email,
+        subject: "Profile Rejection",
+        text: `Dear User,
 
-        res.status(200).json({
-          message:
-            "Request rejected, user deleted, and email sent successfully.",
-        });
-      } catch (emailError) {
-        console.error("Email Error:", emailError);
-        res.status(500).json({
-          message: "Failed to send rejection email.",
-        });
-      }
+We regret to inform you that your account verification request has been rejected. 
+
+Reason: ${comment || "No specific reason was provided."}
+
+If you believe this decision was made in error or require further clarification, please do not hesitate to contact our support team.
+
+Thank you for your understanding.
+
+Best regards,  
+Iter Social Connect`,
+      });
+
+      // Delete the user and request documents
+      await deleteDoc(userRef);
+      await deleteDoc(requestRef);
+
+      return res.status(200).json({
+        message: "Request rejected, user deleted, and email sent successfully.",
+      });
+    } catch (emailError) {
+      console.error("Email Error:", emailError);
+      return res.status(500).json({
+        message: "Failed to send rejection email.",
+      });
     }
   } catch (err) {
     console.error("Handle Request Error:", err);
-    res.status(500).json({ message: "Failed to handle request." });
+    return res.status(500).json({ message: "Failed to handle request." });
   }
 };
 
