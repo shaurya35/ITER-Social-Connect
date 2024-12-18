@@ -58,16 +58,22 @@ const authRoutes = require("./routes/authRoutes");
 const feedRoutes = require("./routes/feedRoutes");
 const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-// New connection routes
 const connectionRoutes = require("./routes/connectionRoutes"); 
+const commentRoutes = require("./routes/commentRoutes")
 
 // --- Use Routes ---
 app.use("/api/auth", authRoutes);
+// open feed routes
 app.use("/api/feed", feedRoutes);
+// restriced user routes
 app.use("/api/user", userRoutes);
+// restricted admin routes
 app.use("/api/admin", adminRoutes);
-// New connection routes
-app.use("/api/connections", connectionRoutes); 
+// restricted connection routes
+app.use("/api/connections", connectionRoutes);
+// restricted comment routes
+app.use("/api/comments", commentRoutes);
+
 
 // --- Start the Server ---
 app.listen(port, () => {

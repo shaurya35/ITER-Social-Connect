@@ -1,0 +1,37 @@
+{
+  "dependencies": {
+    "@firebase/firestore": "^4.7.5",
+    "@types/firebase": "^2.4.32",
+    "@types/ws": "^8.5.13",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "firebase": "^11.1.0",
+    "ws": "^8.18.0"
+  },
+  "name": "chat",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsc -b && node ./dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shaurya35/ITER-Social-Connect.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/shaurya35/ITER-Social-Connect/issues"
+  },
+  "homepage": "https://github.com/shaurya35/ITER-Social-Connect#readme",
+  "description": "",
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "nodemon": "^3.1.9",
+    "rimraf": "^6.0.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}
