@@ -20,7 +20,7 @@ const {
 const db = require("../firebase/firebaseConfig");
 const jwt = require("jsonwebtoken");
 
-// --- Checks for Valid URL --- 
+// --- Checks for Valid URL ---
 const isValidUrl = (url, platform) => {
   const regexes = {
     linkedin: /^https?:\/\/(www\.)?linkedin\.com\/.*$/i,
@@ -74,7 +74,9 @@ const signup = async (req, res) => {
     const { email, password, regNo, discordUrl } = req.body;
 
     if (!email || !password || !regNo || !discordUrl) {
-      return res.status(400).json({ message: "Email, password, and regNo and Photo are required." });
+      return res.status(400).json({
+        message: "Email, password, and regNo and Photo are required.",
+      });
     }
 
     const validationResult = userSignupSchema.safeParse(req.body);
@@ -98,14 +100,16 @@ const signup = async (req, res) => {
     }
 
     if (!regNoSnapshot.empty) {
-      return res.status(400).json({ message: "Registration number is already taken." });
+      return res
+        .status(400)
+        .json({ message: "Registration number is already taken." });
     }
 
     const otp = crypto.randomInt(100000, 999999);
 
     await setDoc(doc(db, "otp_verifications", email), {
       otp,
-      otpExpiresAt: Date.now() + 5 * 60 * 1000, 
+      otpExpiresAt: Date.now() + 5 * 60 * 1000,
       email,
       password,
       regNo,
@@ -114,7 +118,9 @@ const signup = async (req, res) => {
 
     await sendOtpEmail(email, otp);
 
-    res.status(200).json({ message: "OTP sent successfully. Please check your email." });
+    res
+      .status(200)
+      .json({ message: "OTP sent successfully. Please check your email." });
   } catch (error) {
     console.error("Signup Error:", error);
     res.status(500).json({ message: "Internal Server Error." });
@@ -128,31 +134,51 @@ const verifyOtp = async (req, res) => {
     if (!email || !otp) {
       return res.status(400).json({ message: "Email and OTP are required." });
     }
-     const otpDoc = await getDoc(doc(db, "otp_verifications", email));
-     if (!otpDoc.exists()) {
-       return res.status(404).json({ message: "OTP request not found. Please try signing up again." });
-     }
- 
-     const { otp: storedOtp, otpExpiresAt, password, regNo, discordUrl } = otpDoc.data();
- 
-     if (Date.now() > otpExpiresAt) {
-       return res.status(400).json({ message: "OTP has expired. Please try signing up again." });
-     }
- 
-     if (parseInt(otp, 10) !== storedOtp) {
-       return res.status(400).json({ message: "Invalid OTP. Please try again." });
-     }
- 
-     const hashedPassword = await bcrypt.hash(password, 10);
-     await addDoc(collection(db, "users"), {
-       email,
-       password: hashedPassword,
-       regNo,
-       discordUrl,
-       approved: false,
-     });
+    const otpDoc = await getDoc(doc(db, "otp_verifications", email));
+    if (!otpDoc.exists()) {
+      return res.status(404).json({
+        message: "OTP request not found. Please try signing up again.",
+      });
+    }
 
-     await deleteDoc(doc(db, "otp_verifications", email));
+    const {
+      otp: storedOtp,
+      otpExpiresAt,
+      password,
+      regNo,
+      discordUrl,
+    } = otpDoc.data();
+
+    if (Date.now() > otpExpiresAt) {
+      return res
+        .status(400)
+        .json({ message: "OTP has expired. Please try signing up again." });
+    }
+
+    if (parseInt(otp, 10) !== storedOtp) {
+      return res
+        .status(400)
+        .json({ message: "Invalid OTP. Please try again." });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await addDoc(collection(db, "users"), {
+      email,
+      password: hashedPassword,
+      regNo,
+      discordUrl,
+      approved: false,
+      profileCompleted: false,
+    });
+    await addDoc(collection(db, "verification_requests"), {
+      email,
+      regNo,
+      discordUrl,
+      approved: false,
+      // profileCompleted: false,
+    });
+
+    await deleteDoc(doc(db, "otp_verifications", email));
     res.status(200).json({
       message: "OTP verified successfully. User created.",
     });
@@ -162,48 +188,50 @@ const verifyOtp = async (req, res) => {
   }
 };
 
-
 const completeProfile = async (req, res) => {
   try {
-    // Decode and verify the JWT token from the request headers
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ message: "Authorization token missing" });
+    const { email, password, name, about, github, linkedin, twitter } =
+      req.body;
+
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
     }
 
-    const token = authHeader.split(" ")[1];
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (err) {
-      return res.status(401).json({ message: "Invalid or expired token" });
+    // Query Firestore to check if the user exists
+    const userQuery = query(
+      collection(db, "users"),
+      where("email", "==", email)
+    );
+    const querySnapshot = await getDocs(userQuery);
+
+    if (querySnapshot.empty) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const userId = decoded.userId;
-    const { name, about, github, linkedin, twitter } = req.body;
+    const userDoc = querySnapshot.docs[0];
+    const userData = userDoc.data();
+    const userRef = doc(db, "users", userDoc.id); // Add reference for updating
 
-    // Fetch the user document
-    const userRef = doc(db, "users", userId);
-    const userSnapshot = await getDoc(userRef);
-
-    if (!userSnapshot.exists()) {
-      return res.status(404).json({ message: "User not found." });
+    // Validate the password using bcrypt
+    const passwordMatch = await bcrypt.compare(password, userData.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ message: "Incorrect password" });
     }
 
-    const userData = userSnapshot.data();
+    // Check if the user's account is approved
+    if (!userData.approved) {
+      return res.status(403).json({
+        message:
+          "Your account is not approved. Profile completion is not allowed.",
+      });
+    }
 
     // Check if the profile is already completed
     if (userData.profileCompleted) {
       return res.status(200).json({
         message: "Profile is already completed. No updates made.",
-      });
-    }
-
-    // Check if the user's account is approved
-    if (userData.approvalStatus !== "approved") {
-      return res.status(403).json({
-        message:
-          "Your account is not approved. Profile completion is not allowed.",
       });
     }
 
@@ -228,16 +256,20 @@ const completeProfile = async (req, res) => {
       profileCompleted: true,
     });
 
-    // Generate a new JWT token upon successful profile completion
-    const newToken = jwt.sign(
-      { userId, email: userData.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "24h" }
-    );
+    // Refresh Token System
+    const accessToken = generateAccessToken({ userId: userDoc.id, email });
+    const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
 
     res.status(200).json({
       message: "Profile completed successfully",
-      token: newToken, // Include the new token in the response
+      accessToken,
     });
   } catch (error) {
     console.error("Complete Profile Error:", error);
@@ -277,24 +309,9 @@ const signin = async (req, res) => {
       return res.status(401).json({ message: "Incorrect password" });
     }
 
-    // Check if the account has been approved
-    if (userData.approvalStatus !== "approved") {
-      return res
-        .status(403)
-        .json({ message: "Your account has not been approved by the admin." });
-    }
-
-    // Check if the profile has been completed
     if (!userData.profileCompleted) {
-      const tokenUserid = jwt.sign(
-        { userId: userDoc.id },
-        process.env.JWT_SECRET,
-        { expiresIn: "24h" }
-      );
       return res.status(200).json({
-        message: "Your profile is not completed. Please complete it.",
-        requiresProfileCompletion: true,
-        token: tokenUserid, // Send user ID for completing profile
+        message: "Your profile is not completed. Please complete it .",
       });
     }
 
@@ -312,7 +329,6 @@ const signin = async (req, res) => {
     res.status(200).json({
       message: "Signin successful",
       accessToken,
-      // profileCompleted: userData.profileCompleted,
     });
   } catch (error) {
     console.error("Signin Error:", error);
