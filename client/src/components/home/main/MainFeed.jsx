@@ -196,7 +196,7 @@ export default function MainFeed() {
               />
               <div>
                 <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
-                  {post.userId}
+                  {post.userName}
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {timeAgo(post.createdAt)}

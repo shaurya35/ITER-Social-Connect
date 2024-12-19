@@ -35,7 +35,7 @@ const generateAccessToken = (user) => {
   return jwt.sign(
     { userId: user.userId, email: user.email },
     process.env.JWT_SECRET,
-    { expiresIn: "15m" }
+    { expiresIn: "30m" }
   );
 };
 
@@ -190,8 +190,7 @@ const verifyOtp = async (req, res) => {
 
 const completeProfile = async (req, res) => {
   try {
-    const { email, password, name, about, github, linkedin, x } =
-      req.body;
+    const { email, password, name, about, github, linkedin, x } = req.body;
 
     if (!email || !password) {
       return res
@@ -256,6 +255,13 @@ const completeProfile = async (req, res) => {
       profileCompleted: true,
     });
 
+    const user = {
+      name: userData.name,
+      about: userData.about,
+      regNo: userData.regNo,
+      email: userData.email,
+    };
+
     // Refresh Token System
     const accessToken = generateAccessToken({ userId: userDoc.id, email });
     const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
@@ -270,6 +276,7 @@ const completeProfile = async (req, res) => {
     res.status(200).json({
       message: "Profile completed successfully",
       accessToken,
+      user,
     });
   } catch (error) {
     console.error("Complete Profile Error:", error);
@@ -314,6 +321,12 @@ const signin = async (req, res) => {
         message: "Your profile is not completed. Please complete it .",
       });
     }
+    const user = {
+      name: userData.name,
+      about: userData.about,
+      regNo: userData.regNo,
+      email: userData.email,
+    };
 
     // Refresh Token System
     const accessToken = generateAccessToken({ userId: userDoc.id, email });
@@ -329,12 +342,29 @@ const signin = async (req, res) => {
     res.status(200).json({
       message: "Signin successful",
       accessToken,
+      user,
     });
   } catch (error) {
     console.error("Signin Error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+const logout = (req, res) => {
+  try {
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    });
+
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.error("Logout Error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 const refreshAccessToken = (req, res) => {
   const refreshToken = req.cookies.refreshToken;
@@ -362,4 +392,5 @@ module.exports = {
   signin,
   verifyOtp,
   refreshAccessToken,
+  logout,
 };

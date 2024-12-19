@@ -11,10 +11,12 @@ const {
   refreshAccessToken,
   verifyOtp,
   completeProfile,
+  logout
 } = require("../controllers/authControllers");
 
 router.post("/signup",  signup);
 router.post("/signin", signin);
+router.post("/logout", logout);
 router.post("/verify-otp", verifyOtp);
 router.post("/complete-profile", completeProfile);
 router.post("/refresh", refreshAccessToken);

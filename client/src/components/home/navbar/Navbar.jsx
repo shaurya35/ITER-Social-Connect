@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthProvider";
 import Link from "next/link";
 import { Logo } from "./logo";
 import { LogoMobile } from "./logoMobile";
@@ -22,10 +23,11 @@ import {
 } from "lucide-react";
 
 export default function Navbar() {
-  const { isDarkMode, toggleDarkMode } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [renderInput, setRenderInput] = useState(false);
   const searchInputRef = useRef(null);
+  const { isDarkMode, toggleDarkMode } = useTheme();
+  const { user, loading, logout } = useAuth();
 
   useEffect(() => {
     if (isOpen) {
@@ -43,6 +45,14 @@ export default function Navbar() {
     { icon: Bookmark, label: "Saved Events" },
     { icon: User, label: "Profile" },
   ];
+
+  if (loading) {
+    return (
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 shadow-sm h-16 flex justify-center items-center">
+        <p>Loading...</p>
+      </header>
+    );
+  }
 
   return (
     <>
@@ -82,23 +92,37 @@ export default function Navbar() {
             ))}
           </div>
           <div className="flex items-center">
-            <Link href="/signin" passHref>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 hidden lg:block"
-              >
-                Sign in
-              </Button>
-            </Link>
-            <Link href="/signup" passHref>
+            {user ? (
+              // Show Logout button if user is logged in
               <Button
                 size="sm"
                 className="ml-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white hidden lg:block"
+                onClick={logout}
               >
-                Sign Up
+                Logout
               </Button>
-            </Link>
+            ) : (
+              // Show Signin/Signup buttons if user is not logged in
+              <>
+                <Link href="/signin" passHref>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 hidden lg:block"
+                  >
+                    Sign in
+                  </Button>
+                </Link>
+                <Link href="/signup" passHref>
+                  <Button
+                    size="sm"
+                    className="ml-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white hidden lg:block"
+                  >
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -153,21 +177,20 @@ export default function Navbar() {
                       </Button>
                     ))}
                   </div>
-                  
 
                   <div className="flex items-center justify-center flex-col mb-10">
-                  <div className="flex justify-center items-center pb-5">
-                    <Link href="/signin" passHref>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 "
-                        onClick={() => setIsOpen(false)}
-                      >
-                        Sign in?
-                      </Button>
-                    </Link>
-                  </div>
+                    <div className="flex justify-center items-center pb-5">
+                      <Link href="/signin" passHref>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 "
+                          onClick={() => setIsOpen(false)}
+                        >
+                          Sign in?
+                        </Button>
+                      </Link>
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"
