@@ -25,7 +25,7 @@ const isValidUrl = (url, platform) => {
   const regexes = {
     linkedin: /^https?:\/\/(www\.)?linkedin\.com\/.*$/i,
     github: /^https?:\/\/(www\.)?github\.com\/.*$/i,
-    twitter: /^https?:\/\/(www\.)?twitter\.com\/.*$/i,
+    x: /^https?:\/\/(www\.)?x\.com\/.*$/i,
   };
   return regexes[platform]?.test(url);
 };
@@ -190,7 +190,7 @@ const verifyOtp = async (req, res) => {
 
 const completeProfile = async (req, res) => {
   try {
-    const { email, password, name, about, github, linkedin, twitter } =
+    const { email, password, name, about, github, linkedin, x } =
       req.body;
 
     if (!email || !password) {
@@ -242,8 +242,8 @@ const completeProfile = async (req, res) => {
     if (github && !isValidUrl(github, "github")) {
       return res.status(400).json({ message: "Invalid GitHub URL" });
     }
-    if (twitter && !isValidUrl(twitter, "twitter")) {
-      return res.status(400).json({ message: "Invalid Twitter URL" });
+    if (x && !isValidUrl(x, "x")) {
+      return res.status(400).json({ message: "Invalid X URL" });
     }
 
     // Update user profile in Firestore
@@ -252,7 +252,7 @@ const completeProfile = async (req, res) => {
       about: about || "",
       github: github || "",
       linkedin: linkedin || "",
-      twitter: twitter || "",
+      x: x || "",
       profileCompleted: true,
     });
 
