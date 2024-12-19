@@ -1,27 +1,20 @@
-// --- Imports ---
 const express = require("express");
-
-// --- Router Configs ---
 const router = express.Router();
-
-// --- Controller Functions ---
 const {
   getAllUserPosts,
   getUserPostById,
   createUserPost,
   updateUserPost,
-  deleteUserPost,
-} = require("../controllers/userControllers");
+  deleteUserPost
+} = require("../controllers/userControllers");  // Correct import
 
-// --- Middleware Functions ---
 const { isLoggedIn } = require("../middlewares/authMiddlewares");
 
-// --- Post's Routes ---
-router.get("/posts", isLoggedIn, getAllUserPosts); // Get all posts of a user
-router.get("/post/:postId", isLoggedIn, getUserPostById); // Get a post by id
-router.post("/post", isLoggedIn, createUserPost); // Create a new post
-router.put("/post/:postId", isLoggedIn, updateUserPost); // Update a post
-router.delete("/post/:postId", isLoggedIn, deleteUserPost); // Delete a post
+// Define Routes
+router.get("/posts", isLoggedIn, getAllUserPosts);  // GET all posts
+router.get("/post/:postId", isLoggedIn, getUserPostById);  // GET single post by ID
+router.post("/post", isLoggedIn, createUserPost);  // POST create new post
+router.put("/post/:postId", isLoggedIn, updateUserPost);  // PUT update post
+router.delete("/post/:postId", isLoggedIn, deleteUserPost);  // DELETE post
 
-// --- Export Router ---
 module.exports = router;

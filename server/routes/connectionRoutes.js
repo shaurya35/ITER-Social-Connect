@@ -5,7 +5,7 @@ const {
   getConnectionRequests,
   respondToConnectionRequest,
 } = require("../controllers/connectionControllers");
-const authenticateUser = require("../middlewares/authMiddlewares.js");
+const {authenticateUser }= require("../middlewares/authMiddlewares.js");
 
 router.post("/send", authenticateUser, sendConnectionRequest); // Send a connection request
 
