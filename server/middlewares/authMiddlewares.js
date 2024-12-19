@@ -94,7 +94,6 @@ const authenticateUser = (req, res, next) => {
   }
 };
 
-
 // --- Export the function ---
 module.exports = {
   isLoggedIn,

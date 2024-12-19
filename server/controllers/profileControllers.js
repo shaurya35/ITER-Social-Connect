@@ -38,7 +38,7 @@ const {
         profilePicture: userData.profilePicture || "",
         github: userData.github || "",
         linkedin: userData.linkedin || "",
-        twitter: userData.twitter || "",
+        x: userData.x || "",
         posts,
         likedPosts,
         comments,

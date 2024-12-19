@@ -15,14 +15,12 @@ const {
   // --- Send Connection Request ---
   const sendConnectionRequest = async (req, res) => {
     try {
-
+      console.log("Decoded user:", req.user);
       const { targetUserId } = req.body;
-
-       // Extracted from the verified JWT
       const senderId = req.user.userId;
   
       if (!targetUserId) {
-        return res.status(400).json({ message: "user ID is required." });
+        return res.status(400).json({ message: "Target user ID is required." });
       }
   
       // Check if a connection request already exists
