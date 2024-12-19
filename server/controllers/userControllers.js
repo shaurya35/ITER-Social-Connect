@@ -7,11 +7,21 @@ const {
   getDocs,
   doc,
   getDoc,
+  updateDoc,
+  deleteDoc,
 } = require("firebase/firestore");
 
 const getAllUserPosts = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const userRef = doc(db, "users", userId);
+    const userSnapshot = await getDoc(userRef);
+
+    if (!userSnapshot.exists()) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userName = userSnapshot.data().name;
 
     const q = query(collection(db, "posts"), where("userId", "==", userId));
     const querySnapshot = await getDocs(q);
@@ -40,8 +50,18 @@ const createUserPost = async (req, res) => {
       return res.status(400).json({ error: "Post content cannot be empty" });
     }
 
+    const userRef = doc(db, "users", userId);
+    const userSnapshot = await getDoc(userRef);
+
+    if (!userSnapshot.exists()) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userName = userSnapshot.data().name;
+
     const postDoc = await addDoc(collection(db, "posts"), {
       userId,
+      userName, // Include user's name
       content,
       createdAt: new Date().toISOString(),
     });
