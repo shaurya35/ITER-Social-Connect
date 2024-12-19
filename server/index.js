@@ -40,8 +40,11 @@ app.use(cookieParser());
 app.use((err, req, res, next) => {
   if (err instanceof Error && err.message === "Not allowed by CORS") {
     res.status(403).json({ error: "CORS not allowed for this origin" });
+  } else if (err instanceof SyntaxError) {
+    res.status(400).json({ error: "Invalid JSON payload" });
   } else {
-    next(err);
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -58,22 +61,24 @@ const authRoutes = require("./routes/authRoutes");
 const feedRoutes = require("./routes/feedRoutes");
 const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-const connectionRoutes = require("./routes/connectionRoutes"); 
-const commentRoutes = require("./routes/commentRoutes")
+const connectionRoutes = require("./routes/connectionRoutes");
+const commentRoutes = require("./routes/commentRoutes");
+const profileRoutes = require("./routes/profileRoutes"); // New profile route
 
 // --- Use Routes ---
 app.use("/api/auth", authRoutes);
-// open feed routes
+// Open feed routes
 app.use("/api/feed", feedRoutes);
-// restriced user routes
+// Restricted user routes
 app.use("/api/user", userRoutes);
-// restricted admin routes
+// Restricted admin routes
 app.use("/api/admin", adminRoutes);
-// restricted connection routes
+// Restricted connection routes
 app.use("/api/connections", connectionRoutes);
-// restricted comment routes
+// Restricted comment routes
 app.use("/api/comments", commentRoutes);
-
+// Profile routes
+app.use("/api/profile", profileRoutes);
 
 // --- Start the Server ---
 app.listen(port, () => {
