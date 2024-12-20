@@ -26,7 +26,6 @@ app.use(
     },
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
-    // allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -56,6 +55,8 @@ app.get("/", (req, res) => {
   res.json("Test Api!!");
 });
 
+
+
 // --- Route Imports ---
 const authRoutes = require("./routes/authRoutes");
 const feedRoutes = require("./routes/feedRoutes");
@@ -63,22 +64,16 @@ const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const connectionRoutes = require("./routes/connectionRoutes");
 const commentRoutes = require("./routes/commentRoutes");
-const profileRoutes = require("./routes/profileRoutes"); // New profile route
+const profileRoutes = require("./routes/profileRoutes");
 
 // --- Use Routes ---
-app.use("/api/auth", authRoutes);
-// Open feed routes
-app.use("/api/feed", feedRoutes);
-// Restricted user routes
-app.use("/api/user", userRoutes);
-// Restricted admin routes
-app.use("/api/admin", adminRoutes);
-// Restricted connection routes
-app.use("/api/connections", connectionRoutes);
-// Restricted comment routes
-app.use("/api/comments", commentRoutes);
-// Profile routes
-app.use("/api/profile", profileRoutes);
+app.use("/api/auth", authRoutes); // Open auth routes
+app.use("/api/feed", feedRoutes); // Open feed routes
+app.use("/api/user", userRoutes); // Restricted user routes
+app.use("/api/admin", adminRoutes); // Restricted admin routes
+app.use("/api/connections", connectionRoutes); // Restricted connection routes
+app.use("/api/comments", commentRoutes); // Restricted comment routes
+app.use("/api/profile", profileRoutes); // Restricted profile routes
 
 // --- Start the Server ---
 app.listen(port, () => {

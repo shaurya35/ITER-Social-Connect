@@ -4,13 +4,13 @@ const {
   sendConnectionRequest,
   getConnectionRequests,
   respondToConnectionRequest,
-} = require("../controllers/connectionControllers");
-const {authenticateUser }= require("../middlewares/authMiddlewares.js");
+} = require("../controllers/connectionControllers.js"); // Updated path for consistency
+const { isLoggedIn } = require("../middlewares/authMiddlewares.js"); // Updated path and fixed typo
 
-router.post("/send", authenticateUser, sendConnectionRequest); // Send a connection request
+router.post("/send", isLoggedIn, sendConnectionRequest);
 
-router.get("/requests", authenticateUser, getConnectionRequests); // Get pending connection requests
+router.get("/requests", isLoggedIn, getConnectionRequests);
 
-router.post("/respond", authenticateUser, respondToConnectionRequest); // Accept or reject a request
+router.post("/respond", isLoggedIn, respondToConnectionRequest);
 
 module.exports = router;
