@@ -6,14 +6,15 @@ const {
   updateDoc, 
   query, 
   where, 
-  getDocs 
+  getDocs, 
+  increment 
 } = require("firebase/firestore");
 const db = require("../firebase/firebaseConfig");
 
 // --- Send Connection Request ---
 const sendConnectionRequest = async (req, res) => {
   try {
-    const { targetEmail } = req.body; // Replace targetUserId with targetEmail
+    const { targetEmail } = req.body; 
     const senderId = req.user.userId;
 
     if (!targetEmail) {
@@ -28,10 +29,10 @@ const sendConnectionRequest = async (req, res) => {
       return res.status(404).json({ message: "Target user not found." });
     }
 
-    const targetUser = usersSnapshot.docs[0]; // Assuming emails are unique
+    const targetUser = usersSnapshot.docs[0];
     const targetUserId = targetUser.id;
 
-    // Check if the connection already exists for the sender
+    // Check if the connection already exists
     const senderConnectionRef = doc(db, `users/${senderId}/connections/${targetUserId}`);
     const senderConnectionDoc = await getDoc(senderConnectionRef);
 
@@ -64,7 +65,6 @@ const getConnectionRequests = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    // Fetch pending connection requests from the user's subcollection
     const requestsQuery = query(
       collection(db, `users/${userId}/connections`),
       where("status", "==", "pending")
@@ -83,7 +83,7 @@ const getConnectionRequests = async (req, res) => {
           requestId: docSnapshot.id,
           senderId: connectionData.userId,
           name: senderData.name,
-          email: senderData.email, // Include email in the response
+          email: senderData.email,
           about: senderData.about,
         });
       }
@@ -99,7 +99,7 @@ const getConnectionRequests = async (req, res) => {
 // --- Respond to Connection Request ---
 const respondToConnectionRequest = async (req, res) => {
   try {
-    const { targetEmail, action } = req.body; // Replace targetUserId with targetEmail
+    const { targetEmail, action } = req.body; 
     const userId = req.user.userId;
 
     if (!targetEmail || !["true", "false"].includes(action)) {
@@ -114,25 +114,37 @@ const respondToConnectionRequest = async (req, res) => {
       return res.status(404).json({ message: "Target user not found." });
     }
 
-    const targetUser = usersSnapshot.docs[0]; // Assuming emails are unique
+    const targetUser = usersSnapshot.docs[0];
     const targetUserId = targetUser.id;
 
     // Update the connection status in both users' subcollections
     const senderConnectionRef = doc(db, `users/${userId}/connections/${targetUserId}`);
     const receiverConnectionRef = doc(db, `users/${targetUserId}/connections/${userId}`);
 
+    const status = action === "true" ? "accepted" : "rejected";
+
     await updateDoc(senderConnectionRef, {
-      status: action === "true" ? "accepted" : "rejected",
+      status,
       updatedAt: Date.now(),
     });
 
     await updateDoc(receiverConnectionRef, {
-      status: action === "true" ? "accepted" : "rejected",
+      status,
       updatedAt: Date.now(),
     });
 
+    // If the request is accepted, update the connections count
+    if (action === "true") {
+      const senderDocRef = doc(db, "users", userId);
+      const receiverDocRef = doc(db, "users", targetUserId);
+
+      // Increment the connections count for both users
+      await updateDoc(senderDocRef, { connectionsCount: increment(1) });
+      await updateDoc(receiverDocRef, { connectionsCount: increment(1) });
+    }
+
     res.status(200).json({
-      message: `Connection request ${action}ed successfully.`,
+      message: `Connection request ${status} successfully.`,
     });
   } catch (error) {
     console.error("Respond to Connection Request Error:", error);
