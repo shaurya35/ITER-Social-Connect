@@ -256,10 +256,8 @@ const completeProfile = async (req, res) => {
     });
 
     const user = {
-      name: userData.name,
-      about: userData.about,
-      regNo: userData.regNo,
       email: userData.email,
+      userId: userDoc.id,
     };
 
     // Refresh Token System
@@ -322,10 +320,8 @@ const signin = async (req, res) => {
       });
     }
     const user = {
-      name: userData.name,
-      about: userData.about,
-      regNo: userData.regNo,
       email: userData.email,
+      userId: userDoc.id,
     };
 
     // Refresh Token System
@@ -365,7 +361,6 @@ const logout = (req, res) => {
   }
 };
 
-
 const refreshAccessToken = (req, res) => {
   const refreshToken = req.cookies.refreshToken;
 
@@ -380,7 +375,12 @@ const refreshAccessToken = (req, res) => {
       email: decoded.email,
     });
 
-    res.status(200).json({ accessToken: newAccessToken });
+    const user = {
+      email: decoded.email,
+      userId: decoded.userId,
+    };
+
+    res.status(200).json({ accessToken: newAccessToken, user });
   } catch (error) {
     res.status(401).json({ message: "Invalid or expired refresh token" });
   }

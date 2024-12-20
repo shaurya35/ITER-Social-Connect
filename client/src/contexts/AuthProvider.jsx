@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { jwtDecode } from "jwt-decode";
 import { fetchAccessToken } from "@/lib/auth";
 
 const AuthContext = createContext();
@@ -9,22 +8,48 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null); 
   const [accessToken, setAccessToken] = useState(null); 
+  const [loading, setLoading] = useState(true); 
 
   const getTokenExpiration = (token) => {
-    const decoded = jwtDecode(token);
-    return decoded.exp * 1000; 
+    const decoded = JSON.parse(atob(token.split(".")[1])); 
+    return decoded.exp * 1000;
+  };
+
+  const initializeAuth = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/api/auth/refresh", {
+        method: "POST",
+        credentials: "include", 
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAccessToken(data.accessToken); 
+        setUser(data.user); 
+        scheduleTokenRefresh(data.accessToken); 
+      } else {
+        throw new Error("Failed to refresh access token");
+      }
+    } catch (error) {
+      console.error("Failed to initialize authentication:", error);
+      setUser(null);
+      setAccessToken(null);
+    } finally {
+      setLoading(false); 
+    }
   };
 
   const refreshAccessToken = async () => {
     try {
-      const newToken = await fetchAccessToken(); 
-      if (newToken) {
-        setAccessToken(newToken); 
-        return newToken;
+      const response = await fetchAccessToken(); 
+      if (response) {
+        setAccessToken(response.accessToken); 
+        setUser(response.user); 
+        return response.accessToken;
       }
     } catch (error) {
       console.error("Failed to refresh access token:", error);
-      logout(); 
+      logout();
     }
     return null;
   };
@@ -36,9 +61,9 @@ export const AuthProvider = ({ children }) => {
 
     if (delay > 0) {
       setTimeout(async () => {
-        const newToken = await refreshAccessToken(); 
+        const newToken = await refreshAccessToken();
         if (newToken) {
-          scheduleTokenRefresh(newToken); 
+          scheduleTokenRefresh(newToken);
         }
       }, delay);
     }
@@ -47,7 +72,7 @@ export const AuthProvider = ({ children }) => {
   const login = (userData, token) => {
     setUser(userData);
     setAccessToken(token);
-    scheduleTokenRefresh(token); 
+    scheduleTokenRefresh(token);
   };
 
   const logout = async () => {
@@ -64,14 +89,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    if (accessToken) {
-      scheduleTokenRefresh(accessToken);
-    }
-  }, [accessToken]);
+    initializeAuth(); 
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, login, logout }}>
-      {children}
+    <AuthContext.Provider value={{ user, accessToken, login, logout, loading }}>
+      {!loading && children} 
     </AuthContext.Provider>
   );
 };
