@@ -8,16 +8,6 @@ const {
 } = require("firebase/firestore");
 const db = require("../firebase/firebaseConfig");
 const jwt = require("jsonwebtoken");
-const { updateDoc } = require("firebase/firestore");
-
-const isValidUrl = (url, platform) => {
-  const regexes = {
-    linkedin: /^https?:\/\/(www\.)?linkedin\.com\/.*$/i,
-    github: /^https?:\/\/(www\.)?github\.com\/.*$/i,
-    x: /^https?:\/\/(www\.)?x\.com\/.*$/i,
-  };
-  return regexes[platform]?.test(url);
-};
 
 // --- Get User Profile ---
 const getProfile = async (req, res) => {
@@ -25,7 +15,6 @@ const getProfile = async (req, res) => {
   try {
     // Extract the token from the Authorization header
     const authHeader = req.headers.authorization;
-    console.log("1", authHeader);
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res
         .status(401)
@@ -72,8 +61,6 @@ const getProfile = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
 
 module.exports = {
   getProfile,

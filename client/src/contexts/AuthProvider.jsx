@@ -1,55 +1,99 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { jwtDecode } from "jwt-decode";
-import { fetchAccessToken } from "@/lib/auth";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); 
-  const [accessToken, setAccessToken] = useState(null); 
+  const [user, setUser] = useState(null);
+  const [accessToken, setAccessToken] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  // Function to Extract Token Expiry
   const getTokenExpiration = (token) => {
-    const decoded = jwtDecode(token);
-    return decoded.exp * 1000; 
+    const decoded = JSON.parse(atob(token.split(".")[1]));
+    return decoded.exp * 1000;
   };
 
+  // Function to Reset User State
+  const resetAuthState = () => {
+    setUser(null);
+    setAccessToken(null);
+  };
+
+  // Upon Page Reload Check for Cookies
+  const initializeAuth = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/api/auth/refresh", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAccessToken(data.accessToken);
+        setUser(data.user);
+        scheduleTokenRefresh(data.accessToken);
+      } else if (response.status === 401) {
+        resetAuthState();
+      } else {
+        console.error(
+          `Unexpected error during auth initialization: ${response.statusText}`
+        );
+      }
+    } catch (error) {
+      console.error("Failed to initialize authentication:", error);
+      resetAuthState();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to refresh tokens
   const refreshAccessToken = async () => {
     try {
-      const newToken = await fetchAccessToken(); 
-      if (newToken) {
-        setAccessToken(newToken); 
-        return newToken;
+      const response = await fetch("http://localhost:8080/api/auth/refresh", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to refresh access token");
+      }
+      const data = await response.json();
+      if (data) {
+        setAccessToken(data.accessToken);
+        setUser(data.user);
+        return data.accessToken;
       }
     } catch (error) {
       console.error("Failed to refresh access token:", error);
-      logout(); 
+      logout();
     }
     return null;
   };
 
+  // Function to schedule Refresh
   const scheduleTokenRefresh = (token) => {
     const expiration = getTokenExpiration(token);
     const now = Date.now();
-    const delay = expiration - now - 5000; 
-
+    const delay = expiration - now - 5000;
     if (delay > 0) {
       setTimeout(async () => {
-        const newToken = await refreshAccessToken(); 
+        const newToken = await refreshAccessToken();
         if (newToken) {
-          scheduleTokenRefresh(newToken); 
+          scheduleTokenRefresh(newToken);
         }
       }, delay);
     }
   };
 
+  // Function For Login
   const login = (userData, token) => {
     setUser(userData);
     setAccessToken(token);
-    scheduleTokenRefresh(token); 
+    scheduleTokenRefresh(token);
   };
 
+  // Function for Logout
   const logout = async () => {
     try {
       await fetch("http://localhost:8080/api/auth/logout", {
@@ -63,15 +107,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Used Inside useEffect
   useEffect(() => {
-    if (accessToken) {
-      scheduleTokenRefresh(accessToken);
-    }
-  }, [accessToken]);
+    initializeAuth();
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, login, logout }}>
-      {children}
+    <AuthContext.Provider value={{ user, accessToken, login, logout, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
