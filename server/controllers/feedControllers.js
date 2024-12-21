@@ -1,9 +1,6 @@
 const db = require("../firebase/firebaseConfig");
 const {
   collection,
-  addDoc,
-  query,
-  where,
   getDocs,
   doc,
   getDoc,
