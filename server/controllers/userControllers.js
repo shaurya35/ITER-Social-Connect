@@ -56,6 +56,7 @@ const createUserPost = async (req, res) => {
       userName, // Include user's name
       content,
       createdAt: new Date().toISOString(),
+      likes: [] // Initialize likes as an empty array
     });
 
     res.status(201).json({
@@ -160,8 +161,48 @@ const getUserPostById = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch post" });
   }
 };
+// Function to like/unlike a post
+const likePost = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { postId } = req.params; 
+
+    const postRef = doc(db, "posts", postId);
+    const postSnapshot = await getDoc(postRef);
+
+    if (!postSnapshot.exists()) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    const postData = postSnapshot.data();
+
+    let likes = postData.likes || [];
+    const userAlreadyLiked = likes.includes(userId);
+
+    if (userAlreadyLiked) {
+      // If user already liked, remove their ID (unlike functionality)
+      likes = likes.filter((id) => id !== userId);
+    } else {
+      // Add user ID to the likes array
+      likes.push(userId);
+    }
+
+    // Update Firestore document
+    await updateDoc(postRef, { likes });
+
+    res.status(200).json({
+      message: userAlreadyLiked ? "Post unliked successfully" : "Post liked successfully",
+      totalLikes: likes.length,
+    });
+  } catch (error) {
+    console.error("Like Post Error:", error);
+    res.status(500).json({ error: "Failed to like the post" });
+  }
+};
+
 
 module.exports = {
+  likePost,
   getAllUserPosts,
   getUserPostById,
   createUserPost,

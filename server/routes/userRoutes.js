@@ -5,7 +5,8 @@ const {
   getUserPostById,
   createUserPost,
   updateUserPost,
-  deleteUserPost
+  deleteUserPost,
+  likePost
 } = require("../controllers/userControllers");  // Correct import
 
 const { isLoggedIn } = require("../middlewares/authMiddlewares");
@@ -16,5 +17,6 @@ router.get("/post/:postId", isLoggedIn, getUserPostById);  // GET single post by
 router.post("/post", isLoggedIn, createUserPost);  // POST create new post
 router.put("/post/:postId", isLoggedIn, updateUserPost);  // PUT update post
 router.delete("/post/:postId", isLoggedIn, deleteUserPost);  // DELETE post
+router.post("/posts/:postId/like", likePost); // Like/unlike a post
 
 module.exports = router;
