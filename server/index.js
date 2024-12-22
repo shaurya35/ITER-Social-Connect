@@ -79,6 +79,7 @@ app.use("/api/connections", connectionRoutes);
 app.use("/api/comments", commentRoutes);
 // Profile routes
 app.use("/api/profile", profileRoutes);
+//settings routes
 app.use("/api/settings", settingRoutes);
 
 // --- Start the Server ---
