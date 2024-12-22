@@ -2,7 +2,7 @@ const { collection, query, where, getDocs, doc, getDoc } = require("firebase/fir
 const db = require("../firebase/firebaseConfig");
 const jwt = require("jsonwebtoken");
 
-// Get User Profile with Posts
+// Get User Profile
 const getProfile = async (req, res) => {
   try {
     // Extract and verify the token
@@ -36,7 +36,10 @@ const getProfile = async (req, res) => {
       ...doc.data(),
     }));
 
-    // Combine profile and posts data
+    // Fetch connection count
+    const connectionsCount = userData.connectionsCount || 0;
+
+    // Combine profile, posts, and connections count data
     const profileData = {
       name: userData.name,
       about: userData.about || "",
@@ -44,6 +47,7 @@ const getProfile = async (req, res) => {
       github: userData.github || "",
       linkedin: userData.linkedin || "",
       x: userData.x || "",
+      connectionsCount,  // Add connections count here
       posts,
     };
 
