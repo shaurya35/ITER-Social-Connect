@@ -57,7 +57,51 @@ const getProfile = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+const getUserProfile = async (req, res) => {
+  try {
+    // Extract userId from query parameter
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    // Fetch user profile data
+    const userDoc = await getDoc(doc(db, "users", userId));
+    if (!userDoc.exists()) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const userData = userDoc.data();
+
+    // Fetch user posts (optional, if public posts are allowed)
+    const postsQuery = query(collection(db, "posts"), where("userId", "==", userId));
+    const postsSnapshot = await getDocs(postsQuery);
+
+    const posts = postsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    // Build the profile response
+    const profileData = {
+      name: userData.name,
+      about: userData.about || "",
+      profilePicture: userData.profilePicture || "",
+      github: userData.github || "",
+      linkedin: userData.linkedin || "",
+      x: userData.x || "",
+      connectionsCount: userData.connectionsCount || 0,
+      posts,
+    };
+
+    res.status(200).json(profileData);
+  } catch (error) {
+    console.error("Get User Profile Error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 module.exports = {
-  getProfile,
+  getProfile,getUserProfile
 };
