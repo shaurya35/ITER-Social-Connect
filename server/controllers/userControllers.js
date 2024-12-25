@@ -1,3 +1,4 @@
+require("dotenv").config();
 const db = require("../firebase/firebaseConfig");
 const {
   collection,
@@ -9,6 +10,12 @@ const {
   getDoc,
   updateDoc,
   deleteDoc,
+  arrayUnion,
+  arrayRemove,
+  writeBatch,
+  orderBy,
+  startAt,
+  endAt,
 } = require("firebase/firestore");
 
 const getAllUserPosts = async (req, res) => {
@@ -51,17 +58,49 @@ const createUserPost = async (req, res) => {
 
     const userName = userSnapshot.data().name;
 
+    // Extract hashtags from content
+    const hashtags =
+      content.match(/#[a-zA-Z0-9_]+/g)?.map((tag) => tag.toLowerCase()) || [];
+
+    // Save post to the `posts` collection
     const postDoc = await addDoc(collection(db, "posts"), {
       userId,
       userName, // Include user's name
       content,
       createdAt: new Date().toISOString(),
-      likes: [] // Initialize likes as an empty array
+      likes: [], // Initialize likes as an empty array
     });
+
+    const postId = postDoc.id;
+
+    // Update the `hashtags` collection
+    const batch = writeBatch(db);
+    const currentTime = new Date().toISOString();
+
+    for (const tag of hashtags) {
+      const hashtagRef = doc(db, "hashtags", tag);
+
+      const hashtagSnapshot = await getDoc(hashtagRef);
+      if (hashtagSnapshot.exists()) {
+        // Hashtag exists: Update it
+        batch.update(hashtagRef, {
+          posts: arrayUnion({ postId, createdAt: currentTime }),
+        });
+      } else {
+        // Hashtag does not exist: Create it
+        batch.set(hashtagRef, {
+          createdAt: currentTime,
+          posts: [{ postId, createdAt: currentTime }],
+        });
+      }
+    }
+
+    // Commit the batch operation
+    await batch.commit();
 
     res.status(201).json({
       message: "Post created successfully",
-      postId: postDoc.id,
+      postId,
     });
   } catch (error) {
     console.error("Create Post Error:", error);
@@ -132,7 +171,7 @@ const deleteUserPost = async (req, res) => {
 
 const getUserPostById = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.userId; // Authenticated user
     const { postId } = req.params;
 
     const postRef = doc(db, "posts", postId);
@@ -143,12 +182,14 @@ const getUserPostById = async (req, res) => {
     }
 
     const postData = postSnapshot.data();
-    if (postData.userId !== userId) {
+    //If the user is not logged in (userId is undefined)
+    if (!userId) {
       return res
         .status(403)
-        .json({ error: "You are not authorized to view this post" });
+        .json({ error: "You need to log in to view this private post" });
     }
 
+    // Successfully retrieve the post
     res.status(200).json({
       message: "Post retrieved successfully",
       post: {
@@ -161,11 +202,12 @@ const getUserPostById = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch post" });
   }
 };
+
 // Function to like/unlike a post
 const likePost = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { postId } = req.params; 
+    const { postId } = req.params;
 
     const postRef = doc(db, "posts", postId);
     const postSnapshot = await getDoc(postRef);
@@ -191,7 +233,9 @@ const likePost = async (req, res) => {
     await updateDoc(postRef, { likes });
 
     res.status(200).json({
-      message: userAlreadyLiked ? "Post unliked successfully" : "Post liked successfully",
+      message: userAlreadyLiked
+        ? "Post unliked successfully"
+        : "Post liked successfully",
       totalLikes: likes.length,
     });
   } catch (error) {
@@ -200,6 +244,101 @@ const likePost = async (req, res) => {
   }
 };
 
+const bookmarkPost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user.userId;
+
+    const userRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const bookmarks = userDoc.data().bookmarks || [];
+
+    // Check if the post is already bookmarked
+    if (bookmarks.includes(postId)) {
+      // Remove the bookmark
+      await updateDoc(userRef, {
+        bookmarks: arrayRemove(postId),
+      });
+      return res.status(200).json({ message: "Post removed from bookmarks" });
+    } else {
+      // Add the bookmark
+      await updateDoc(userRef, {
+        bookmarks: arrayUnion(postId),
+      });
+      return res.status(200).json({ message: "Post bookmarked successfully" });
+    }
+  } catch (error) {
+    console.error("Error toggling bookmark:", error);
+    res.status(500).json({ error: "Error toggling bookmark" });
+  }
+};
+
+const getBookmarkedPosts = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const userRef = doc(db, "users", userId); // Reference to the user's document
+    const userDoc = await getDoc(userRef); // Fetch the user's document
+
+    if (!userDoc.exists()) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const bookmarks = userDoc.data().bookmarks || []; // Get the bookmarks array
+
+    if (bookmarks.length === 0) {
+      return res
+        .status(200)
+        .json({ message: "No bookmarks found", bookmarks: [] });
+    }
+
+    // If you want detailed information about the posts:
+    const postsRef = collection(db, "posts");
+    const bookmarkedPosts = [];
+
+    for (const postId of bookmarks) {
+      const postDoc = await getDoc(doc(postsRef, postId));
+      if (postDoc.exists()) {
+        bookmarkedPosts.push({ id: postDoc.id, ...postDoc.data() });
+      }
+    }
+
+    res.status(200).json({
+      message: "Bookmarked posts fetched successfully",
+      bookmarks: bookmarkedPosts,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching bookmarked posts" });
+  }
+};
+
+const sharePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const baseUrl = process.env.BASE_URL; // Replace with your actual domain
+
+    const directLink = `${baseUrl}/${postId}`;
+
+    // Generate the WhatsApp sharable link
+    const whatsappLink = `https://wa.me/?text=${encodeURIComponent(
+      `Check out this post: ${directLink}`
+    )}`;
+
+    res.status(200).json({
+      message: "Share links generated successfully",
+      directLink,
+      whatsappLink,
+    });
+  } catch (error) {
+    console.error("Error generating share links:", error);
+    res.status(500).json({ error: "Error generating share links" });
+  }
+};
 
 module.exports = {
   likePost,
@@ -208,4 +347,7 @@ module.exports = {
   createUserPost,
   updateUserPost,
   deleteUserPost,
+  bookmarkPost,
+  getBookmarkedPosts,
+  sharePost,
 };

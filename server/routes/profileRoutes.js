@@ -7,7 +7,7 @@ const { isLoggedIn } = require("../middlewares/authMiddlewares");
 const router = express.Router();
 
 // Route to fetch user profile
-router.get("/profile", isLoggedIn, getProfile);
-router.get('/profile/:userId', getUserProfile); // Someone else's profile
+router.get("/", isLoggedIn, getProfile);
+router.get('/:userId', getUserProfile); // Someone else's profile
 
 module.exports = router;
