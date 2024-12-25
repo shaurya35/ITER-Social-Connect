@@ -1,10 +1,14 @@
 const db = require("../firebase/firebaseConfig");
-const { collection, getDocs, doc, getDoc } = require("firebase/firestore");
+const { collection, getDocs, query, orderBy } = require("firebase/firestore");
 
 const getAllPosts = async (req, res) => {
   try {
     const postsCollection = collection(db, "posts");
-    const postsSnapshot = await getDocs(postsCollection);
+
+    // Query to order posts by 'createdAt' field in descending order
+    const postsQuery = query(postsCollection, orderBy("createdAt", "desc"));
+
+    const postsSnapshot = await getDocs(postsQuery);
 
     const posts = postsSnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -15,6 +19,7 @@ const getAllPosts = async (req, res) => {
       posts,
     });
   } catch (error) {
+    console.error("Error fetching posts:", error);
     res.status(400).json({
       error: "Failed to fetch posts. Please try again later.",
     });
