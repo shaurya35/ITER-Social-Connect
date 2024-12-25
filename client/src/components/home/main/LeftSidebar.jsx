@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import NextImage from "next/image";
 import { useAuth } from "@/contexts/AuthProvider";
+import { useRouter } from "next/navigation"
 import axios from "axios";
 import {
   BookMarked,
@@ -22,6 +23,7 @@ export default function LeftSidebar() {
   const [connections, setConnections] = useState("No Connections");
   const [loading, setLoading] = useState(true); 
   const { user, accessToken } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     if (user && accessToken) {
@@ -55,13 +57,17 @@ export default function LeftSidebar() {
   }, [user, accessToken]);
 
   const menuItems = [
-    { icon: User, label: "Profile" },
-    { icon: MessageCircle, label: "Messages" },
-    { icon: Bell, label: "Notifications" },
-    { icon: Bookmark, label: "Saved Events" },
-    { icon: Users, label: "Connections" },
-    { icon: Settings, label: "Settings" },
+    { icon: User, label: "Profile", route: "/profile" },
+    { icon: MessageCircle, label: "Messages",route: "/chat" },
+    { icon: Bell, label: "Notifications",route: "/notifications" },
+    { icon: Bookmark, label: "Saved Posts",route: "/bookmarks" },
+    { icon: Users, label: "Connections",route: "/connections" },
+    { icon: Settings, label: "Settings",route: "/settings" },
   ];
+
+  const handleNavigation = (route) => {
+    router.push(route);
+  }
 
   return (
     <>
@@ -134,6 +140,7 @@ export default function LeftSidebar() {
               key={index}
               variant="ghost"
               size="sm"
+              onClick={() => handleNavigation(item.route)}
               className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
             >
               <item.icon className="h-5 w-5" />
@@ -144,14 +151,15 @@ export default function LeftSidebar() {
 
         <nav className="space-y-1 bg-white dark:bg-gray-800 rounded-lg shadow">
           {[
-            { icon: FileText, label: "My Posts" },
-            { icon: Users, label: "Connections" },
-            { icon: BookMarked, label: "Events" },
-            { icon: Settings, label: "Settings" },
+            { icon: FileText, label: "My Posts", route: "/profile" },
+            { icon: Users, label: "Connections", route: "/connections" },
+            { icon: BookMarked, label: "Events", route: "/events"},
+            { icon: Settings, label: "Settings", route: "/settings" },
           ].map((item, index) => (
             <Button
               key={index}
               variant="ghost"
+              onClick={() => handleNavigation(item.route)}
               className="w-full justify-between text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
             >
               <div className="flex items-center">

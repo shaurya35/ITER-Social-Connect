@@ -5,7 +5,7 @@ import { Check, X } from "lucide-react";
 
 export default function RightSidebar() {
   return (
-    <aside className="w-full lg:w-96 lg:flex-shrink-0">
+    <aside className="w-full lg:w-96 lg:flex-1">
       <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200 mb-4">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg font-semibold text-gray-800 dark:text-gray-200">

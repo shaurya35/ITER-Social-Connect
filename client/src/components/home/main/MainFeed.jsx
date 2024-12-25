@@ -5,6 +5,7 @@ import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Image, MessageCircle, Share2, ThumbsUp } from "lucide-react";
+import { useAuth } from "@/contexts/AuthProvider";
 import {
   Card,
   CardContent,
@@ -41,12 +42,38 @@ export default function MainFeed() {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [newPostContent, setNewPostContent] = useState("");
+  const [username, setUsername] = useState("");
+  const [fetchingUser, setFetchingUser] = useState(true);
+  const { accessToken, user } = useAuth();
 
   const observer = useRef();
 
   useEffect(() => {
     setIsHydrated(true);
-  }, []);
+
+    if (user && accessToken) {
+      setFetchingUser(true);
+      axios
+        .get("http://localhost:8080/api/profile", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        })
+        .then((response) => {
+          const { name } = response.data;
+          setUsername(name || "Explorer");
+        })
+        .catch((error) => {
+          console.error("Error fetching user profile:", error);
+        })
+        .finally(() => {
+          setFetchingUser(false);
+        });
+    }else{
+      setFetchingUser(false);
+    }
+  }, [user, accessToken]);
 
   const fetchPosts = useCallback(async () => {
     if (!hasMore) return;
@@ -54,7 +81,7 @@ export default function MainFeed() {
     setLoading(true);
     try {
       // await new Promise(resolve => setTimeout(resolve, 10000));
-      const response = await axios.get(`https://itersocialconnect-backend.onrender.com/api/feed`, {
+      const response = await axios.get(`http://localhost:8080/api/feed`, {
         params: { page, limit: 10 },
         withCredentials: true,
       });
@@ -83,6 +110,45 @@ export default function MainFeed() {
     },
     [loading, hasMore]
   );
+
+  const handlePostSubmit = async () => {
+    if (!newPostContent.trim()) return; 
+
+    const tempPost = {
+      id: "temp",
+      userName: username, 
+      content: newPostContent,
+      createdAt: new Date().toISOString(),
+    };
+
+    setPosts((prevPosts) => [tempPost, ...prevPosts]);
+    setNewPostContent("");
+
+    try {
+      const response = await axios.post(
+        "http://localhost:8080/api/user/post",
+        { content: newPostContent },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          withCredentials: true,
+        }
+      );
+
+      const { postId } = response.data;
+
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === "temp" ? { ...post, id: postId } : post
+        )
+      );
+    } catch (err) {
+      console.error("Error creating new post:", err);
+      setPosts((prevPosts) => prevPosts.filter((post) => post.id !== "temp"));
+      alert("Failed to post. Please try again.");
+    }
+  };
 
   useEffect(() => {
     if (isHydrated) {
@@ -117,6 +183,8 @@ export default function MainFeed() {
             <div className="flex-1">
               <Textarea
                 placeholder="What's on your mind?"
+                value={newPostContent}
+                onChange={(e) => setNewPostContent(e.target.value)}
                 className="resize-none bg-gray-100 dark:bg-gray-700 border-0 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 rounded-lg text-gray-900 dark:text-gray-100"
               />
               <div className="mt-4 flex justify-between items-center">
@@ -131,38 +199,16 @@ export default function MainFeed() {
                 <Button
                   size="sm"
                   className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
+                  onClick={handlePostSubmit}
+                  disabled={fetchingUser} 
                 >
-                  Post
+                  {fetchingUser ? "Loading..." : "Post"}
                 </Button>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Preloader */}
-      {loading && (
-        <div className="space-y-4">
-          {[...Array(3)].map((_, idx) => (
-            <Card
-              key={idx}
-              className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-700 animate-pulse"
-            >
-              <CardHeader className="flex-row items-center gap-4 p-4">
-                <div className="rounded-full bg-gray-300 dark:bg-gray-700 h-12 w-12"></div>
-                <div>
-                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-24 mb-2"></div>
-                  <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-16"></div>
-                </div>
-              </CardHeader>
-              <CardContent className="px-4 py-2">
-                <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-full mb-2"></div>
-                <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
 
       {/* Error message */}
       {error && (

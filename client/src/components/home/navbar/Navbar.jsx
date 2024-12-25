@@ -6,7 +6,7 @@ import { Logo } from "./logo";
 import { LogoMobile } from "./logoMobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   Users,
@@ -69,7 +69,7 @@ export default function Navbar() {
             </Link>
           </div>
           <div className="hidden lg:flex lg:flex-row lg:flex-wrap lg:space-x-1">
-          <div className="relative mr-4">
+            <div className="relative mr-4">
               <Input
                 type="search"
                 placeholder="Search..."
@@ -146,6 +146,7 @@ export default function Navbar() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <SheetTitle>Menu</SheetTitle>
                 <nav className="flex flex-col justify-between h-full">
                   <div className="space-y-4">
                     <div className="relative mb-7 mt-4">
@@ -178,16 +179,33 @@ export default function Navbar() {
 
                   <div className="flex items-center justify-center flex-col mb-10">
                     <div className="flex justify-center items-center pb-5">
-                      <Link href="/signin" passHref>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 "
-                          onClick={() => setIsOpen(false)}
-                        >
-                          Sign in?
-                        </Button>
-                      </Link>
+                      {user ? (
+                        <Link href="/explore" passHref>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 "
+                            onClick={() => {
+                              setIsOpen(false);
+                              logout();
+                              Router.push("/explore")
+                            }}
+                          >
+                            Logout?
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Link href="/signin" passHref>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 "
+                            onClick={() => setIsOpen(false)}
+                          >
+                            Sign in?
+                          </Button>
+                        </Link>
+                      )}
                     </div>
                     <Button
                       variant="ghost"
