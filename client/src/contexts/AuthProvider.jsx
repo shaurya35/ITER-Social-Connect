@@ -41,7 +41,6 @@ export const AuthProvider = ({ children }) => {
         );
       }
     } catch (error) {
-      console.error("Failed to initialize authentication:", error);
       resetAuthState();
     } finally {
       setLoading(false);

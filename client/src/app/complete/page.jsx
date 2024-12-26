@@ -1,10 +1,11 @@
-import { SignupForm } from '@/components/auth/SignupForm'
-export const metadata = {
-  title: 'Signup / ITER Connect',
-  description: 'Create a new ITER Connect account',
-}
+import CompleteProfile from "@/components/auth/CompleteProfile";
 
-export default function SignupPage() {
+export const metadata = {
+  title: "Complete-Profile / ITER Connect",
+  description: "Create a new ITER Connect account",
+};
+
+export default function Complete() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
       {/* <Navbar /> */}
@@ -16,17 +17,19 @@ export default function SignupPage() {
             </h2>
           </div>
           <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
-            <SignupForm />
+            <CompleteProfile />
           </div>
           <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-            Or{' '}
-            <a href="/signin" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
+            Or{" "}
+            <a
+              href="/signin"
+              className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+            >
               sign in to your existing account
             </a>
           </p>
         </div>
       </div>
     </div>
-  )
+  );
 }
-
