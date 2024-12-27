@@ -1,6 +1,8 @@
+const fs = require("fs");
 require("dotenv").config();
 const nodemailer = require("nodemailer");
 const XLSX = require("xlsx");
+const path = require("path");
 
 // Configure mail transporter
 const transporter = nodemailer.createTransport({
@@ -11,8 +13,21 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Function to send personalized emails
-const sendEmails = async (emailFilePath, subjectTemplate, bodyTemplate) => {
+// Get all images from the "images" folder
+const imageFolder = path.join(__dirname, "images");
+const imageFiles = fs
+  .readdirSync(imageFolder)
+  .filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file));
+
+// Generate the attachments array
+const attachments = imageFiles.map((file) => ({
+  filename: file,
+  path: path.join(imageFolder, file),
+  cid: path.basename(file, path.extname(file)), // Use the filename without extension as cid
+}));
+
+// Function to send personalized HTML emails
+const sendEmails = async (emailFilePath, subjectTemplate, htmlFilePath) => {
   try {
     // Read the Excel file
     const workbook = XLSX.readFile(emailFilePath);
@@ -20,25 +35,40 @@ const sendEmails = async (emailFilePath, subjectTemplate, bodyTemplate) => {
     const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
     // Check if the necessary columns exist
-    const requiredColumns = ["Email Address", "Full Name", "What is your current year of study? ", "  What kind of projects excite you the most?  ", "  How would you describe your current skill level?  "];
-    const missingColumns = requiredColumns.filter(col => !sheetData[0] || !(col in sheetData[0]));
+    const requiredColumns = [
+      "Email Address",
+      "Full Name",
+      "What is your current year of study? ",
+      "  What kind of projects excite you the most?  ",
+      "  How would you describe your current skill level?  ",
+    ];
+    const missingColumns = requiredColumns.filter(
+      (col) => !sheetData[0] || !(col in sheetData[0])
+    );
 
     if (missingColumns.length > 0) {
-      console.log(`Missing columns in the Excel file: ${missingColumns.join(", ")}`);
+      console.log(
+        `Missing columns in the Excel file: ${missingColumns.join(", ")}`
+      );
       return;
     }
+
+    // Read the HTML file
+    const htmlTemplate = fs.readFileSync(htmlFilePath, "utf8");
 
     // Send personalized emails
     for (const row of sheetData) {
       const recipientEmail = row["Email Address"];
       const fullName = row["Full Name"];
       const yearOfStudy = row["What is your current year of study? "].trim();
-      const projectInterest = row["  What kind of projects excite you the most?  "].trim();
-      const skillLevel = row["  How would you describe your current skill level?  "].trim();
+      const projectInterest =
+        row["  What kind of projects excite you the most?  "].trim();
+      const skillLevel =
+        row["  How would you describe your current skill level?  "].trim();
 
-      // Customize the subject and body
+      // Customize the subject and HTML body
       const subject = subjectTemplate;
-      const body = bodyTemplate
+      const htmlBody = htmlTemplate
         .replace("{fullName}", fullName)
         .replace("{yearOfStudy}", yearOfStudy)
         .replace("{projectInterest}", projectInterest)
@@ -48,12 +78,17 @@ const sendEmails = async (emailFilePath, subjectTemplate, bodyTemplate) => {
         from: process.env.EMAIL,
         to: recipientEmail,
         subject: subject,
-        text: body,
+        html: htmlBody,
+        attachments,
       };
 
       // Send email
-      await transporter.sendMail(mailOptions);
-      console.log(`Email sent to: ${recipientEmail}`);
+      try {
+        await transporter.sendMail(mailOptions);
+        console.log(`Email sent to: ${recipientEmail}`);
+      } catch (emailError) {
+        console.error(`Failed to send email to ${recipientEmail}:`, emailError);
+      }
     }
 
     console.log("All emails sent successfully!");
@@ -65,20 +100,6 @@ const sendEmails = async (emailFilePath, subjectTemplate, bodyTemplate) => {
 // Example usage
 const emailFilePath = "./emails.xlsx"; // Path to the Excel file
 const emailSubject = "Welcome to ITER Social Connect!";
-const emailBody = `
-Dear {fullName},
+const htmlFilePath = "./email.html"; // Path to the HTML file
 
-Greetings from ITER Social Connect!
-
-We’re thrilled to have you with us. As a {yearOfStudy}-year student with an interest in {projectInterest}, and at a {skillLevel} level, your enthusiasm is truly inspiring.
-
-This email is a test to ensure our system is functioning correctly. No further action is required from you.
-
-Stay connected for more exciting updates and opportunities!
-
-Best regards,  
-Satyam Kumar  
-ITER-SOCIAL-CONNECT
-`;
-
-sendEmails(emailFilePath, emailSubject, emailBody);
+sendEmails(emailFilePath, emailSubject, htmlFilePath);
