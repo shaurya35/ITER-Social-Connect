@@ -4,22 +4,26 @@ const express = require("express");
 // --- Router Configs ---
 const router = express.Router();
 
-const { isLoggedIn } = require("../middlewares/authMiddlewares");
 const {
   signup,
   signin,
   refreshAccessToken,
   verifyOtp,
   completeProfile,
-  logout
+  logout,
+  forgetPassword,
+  verifyOtpForForgetPassword,resetPassword
 } = require("../controllers/authControllers");
 
-router.post("/signup",  signup);
+router.post("/signup", signup);
 router.post("/signin", signin);
 router.post("/logout", logout);
 router.post("/verify-otp", verifyOtp);
 router.post("/complete-profile", completeProfile);
 router.post("/refresh", refreshAccessToken);
+router.post("/forget-password", forgetPassword);
+router.post("/verify-forget-password-otp", verifyOtpForForgetPassword);
+router.post("/reset-password", resetPassword);
 
 // --- Export Router ---
 module.exports = router;

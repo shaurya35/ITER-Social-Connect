@@ -1,14 +1,7 @@
-const {
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  getDoc,
-} = require("firebase/firestore");
+const { doc, getDoc, updateDoc } = require("firebase/firestore");
 const db = require("../firebase/firebaseConfig");
-const jwt = require("jsonwebtoken");
-const { updateDoc } = require("firebase/firestore");
+const { changePasswordSchema } = require("../validations/userValidations");
+const bcrypt = require("bcrypt");
 
 const isValidUrl = (url, platform) => {
   const regexes = {
@@ -21,24 +14,7 @@ const isValidUrl = (url, platform) => {
 
 const updateProfile = async (req, res) => {
   try {
-    // Extract the token from the Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res
-        .status(401)
-        .json({ message: "Authorization header is missing or invalid" });
-    }
-
-    const token = authHeader.split(" ")[1]; // Extract the token after "Bearer "
-    if (!token) {
-      return res
-        .status(401)
-        .json({ message: "Authentication token is missing" });
-    }
-
-    // Verify and decode the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.userId;
+    const userId = req.user.userId;
 
     if (!userId) {
       return res.status(401).json({ message: "Invalid token" });
@@ -61,8 +37,6 @@ const updateProfile = async (req, res) => {
     if (!userDoc.exists()) {
       return res.status(404).json({ message: "User not found" });
     }
-
-    const userData = userDoc.data();
 
     // Validate social media links (if provided)
     if (linkedin && !isValidUrl(linkedin, "linkedin")) {
@@ -106,6 +80,60 @@ const updateProfile = async (req, res) => {
   }
 };
 
+const changePassword = async (req, res) => {
+  try {
+    const validationResult = changePasswordSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res
+        .status(400)
+        .json({ message: validationResult.error.errors[0].message });
+    }
+
+    const { currentPassword, newPassword } = changePasswordSchema.parse(
+      req.body
+    );
+
+    const userId = req.user.userId;
+
+    const userDocRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userDocRef);
+
+    if (!userDoc.exists()) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const passwordMatch = await bcrypt.compare(
+      currentPassword,
+      userDoc.data().password
+    );
+    if (!passwordMatch) {
+      return res.status(401).json({ message: "Incorrect current password" });
+    }
+
+    const newPasswordMatch = await bcrypt.compare(
+      newPassword,
+      userDoc.data().password
+    );
+    if (newPasswordMatch) {
+      return res
+        .status(400)
+        .json({
+          message: "New password cannot be the same as the current password",
+        });
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    await updateDoc(userDocRef, { password: hashedPassword });
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 module.exports = {
   updateProfile,
+  changePassword,
 };

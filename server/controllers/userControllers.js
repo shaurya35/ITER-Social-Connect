@@ -13,9 +13,6 @@ const {
   arrayUnion,
   arrayRemove,
   writeBatch,
-  orderBy,
-  startAt,
-  endAt,
 } = require("firebase/firestore");
 
 const getAllUserPosts = async (req, res) => {

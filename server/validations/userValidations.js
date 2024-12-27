@@ -3,7 +3,13 @@ const { z } = require("zod");
 
 const userSignupSchema = z.object({
   email: z.string().email("Invalid email format."),
-  password: z.string().min(6, "Password must be at least 6 characters long."),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters long.")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
+      "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character"
+    ),
   regNo: z
     .string()
     .regex(/^\d{10}$/, "Registration number must be a 10-digit number.")
@@ -35,4 +41,22 @@ const completeProfileSchema = z.object({
   x: z.any().optional(), // Accepts any type
 });
 
-module.exports = { userSignupSchema, userSigninSchema, completeProfileSchema };
+const changePasswordSchema = z.object({
+  currentPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters long"),
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters long")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
+      "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character"
+    ),
+});
+
+module.exports = {
+  userSignupSchema,
+  userSigninSchema,
+  completeProfileSchema,
+  changePasswordSchema,
+};

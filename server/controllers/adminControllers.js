@@ -2,7 +2,6 @@ require("dotenv").config();
 const {
   collection,
   addDoc,
-  updateDoc,
   doc,
   getDocs,
   query,
@@ -10,12 +9,12 @@ const {
   deleteDoc,
   getDoc,
   orderBy,
+  writeBatch,
 } = require("firebase/firestore");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const db = require("../firebase/firebaseConfig");
 
-const bcrypt = require("bcrypt");
 // --- Generates Access Token for 15min ---
 const generateAccessToken = (user) => {
   return jwt.sign(
@@ -34,32 +33,50 @@ const generateRefreshToken = (user) => {
   );
 };
 
-const adminLogin = (req, res) => {
+//fix with the hashing password
+const adminLogin = async (req, res) => {
   const { email, password } = req.body;
-  if (
-    email === process.env.ADMIN_EMAIL &&
-    password === process.env.ADMIN_PASSWORD
-  ) {
-    // Refresh Token System
-    const accessToken = generateAccessToken({ email: process.env.ADMIN_EMAIL });
-    const refreshToken = generateRefreshToken({
-      email: process.env.ADMIN_EMAIL,
+
+  try {
+    // Fetch admin credentials from Firestore
+    const adminCollection = collection(db, "admin");
+    const adminSnapshot = await getDocs(adminCollection);
+
+    let isValidAdmin = false;
+
+    adminSnapshot.forEach((doc) => {
+      const adminData = doc.data();
+      if (
+        email === adminData.ADMIN_EMAIL &&
+        password === adminData.ADMIN_PASSWORD
+      ) {
+        isValidAdmin = true;
+      }
     });
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    if (isValidAdmin) {
+      // Generate tokens (you can use your existing token functions here)
+      const accessToken = generateAccessToken({ email });
+      const refreshToken = generateRefreshToken({ email });
 
-    res.status(200).json({
-      message: "Signin successful",
-      accessToken,
-    });
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      });
+
+      return res.status(200).json({
+        message: "Signin successful",
+        accessToken,
+      });
+    }
+
+    return res.status(401).json({ message: "Invalid credentials" });
+  } catch (error) {
+    console.error("Error during admin login:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
-
-  res.status(401).json({ message: "Invalid credentials" });
 };
 
 const pendingRequest = async (req, res) => {
@@ -201,4 +218,57 @@ Iter Social Connect Team
   }
 };
 
-module.exports = { adminLogin, pendingRequest, handleRequest };
+const deleteOtps = async (req, res) => {
+  try {
+    const now = Date.now();
+    let totalDeletedCount = 0; // Counter for the total number of OTPs deleted
+
+    // Collections to check for expired OTPs
+    const collections = ["otp_verifications", "otps"];
+
+    // Loop through the collections to find expired OTPs
+    for (const collectionName of collections) {
+      const collectionRef = collection(db, collectionName);
+
+      // Query to get expired OTPs based on otpExpiresAt
+      const expiredDocsQuery = query(
+        collectionRef,
+        where("otpExpiresAt", "<", now)
+      );
+      const expiredDocsSnapshot = await getDocs(expiredDocsQuery);
+
+      if (!expiredDocsSnapshot.empty) {
+        // Create a new write batch
+        const batch = writeBatch(db);
+
+        // Loop through expired documents and add delete operations to the batch
+        expiredDocsSnapshot.forEach((doc) => {
+          batch.delete(doc.ref);
+          totalDeletedCount++; // Increment the count for each OTP deleted
+        });
+
+        // Commit the batch
+        await batch.commit();
+
+        console.log(
+          `Deleted ${expiredDocsSnapshot.size} expired OTP(s) from ${collectionName}`
+        );
+      } else {
+        console.log(`No expired OTPs found in ${collectionName}`);
+      }
+    }
+
+    // Send a success response with the total count of deleted OTPs
+    res
+      .status(200)
+      .json({
+        message: "Expired OTPs deleted successfully",
+        deletedCount: totalDeletedCount,
+      });
+  } catch (error) {
+    console.error("Error deleting expired OTPs:", error);
+    res.status(500).json({ error: "Failed to delete expired OTPs" });
+  }
+};
+
+module.exports = { adminLogin, pendingRequest, handleRequest, deleteOtps };

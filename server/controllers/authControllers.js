@@ -70,6 +70,25 @@ const sendOtpEmail = async (email, otp) => {
   await transporter.sendMail(mailOptions);
 };
 
+const sendOtpForgetPassowrd = async (email, otp) => {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Password Reset OTP",
+    text: `You requested a password reset. Use the OTP ${otp} to reset your password. This OTP is valid for 5 minutes. If you didn't request a password reset, please ignore this email.`,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
 // --- Signup Routes (takes email, pass and RegNo and Url as fields) ---
 const signup = async (req, res) => {
   try {
@@ -325,6 +344,9 @@ const completeProfile = async (req, res) => {
   }
 };
 
+const generateOtp = () =>
+  Math.floor(100000 + Math.random() * 900000).toString();
+
 const signin = async (req, res) => {
   try {
     // Validate the request body using zod or any schema validation library
@@ -429,6 +451,175 @@ const refreshAccessToken = (req, res) => {
   }
 };
 
+const forgetPassword = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    // Check if user exists
+    const userQuery = query(
+      collection(db, "users"),
+      where("email", "==", email)
+    );
+    const querySnapshot = await getDocs(userQuery);
+
+    if (querySnapshot.empty) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if an OTP request already exists for the email
+    const otpDocRef = doc(db, "otps", email);
+    const otpDocSnapshot = await getDoc(otpDocRef);
+
+    if (otpDocSnapshot.exists()) {
+      const { otpExpiresAt } = otpDocSnapshot.data();
+      const remainingTime = otpExpiresAt - Date.now();
+
+      if (remainingTime > 0) {
+        const remainingSeconds = Math.ceil(remainingTime / 1000);
+        return res.status(400).json({
+          message: `An OTP request is already pending. Please wait ${remainingSeconds} seconds before requesting a new OTP or use the OTP sent to your email.`,
+        });
+      }
+    }
+
+    // Generate new OTP and save it to the database
+    const otp = generateOtp();
+    const otpData = {
+      email,
+      otp,
+      otpExpiresAt: Date.now() + 5 * 60 * 1000, // Expires in 5 minutes
+    };
+
+    await setDoc(otpDocRef, otpData); // Save OTP with expiration details
+
+    // Send OTP via email
+    await sendOtpForgetPassowrd(email, otp);
+
+    res.status(200).json({ message: "OTP sent to email" });
+  } catch (error) {
+    console.error("Error sending OTP:", error);
+    res.status(500).json({ message: "Failed to send OTP" });
+  }
+};
+
+//function to generate a secure random token
+const generateResetToken = () => {
+  // Generate a random 32-byte token and encode it in hexadecimal format
+  return crypto.randomBytes(32).toString("hex");
+};
+
+const verifyOtpForForgetPassword = async (req, res) => {
+  const { email, otp } = req.body;
+
+  try {
+    // Check if the OTP is a valid 6-digit number
+    const otpRegex = /^[0-9]{6}$/;
+    if (!otpRegex.test(otp)) {
+      return res.status(400).json({
+        message: "Invalid OTP format. OTP must be a 6-digit number.",
+      });
+    }
+
+    const otpDocRef = doc(db, "otps", email);
+    const otpDocSnapshot = await getDoc(otpDocRef);
+
+    if (!otpDocSnapshot.exists()) {
+      return res.status(404).json({ message: "OTP not found or expired" });
+    }
+
+    const { otp: savedOtp, expiresAt, used } = otpDocSnapshot.data();
+
+    // Check if the OTP has been marked as used
+    if (used) {
+      return res.status(400).json({
+        message: "This OTP has already been used. Please request a new one.",
+      });
+    }
+
+    // Check if the OTP has expired
+    if (Date.now() > expiresAt) {
+      await deleteDoc(otpDocRef); // Clean up expired OTP
+      return res
+        .status(400)
+        .json({ message: "OTP expired. Please request a new one." });
+    }
+
+    // Validate the OTP
+    if (savedOtp !== otp) {
+      return res.status(401).json({ message: "Invalid OTP" });
+    }
+
+    // Mark the OTP as used and generate a reset token
+    const resetToken = generateResetToken(); // Create a secure random token
+    const resetTokenExpiresAt = Date.now() + 5 * 60 * 1000; // Token valid for 5 minutes
+
+    await setDoc(
+      otpDocRef,
+      { used: true, resetToken, resetTokenExpiresAt },
+      { merge: true }
+    );
+
+    res.status(200).json({
+      message:
+        "OTP verified successfully. Use the reset token to reset your password.",
+      resetToken,
+    });
+  } catch (error) {
+    console.error("Error verifying OTP:", error);
+    res.status(500).json({ message: "Failed to verify OTP" });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { email, newPassword, token } = req.body; // Accept a token with the request
+
+  try {
+    // Check if the token exists and is valid
+    const otpDocRef = doc(db, "otps", email);
+    const otpDocSnapshot = await getDoc(otpDocRef);
+
+    if (!otpDocSnapshot.exists()) {
+      return res.status(403).json({ message: "Unauthorized request" });
+    }
+
+    const { resetToken, resetTokenExpiresAt } = otpDocSnapshot.data();
+
+    // Validate token
+    if (token !== resetToken || Date.now() > resetTokenExpiresAt) {
+      return res
+        .status(403)
+        .json({ message: "Invalid or expired reset token" });
+    }
+
+    // Check if user exists
+    const userQuery = query(
+      collection(db, "users"),
+      where("email", "==", email)
+    );
+    const querySnapshot = await getDocs(userQuery);
+
+    if (querySnapshot.empty) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Hash the new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update user password in the database
+    const userDocRef = doc(db, "users", email);
+    await setDoc(userDocRef, { password: hashedPassword }, { merge: true });
+
+    // Clean up the OTP reset token to prevent reuse
+    await deleteDoc(otpDocRef);
+
+    res.status(200).json({ message: "Password reset successfully" });
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    res.status(500).json({ message: "Failed to reset password" });
+  }
+};
+
 module.exports = {
   signup,
   completeProfile,
@@ -436,4 +627,7 @@ module.exports = {
   verifyOtp,
   refreshAccessToken,
   logout,
+  forgetPassword,
+  verifyOtpForForgetPassword,
+  resetPassword,
 };
