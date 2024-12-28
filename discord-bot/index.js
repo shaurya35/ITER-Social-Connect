@@ -26,11 +26,30 @@ app.use(
     credentials: true,
   })
 );
+app.use(express.json());
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const GUILD_ID = process.env.GUILD_ID;
-const CATEGORY_ID = process.env.CATEGORY_ID;
+
+const CHANNEL_IDS = [
+  "1322701242509693070", //1
+  "1322701265163259935", //2
+  "1322701281793675435", //3
+  "1322701996989354016", //4
+  "1322702013724758109", //5
+  "1322702031529705542", //6
+  "1322702987596140544", //7
+  "1322703008022270153", //8
+  "1322703021280460883", //9
+  "1322703036866625597", //10
+  "1322703053803098215", //11
+  "1322703066457178206", //12
+  "1322703107309961347", //13
+  "1322703461006966895", //14
+  "1322703529546088569", //15
+];
+let channelIndex = 0;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -54,9 +73,7 @@ app.post("/upload", upload.single("photo"), async (req, res) => {
     return res.status(400).json({ error: "No file uploaded!" });
   }
 
-  const { username } = req.body;
   const filePath = req.file.path;
-  console.log(`Username: ${username}`);
   console.log(`Uploaded file details:`, req.file);
 
   try {
@@ -64,16 +81,16 @@ app.post("/upload", upload.single("photo"), async (req, res) => {
     const guild = await client.guilds.fetch(GUILD_ID);
     console.log("Guild fetched successfully:", guild.name);
 
-    console.log(`Creating a channel for user: ${username}`);
-    const channel = await guild.channels.create({
-      name: `profile-${username}`,
-      type: 0,
-      parent: CATEGORY_ID,
-    });
-    console.log(`Channel created successfully: ${channel.name}`);
+    // round-robin
+    const selectedChannelId = CHANNEL_IDS[channelIndex];
+    channelIndex = (channelIndex + 1) % CHANNEL_IDS.length;
 
-    console.log("Waiting for the channel to be fully created...");
-    await sleep(2000);
+    console.log(`Using channel ID: ${selectedChannelId}`);
+    const channel = await guild.channels.fetch(selectedChannelId);
+
+    if (!channel) {
+      throw new Error(`Channel with ID ${selectedChannelId} not found`);
+    }
 
     console.log("Uploading the photo to the channel...");
     const attachment = new AttachmentBuilder(filePath);
@@ -101,7 +118,7 @@ app.post("/upload", upload.single("photo"), async (req, res) => {
     fs.unlinkSync(filePath);
     console.log("Temporary file deleted:", filePath);
 
-    res.status(200).json({ username, imageUrl });
+    res.status(200).json({ imageUrl });
   } catch (error) {
     console.error("Error uploading photo:", error);
 
