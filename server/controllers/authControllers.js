@@ -27,7 +27,7 @@ const isValidUrl = (url, platform) => {
   const regexes = {
     linkedin: /^https?:\/\/(www\.)?linkedin\.com\/.*$/i,
     github: /^https?:\/\/(www\.)?github\.com\/.*$/i,
-    x: /^https?:\/\/(www\.)?x\.com\/.*$/i,
+    x: /^https?:\/\/(www\.)?(x\.com|twitter\.com)\/.*$/i, // Allow both x.com and twitter.com
   };
   return regexes[platform]?.test(url);
 };
@@ -233,7 +233,17 @@ const verifyOtp = async (req, res) => {
 
 const completeProfile = async (req, res) => {
   try {
-    const { email, password, name, about, github, linkedin, x } = req.body;
+    const {
+      email,
+      password,
+      name,
+      about,
+      github,
+      linkedin,
+      x,
+      profilePicture,
+      discordUrl,
+    } = req.body;
 
     if (!email || !password) {
       return res
@@ -244,10 +254,12 @@ const completeProfile = async (req, res) => {
     // Validate request body with Zod schema
     const validationResult = completeProfileSchema.safeParse(req.body);
     if (!validationResult.success) {
-      // Check if the error is specifically about `name` or `about`
       const missingFields = validationResult.error.errors
         .filter(
-          (error) => error.path.includes("name") || error.path.includes("about")
+          (error) =>
+            error.path.includes("name") ||
+            error.path.includes("about") ||
+            error.path.includes("profilePicture")
         )
         .map((error) => error.path[0])
         .join(", ");
@@ -313,6 +325,7 @@ const completeProfile = async (req, res) => {
       github: github || "",
       linkedin: linkedin || "",
       x: x || "",
+      profilePicture: profilePicture || "",
       profileCompleted: true,
     });
 

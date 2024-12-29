@@ -1,14 +1,18 @@
 const { doc, getDoc, updateDoc } = require("firebase/firestore");
 const db = require("../firebase/firebaseConfig");
-const { changePasswordSchema } = require("../validations/userValidations");
+const {
+  changePasswordSchema,
+  updateProfileSchema,
+} = require("../validations/userValidations");
 const bcrypt = require("bcrypt");
 
 const isValidUrl = (url, platform) => {
   const regexes = {
     linkedin: /^https?:\/\/(www\.)?linkedin\.com\/.*$/i,
     github: /^https?:\/\/(www\.)?github\.com\/.*$/i,
-    x: /^https?:\/\/(www\.)?x\.com\/.*$/i,
+    x: /^https?:\/\/(www\.)?(x\.com|twitter\.com)\/.*$/i, // Allow both x.com and twitter.com
   };
+
   return regexes[platform]?.test(url);
 };
 
@@ -20,25 +24,44 @@ const updateProfile = async (req, res) => {
       return res.status(401).json({ message: "Invalid token" });
     }
 
-    // Retrieve updated profile details from the request body
-    const { name, about, github, linkedin, x } = req.body;
+    // Validate the request body
+    const validatedData = updateProfileSchema.safeParse(req.body);
 
-    // Check if any fields are provided for the update
-    if (!name && !about && !github && !linkedin && !x) {
+    if (!validatedData.success) {
+      return res.status(400).json({
+        message: "Validation error",
+        errors: validatedData.error.errors,
+      });
+    }
+
+    const {
+      name,
+      about,
+      email,
+      password,
+      github,
+      linkedin,
+      x,
+      profilePicture,
+    } = validatedData.data;
+
+    // Check if at least one field is provided
+    if (
+      !name &&
+      !about &&
+      !email &&
+      !password &&
+      !github &&
+      !linkedin &&
+      !x &&
+      !profilePicture
+    ) {
       return res
         .status(400)
         .json({ message: "At least one field must be provided to update" });
     }
 
-    // Query Firestore to check if the user exists
-    const userRef = doc(db, "users", userId);
-    const userDoc = await getDoc(userRef);
-
-    if (!userDoc.exists()) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Validate social media links (if provided)
+    // Validate URLs for `github`,`linkedin` and `x`
     if (linkedin && !isValidUrl(linkedin, "linkedin")) {
       return res.status(400).json({ message: "Invalid LinkedIn URL" });
     }
@@ -49,15 +72,26 @@ const updateProfile = async (req, res) => {
       return res.status(400).json({ message: "Invalid X URL" });
     }
 
-    // Update user profile in Firestore
+    // Query Firestore to check if the user exists
+    const userRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Prepare update data
     const updateData = {
       ...(name && { name }),
       ...(about && { about }),
+      ...(email && { email }),
       ...(github && { github }),
       ...(linkedin && { linkedin }),
       ...(x && { x }),
+      ...(profilePicture && { profilePicture }),
     };
 
+    // Update the user's profile
     await updateDoc(userRef, updateData);
 
     // Fetch updated user data
@@ -115,11 +149,9 @@ const changePassword = async (req, res) => {
       userDoc.data().password
     );
     if (newPasswordMatch) {
-      return res
-        .status(400)
-        .json({
-          message: "New password cannot be the same as the current password",
-        });
+      return res.status(400).json({
+        message: "New password cannot be the same as the current password",
+      });
     }
 
     const saltRounds = 10;

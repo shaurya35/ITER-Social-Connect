@@ -85,6 +85,7 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/settings", settingRoutes);
 //Search routes
 app.use("/api/search", searchRoutes);
+//Report routtes
 app.use("/api/report", reportRoutes);
 
 // --- Start the Server ---
