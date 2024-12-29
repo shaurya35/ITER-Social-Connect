@@ -3,9 +3,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import NextImage from "next/image";
-import { useAuth } from "@/contexts/AuthProvider";
+import { useProfile } from "@/contexts/ProfileContext"
 import { useRouter } from "next/navigation"
-import axios from "axios";
 import {
   BookMarked,
   FileText,
@@ -19,42 +18,8 @@ import {
 } from "lucide-react";
 
 export default function LeftSidebar() {
-  const [username, setUsername] = useState("Explorer");
-  const [connections, setConnections] = useState("No Connections");
-  const [loading, setLoading] = useState(true); 
-  const { user, accessToken } = useAuth();
+  const { profile, loading } = useProfile();
   const router = useRouter();
-
-  useEffect(() => {
-    if (user && accessToken) {
-      setLoading(true);
-      axios
-        .get("http://localhost:8080/api/profile", {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        })
-        .then((response) => {
-          const { name, connectionsCount } = response.data;
-          setUsername(name || "Explorer");
-          setConnections(
-            connectionsCount > 0
-              ? `${connectionsCount} Connections`
-              : "No Connections"
-          );
-        })
-        .catch((error) => {
-          console.error("Error fetching user details:", error);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else {
-      setUsername("Explorer");
-      setConnections("No Connections");
-      setLoading(false); 
-    }
-  }, [user, accessToken]);
 
   const menuItems = [
     { icon: User, label: "Profile", route: "/profile" },
@@ -98,7 +63,7 @@ export default function LeftSidebar() {
                   <div className="w-full h-full bg-gray-300 dark:bg-gray-700 animate-pulse rounded-full transition-all duration-700"></div>
                 ) : (
                   <NextImage
-                    src="https://media.discordapp.net/attachments/1315342834278207540/1315347576207179818/3.jpg?ex=67590ea4&is=6757bd24&hm=bb7466b04c2baa14bf93ec2d056530e0cfc2c5346c8222b1c57bd59299e785e7&=&format=webp&width=460&height=465"
+                    src={ profile?.profilePicture || "https://res.cloudinary.com/dkjsi6iwm/image/upload/f_auto,q_auto/profile"}
                     alt="Avatar"
                     priority
                     fill
@@ -117,7 +82,7 @@ export default function LeftSidebar() {
                 </div>
               ) : (
                 <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100 ">
-                  {username}
+                  {profile?.name || "Explorer"}
                 </h2>
               )}
               {/* Connections */}
@@ -127,7 +92,9 @@ export default function LeftSidebar() {
                 </div>
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {connections}
+                   {profile?.connectionsCount
+                    ? `${profile.connectionsCount} Connections`
+                    : "No Connections"}
                 </p>
               )}
             </div>

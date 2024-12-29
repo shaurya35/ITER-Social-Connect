@@ -2,6 +2,7 @@ import localFont from "next/font/local";
 import { Poppins } from "next/font/google";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthProvider";
+import { ProfileProvider } from "@/contexts/ProfileContext";
 import Navbar from "@/components/home/navbar/Navbar";
 import "./globals.css";
 
@@ -35,10 +36,12 @@ export default function RootLayout({ children }) {
       >
         <ThemeProvider>
           <AuthProvider>
+            <ProfileProvider>
             <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
               <Navbar />
               {children}
             </div>
+            </ProfileProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
