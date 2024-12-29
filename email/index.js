@@ -26,7 +26,7 @@ const attachments = imageFiles.map((file) => ({
   cid: path.basename(file, path.extname(file)), // Use the filename without extension as cid
 }));
 
-// Function to send personalized HTML emails
+// Function to send personalized HTML emails with rate limiting (setTimeout)
 const sendEmails = async (emailFilePath, subjectTemplate, htmlFilePath) => {
   try {
     // Read the Excel file
@@ -56,8 +56,12 @@ const sendEmails = async (emailFilePath, subjectTemplate, htmlFilePath) => {
     // Read the HTML file
     const htmlTemplate = fs.readFileSync(htmlFilePath, "utf8");
 
-    // Send personalized emails
-    for (const row of sheetData) {
+    // Initialize the counter for emails sent
+    let emailCount = 0;
+
+    // Send personalized emails with rate-limiting (delay)
+    for (let i = 0; i < sheetData.length; i++) {
+      const row = sheetData[i];
       const recipientEmail = row["Email Address"];
       const fullName = row["Full Name"];
       const yearOfStudy = row["What is your current year of study? "].trim();
@@ -82,16 +86,29 @@ const sendEmails = async (emailFilePath, subjectTemplate, htmlFilePath) => {
         attachments,
       };
 
-      // Send email
+      // Send email with a delay using setTimeout
       try {
-        await transporter.sendMail(mailOptions);
-        console.log(`Email sent to: ${recipientEmail}`);
+        await new Promise((resolve) => {
+          setTimeout(async () => {
+            try {
+              await transporter.sendMail(mailOptions);
+              emailCount++; // Increment email sent counter
+              console.log(`Email sent to: ${recipientEmail} ${emailCount}`);
+            } catch (emailError) {
+              console.error(
+                `Failed to send email to ${recipientEmail}:`,
+                emailError
+              );
+            }
+            resolve();
+          }, i * 2000); // 2000 ms delay (2 seconds) between emails
+        });
       } catch (emailError) {
         console.error(`Failed to send email to ${recipientEmail}:`, emailError);
       }
     }
 
-    console.log("All emails sent successfully!");
+    console.log("\nAll emails sent successfully!");
   } catch (error) {
     console.error("Error sending emails:", error);
   }

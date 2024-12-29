@@ -14,6 +14,7 @@ const {
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const db = require("../firebase/firebaseConfig");
+const bcrypt = require("bcrypt")
 
 // --- Generates Access Token for 15min ---
 const generateAccessToken = (user) => {
@@ -44,26 +45,34 @@ const adminLogin = async (req, res) => {
 
     let isValidAdmin = false;
 
-    adminSnapshot.forEach((doc) => {
+    for (const doc of adminSnapshot.docs) {
       const adminData = doc.data();
-      if (
-        email === adminData.ADMIN_EMAIL &&
-        password === adminData.ADMIN_PASSWORD
-      ) {
-        isValidAdmin = true;
+
+      if (email === adminData.ADMIN_EMAIL) {
+        // Compare the provided password with the hashed password in the database
+        const isMatch = await bcrypt.compare(
+          password,
+          adminData.ADMIN_PASSWORD
+        );
+
+        if (isMatch) {
+          isValidAdmin = true;
+          break;
+        }
       }
-    });
+    }
 
     if (isValidAdmin) {
       // Generate tokens (you can use your existing token functions here)
       const accessToken = generateAccessToken({ email });
       const refreshToken = generateRefreshToken({ email });
 
+      // Set refresh token as an HTTP-only cookie
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
-        maxAge: 30 * 24 * 60 * 60 * 1000,
+        secure: process.env.NODE_ENV === "production", // Only use secure cookies in production
+        sameSite: "Strict", // Prevent CSRF attacks
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
 
       return res.status(200).json({
@@ -259,12 +268,10 @@ const deleteOtps = async (req, res) => {
     }
 
     // Send a success response with the total count of deleted OTPs
-    res
-      .status(200)
-      .json({
-        message: "Expired OTPs deleted successfully",
-        deletedCount: totalDeletedCount,
-      });
+    res.status(200).json({
+      message: "Expired OTPs deleted successfully",
+      deletedCount: totalDeletedCount,
+    });
   } catch (error) {
     console.error("Error deleting expired OTPs:", error);
     res.status(500).json({ error: "Failed to delete expired OTPs" });

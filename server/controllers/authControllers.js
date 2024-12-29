@@ -306,7 +306,6 @@ const completeProfile = async (req, res) => {
       return res.status(400).json({ message: "Invalid X URL" });
     }
 
-    console.log("check");
     // Update user profile in Firestore
     await updateDoc(userRef, {
       name,

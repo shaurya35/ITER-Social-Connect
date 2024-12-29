@@ -63,8 +63,9 @@ const adminRoutes = require("./routes/adminRoutes");
 const connectionRoutes = require("./routes/connectionRoutes");
 const commentRoutes = require("./routes/commentRoutes");
 const profileRoutes = require("./routes/profileRoutes"); // New profile route
-const settingRoutes = require("./routes/settingRoutes"); // New profile route
-const searchRoutes = require("./routes/searchRoutes"); // New profile route
+const settingRoutes = require("./routes/settingRoutes");
+const searchRoutes = require("./routes/searchRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 
 // --- Use Routes ---
 app.use("/api/auth", authRoutes);
@@ -84,6 +85,7 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/settings", settingRoutes);
 //Search routes
 app.use("/api/search", searchRoutes);
+app.use("/api/report", reportRoutes);
 
 // --- Start the Server ---
 app.listen(port, () => {
