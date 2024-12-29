@@ -45,6 +45,7 @@ export default function MainFeed() {
   const [newPostContent, setNewPostContent] = useState("");
   const [username, setUsername] = useState("");
   const [fetchingUser, setFetchingUser] = useState(true);
+  const [isPosting, setIsPosting] = useState(false); // Preloader for post submission
   const { accessToken, user } = useAuth();
 
   const observer = useRef();
@@ -70,7 +71,7 @@ export default function MainFeed() {
         .finally(() => {
           setFetchingUser(false);
         });
-    }else{
+    } else {
       setFetchingUser(false);
     }
   }, [user, accessToken]);
@@ -80,7 +81,7 @@ export default function MainFeed() {
 
     setLoading(true);
     try {
-      // await new Promise(resolve => setTimeout(resolve, 10000));
+      await new Promise(resolve => setTimeout(resolve, 10000));
       const response = await axios.get(`http://localhost:8080/api/feed`, {
         params: { page, limit: 10 },
         withCredentials: true,
@@ -112,16 +113,17 @@ export default function MainFeed() {
   );
 
   const handlePostSubmit = async () => {
-    if (!newPostContent.trim()) return; 
+    if (!newPostContent.trim()) return;
+
+    setIsPosting(true);
 
     const tempPost = {
       id: "temp",
-      userName: username, 
+      userName: username,
       content: newPostContent,
       createdAt: new Date().toISOString(),
     };
 
-    setPosts((prevPosts) => [tempPost, ...prevPosts]);
     setNewPostContent("");
 
     try {
@@ -138,15 +140,15 @@ export default function MainFeed() {
 
       const { postId } = response.data;
 
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
-          post.id === "temp" ? { ...post, id: postId } : post
-        )
-      );
+      setPosts((prevPosts) => [
+        { ...tempPost, id: postId },
+        ...prevPosts.filter((post) => post.id !== "temp"),
+      ]);
     } catch (err) {
       console.error("Error creating new post:", err);
-      setPosts((prevPosts) => prevPosts.filter((post) => post.id !== "temp"));
       alert("Failed to post. Please try again.");
+    } finally {
+      setIsPosting(false);
     }
   };
 
@@ -200,9 +202,9 @@ export default function MainFeed() {
                   size="sm"
                   className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
                   onClick={handlePostSubmit}
-                  disabled={fetchingUser} 
+                  disabled={fetchingUser || isPosting}
                 >
-                  {fetchingUser ? "Loading..." : "Post"}
+                  {isPosting ? "Posting..." : fetchingUser ? "Loading..." : "Post"}
                 </Button>
               </div>
             </div>
@@ -210,8 +212,25 @@ export default function MainFeed() {
         </CardContent>
       </Card>
 
-     {/* Preloader */}
-     {loading && (
+      {/* Preloader for a single post */}
+      {isPosting && (
+        <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-700 animate-pulse">
+          <CardHeader className="flex-row items-center gap-4 p-4">
+            <div className="rounded-full bg-gray-300 dark:bg-gray-700 h-12 w-12"></div>
+            <div>
+              <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-24 mb-2"></div>
+              <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-16"></div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 py-2">
+            <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-full mb-2"></div>
+            <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Initial Preloader */}
+      {loading && (
         <div className="space-y-4">
           {[...Array(3)].map((_, idx) => (
             <Card
