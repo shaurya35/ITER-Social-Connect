@@ -294,7 +294,7 @@ export default function MainFeed() {
             </CardHeader>
 
             <CardContent className="px-4 py-2">
-              <p className="text-gray-700 dark:text-gray-300">{post.content}</p>
+              <p className="text-gray-700 dark:text-gray-300 break-words">{post.content}</p>
             </CardContent>
             <CardFooter className="border-t border-gray-200 dark:border-gray-700 p-2">
               <div className="flex justify-between w-full">
