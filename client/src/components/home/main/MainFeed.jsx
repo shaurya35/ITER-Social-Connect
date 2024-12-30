@@ -328,7 +328,7 @@ export default function MainFeed() {
         );
       })}
 
-      {!hasMore && <p className="flex justify-center align-center">No more posts to load.</p>}
+      {!hasMore && <p className="flex justify-center align-center ">No more posts to load.</p>}
     </div>
   );
 }
