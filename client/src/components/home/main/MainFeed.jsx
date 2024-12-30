@@ -81,7 +81,7 @@ export default function MainFeed() {
 
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      // await new Promise(resolve => setTimeout(resolve, 10000));
       const response = await axios.get(`http://localhost:8080/api/feed`, {
         params: { page, limit: 10 },
         withCredentials: true,
@@ -328,7 +328,7 @@ export default function MainFeed() {
         );
       })}
 
-      {!hasMore && <p>No more posts to load.</p>}
+      {!hasMore && <p className="flex justify-center align-center">No more posts to load.</p>}
     </div>
   );
 }
