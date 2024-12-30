@@ -9,7 +9,7 @@ const {
   deleteDoc,
   getDoc,
   orderBy,
-  writeBatch,
+  writeBatch,updateDoc
 } = require("firebase/firestore");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
@@ -152,8 +152,10 @@ const handleRequest = async (req, res) => {
         password: requestData.password,
         regNo: requestData.regNo,
         discordUrl: requestData.discordUrl,
-        approved: true,
-        profileCompleted: false,
+        approved: true, // Set as approved by default
+        profileCompleted: false, // Set as incomplete by default
+        isContributor: false, // New field for contributor status
+        isBetaTester: false, // New field for beta tester status
       });
 
       // Send approval email
@@ -473,6 +475,54 @@ const getUserReportDetails = async (req, res) => {
   }
 };
 
+const updateUserBadges = async (req, res) => {
+  const { emails, isContributor, isBetaTester } = req.body;
+
+  if (!emails || !Array.isArray(emails) || emails.length === 0) {
+    return res
+      .status(400)
+      .json({ message: "Please provide a valid list of emails." });
+  }
+
+  if (typeof isContributor !== "boolean" || typeof isBetaTester !== "boolean") {
+    return res
+      .status(400)
+      .json({
+        message: "isContributor and isBetaTester must be boolean values.",
+      });
+  }
+
+  try {
+    const usersRef = collection(db, "users");
+
+    for (const email of emails) {
+      const userQuery = query(usersRef, where("email", "==", email));
+      const userSnapshot = await getDocs(userQuery);
+
+      if (userSnapshot.empty) {
+        return res
+          .status(404)
+          .json({ message: `User with email ${email} not found.` });
+      }
+
+      const userDoc = userSnapshot.docs[0];
+      const userId = userDoc.id; // Get the userId from Firestore document ID
+
+      // Update user fields
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, {
+        isContributor,
+        isBetaTester,
+      });
+    }
+
+    return res.status(200).json({ message: "Badges updated successfully." });
+  } catch (error) {
+    console.error("Error updating badges:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   adminLogin,
   pendingRequest,
@@ -481,4 +531,5 @@ module.exports = {
   getReports,
   getPostReportDetails,
   getUserReportDetails,
+  updateUserBadges,
 };
