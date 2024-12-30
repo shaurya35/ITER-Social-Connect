@@ -14,7 +14,7 @@ const {
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const db = require("../firebase/firebaseConfig");
-const bcrypt = require("bcrypt")
+const bcrypt = require("bcrypt");
 
 // --- Generates Access Token for 15min ---
 const generateAccessToken = (user) => {
@@ -278,4 +278,207 @@ const deleteOtps = async (req, res) => {
   }
 };
 
-module.exports = { adminLogin, pendingRequest, handleRequest, deleteOtps };
+const getReports = async (req, res) => {
+  try {
+    // Fetch reports ordered by the 'createdAt' timestamp in ascending order
+    const reportsCollection = collection(db, "reports");
+    const reportsQuery = query(reportsCollection, orderBy("createdAt", "asc"));
+    const reportsSnapshot = await getDocs(reportsQuery);
+
+    const reports = reportsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    // Count the total number of reports
+    const totalReports = reports.length;
+
+    res.status(200).json({ totalReports, reports });
+  } catch (error) {
+    console.error("Error fetching reports:", error.message);
+    res.status(500).json({ message: "Failed to fetch reports." });
+  }
+};
+
+const getPostReportDetails = async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    if (!postId) {
+      return res
+        .status(400)
+        .json({ message: "postId is required in the request." });
+    }
+
+    console.log("Fetching reports for postId:", postId);
+
+    // Query the 'reports' collection for reports on the given post
+    const reportsQuery = query(
+      collection(db, "reports"),
+      where("postId", "==", postId)
+    );
+    const reportsSnapshot = await getDocs(reportsQuery);
+
+    if (reportsSnapshot.empty) {
+      return res
+        .status(404)
+        .json({ message: "No reports found for this post." });
+    }
+
+    const reports = [];
+    const userFetchPromises = [];
+    let totalReports = 0;
+
+    reportsSnapshot.forEach((docSnapshot) => {
+      const report = docSnapshot.data();
+      report.id = docSnapshot.id;
+      totalReports++;
+      reports.push(report);
+
+      // Fetch the details of the user who reported
+      const userDocRef = doc(db, "users", report.reportedBy);
+      userFetchPromises.push(getDoc(userDocRef));
+    });
+
+    const userDocs = await Promise.all(userFetchPromises);
+
+    const detailedReports = reports.map((report, index) => {
+      const userDoc = userDocs[index];
+      return {
+        ...report,
+        reportedByUser: userDoc.exists()
+          ? { id: userDoc.id, ...userDoc.data() }
+          : null,
+      };
+    });
+
+    // Check if the post exists
+    const postDocRef = doc(db, "posts", postId);
+    const postDoc = await getDoc(postDocRef);
+
+    // Log if the post exists or not
+    console.log("Post exists:", postDoc.exists());
+
+    const postDetails = postDoc.exists()
+      ? { id: postDoc.id, ...postDoc.data() }
+      : null;
+
+    const detailedReport = {
+      postDetails,
+      totalReports,
+      reports: detailedReports.map((report) => ({
+        reason: report.reason,
+        commentBy: report.reportedByUser
+          ? report.reportedByUser.name
+          : "Unknown User",
+        userId: report.reportedByUser
+          ? report.reportedByUser.id
+          : "Unknown User ID",
+        createdAt: report.createdAt || "Unknown Date",
+      })),
+    };
+
+    res.status(200).json({ detailedReport });
+  } catch (error) {
+    console.error("Error fetching report details:", error.message);
+    res.status(500).json({ message: "Failed to fetch report details." });
+  }
+};
+
+const getUserReportDetails = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ message: "userId is required in the request." });
+    }
+
+    console.log("Fetching reports for userId:", userId);
+
+    // Query the 'reports' collection for reports involving the given user
+    const reportsQuery = query(
+      collection(db, "reports"),
+      where("userIdToReport", "==", userId)
+    );
+    const reportsSnapshot = await getDocs(reportsQuery);
+
+    if (reportsSnapshot.empty) {
+      return res
+        .status(404)
+        .json({ message: "No reports found for this user." });
+    }
+
+    const reports = [];
+    const userFetchPromises = [];
+    let totalReports = 0;
+
+    reportsSnapshot.forEach((docSnapshot) => {
+      const report = docSnapshot.data();
+      report.id = docSnapshot.id;
+      totalReports++;
+      reports.push(report);
+
+      // Fetch the details of the user who reported
+      const userDocRef = doc(db, "users", report.reportedBy);
+      userFetchPromises.push(getDoc(userDocRef));
+    });
+
+    const userDocs = await Promise.all(userFetchPromises);
+
+    const detailedReports = reports.map((report, index) => {
+      const userDoc = userDocs[index];
+      return {
+        ...report,
+        reportedByUser: userDoc.exists()
+          ? { id: userDoc.id, ...userDoc.data() }
+          : null,
+      };
+    });
+
+    // Fetch details of the user being reported
+    const reportedUserDocRef = doc(db, "users", userId);
+    const reportedUserDoc = await getDoc(reportedUserDocRef);
+
+    const reportedUserDetails = reportedUserDoc.exists()
+      ? {
+          id: reportedUserDoc.id,
+          email: reportedUserDoc.data().email,
+          name: reportedUserDoc.data().name,
+          connectionsCount: reportedUserDoc.data().connectionsCount,
+          about: reportedUserDoc.data().about,
+        }
+      : {};
+
+    const detailedReport = {
+      reportedUserDetails,
+      totalReports,
+      reports: detailedReports.map((report) => ({
+        reason: report.reason,
+        reportedBy: report.reportedByUser
+          ? report.reportedByUser.name
+          : "Unknown User",
+        reporterId: report.reportedByUser
+          ? report.reportedByUser.id
+          : "Unknown User ID",
+        createdAt: report.createdAt || "Unknown Date",
+      })),
+    };
+
+    res.status(200).json({ detailedReport });
+  } catch (error) {
+    console.error("Error fetching user report details:", error.message);
+    res.status(500).json({ message: "Failed to fetch user report details." });
+  }
+};
+
+module.exports = {
+  adminLogin,
+  pendingRequest,
+  handleRequest,
+  deleteOtps,
+  getReports,
+  getPostReportDetails,
+  getUserReportDetails,
+};

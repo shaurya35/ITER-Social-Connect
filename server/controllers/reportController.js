@@ -69,6 +69,13 @@ const reportUser = async (req, res) => {
     return res.status(401).json({ message: "Unauthorized: User ID missing." });
   }
 
+  // Prevent the user from reporting themselves
+  if (userId === userIdToReport) {
+    return res
+      .status(400)
+      .json({ message: "You cannot report your own profile." });
+  }
+
   try {
     // Check if the user has already reported this user
     const userReportsCollection = collection(db, "reports");
