@@ -1,7 +1,8 @@
 "use client";
-import NextImage from "next/image";
 import { useEffect, useState, useRef, useCallback } from "react";
+import NextImage from "next/image";
 import axios from "axios";
+import PostsPreloader from "@/components/preloaders/PostsPreloader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Image, MessageCircle, Share2, ThumbsUp } from "lucide-react";
@@ -45,7 +46,7 @@ export default function MainFeed() {
   const [newPostContent, setNewPostContent] = useState("");
   const [username, setUsername] = useState("");
   const [fetchingUser, setFetchingUser] = useState(true);
-  const [isPosting, setIsPosting] = useState(false); // Preloader for post submission
+  const [isPosting, setIsPosting] = useState(false);
   const { accessToken, user } = useAuth();
 
   const observer = useRef();
@@ -204,7 +205,11 @@ export default function MainFeed() {
                   onClick={handlePostSubmit}
                   disabled={fetchingUser || isPosting}
                 >
-                  {isPosting ? "Posting..." : fetchingUser ? "Loading..." : "Post"}
+                  {isPosting
+                    ? "Posting..."
+                    : fetchingUser
+                    ? "Loading..."
+                    : "Post"}
                 </Button>
               </div>
             </div>
@@ -230,28 +235,7 @@ export default function MainFeed() {
       )}
 
       {/* Initial Preloader */}
-      {loading && (
-        <div className="space-y-4">
-          {[...Array(3)].map((_, idx) => (
-            <Card
-              key={idx}
-              className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-700 animate-pulse"
-            >
-              <CardHeader className="flex-row items-center gap-4 p-4">
-                <div className="rounded-full bg-gray-300 dark:bg-gray-700 h-12 w-12"></div>
-                <div>
-                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-24 mb-2"></div>
-                  <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-16"></div>
-                </div>
-              </CardHeader>
-              <CardContent className="px-4 py-2">
-                <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-full mb-2"></div>
-                <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      {loading && <PostsPreloader />}
 
       {/* Error message */}
       {error && (
@@ -293,8 +277,10 @@ export default function MainFeed() {
               </div>
             </CardHeader>
 
-            <CardContent className="px-4 py-2">
-              <p className="text-gray-700 dark:text-gray-300 break-words">{post.content}</p>
+            <CardContent className="px-4 py-2 w-full">
+              <p className="text-gray-700 dark:text-gray-300 break-words">
+                {post.content}
+              </p>
             </CardContent>
             <CardFooter className="border-t border-gray-200 dark:border-gray-700 p-2">
               <div className="flex justify-between w-full">
@@ -328,7 +314,17 @@ export default function MainFeed() {
         );
       })}
 
-      {!hasMore && <p className="flex justify-center align-center ">No more posts to load.</p>}
+      {loading && hasMore && (
+        <div className="flex justify-center items-center py-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-600 dark:border-gray-300"></div>
+        </div>
+      )}
+
+      {!hasMore && (
+        <p className="flex justify-center align-center ">
+          No more posts to load.
+        </p>
+      )}
     </div>
   );
 }
