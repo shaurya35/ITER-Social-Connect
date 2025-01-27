@@ -2,8 +2,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import NextImage from "next/image";
-import { useProfile } from "@/contexts/ProfileContext"
-import { useRouter } from "next/navigation"
+import { useProfile } from "@/contexts/ProfileContext";
+import { useRouter } from "next/navigation";
 import {
   BookMarked,
   FileText,
@@ -14,6 +14,7 @@ import {
   MessageCircle,
   User,
   Bookmark,
+  Mail,
 } from "lucide-react";
 
 export default function LeftSidebar() {
@@ -22,16 +23,17 @@ export default function LeftSidebar() {
 
   const menuItems = [
     { icon: User, label: "Profile", route: "/profile" },
-    { icon: MessageCircle, label: "Messages",route: "/chat" },
-    { icon: Bell, label: "Notifications",route: "/notifications" },
-    { icon: Bookmark, label: "Saved Posts",route: "/bookmarks" },
-    { icon: Users, label: "Connections",route: "/connections" },
-    { icon: Settings, label: "Settings",route: "/settings" },
+    // { icon: MessageCircle, label: "Messages", route: "/chat" },
+    { icon: Bell, label: "Notifications", route: "/notifications" },
+    { icon: Mail, label: "Messages", route: "/chat" },
+    { icon: Bookmark, label: "Saved Posts", route: "/bookmarks" },
+    { icon: Users, label: "Connections", route: "/connections" },
+    { icon: Settings, label: "Settings", route: "/settings" },
   ];
 
   const handleNavigation = (route) => {
     router.push(route);
-  }
+  };
 
   return (
     <>
@@ -62,7 +64,10 @@ export default function LeftSidebar() {
                   <div className="w-full h-full bg-gray-300 dark:bg-gray-700 animate-pulse rounded-full transition-all duration-700"></div>
                 ) : (
                   <NextImage
-                    src={ profile?.profilePicture || "https://res.cloudinary.com/dkjsi6iwm/image/upload/f_auto,q_auto/profile"}
+                    src={
+                      profile?.profilePicture ||
+                      "https://res.cloudinary.com/dkjsi6iwm/image/upload/f_auto,q_auto/profile"
+                    }
                     alt="Avatar"
                     priority
                     fill
@@ -91,7 +96,7 @@ export default function LeftSidebar() {
                 </div>
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                   {profile?.connectionsCount
+                  {profile?.connectionsCount
                     ? `${profile.connectionsCount} Connections`
                     : "No Connections"}
                 </p>
@@ -119,7 +124,7 @@ export default function LeftSidebar() {
           {[
             { icon: FileText, label: "My Posts", route: "/profile" },
             { icon: Users, label: "Connections", route: "/connections" },
-            { icon: BookMarked, label: "Events", route: "/events"},
+            { icon: BookMarked, label: "Events", route: "/events" },
             { icon: Settings, label: "Settings", route: "/settings" },
           ].map((item, index) => (
             <Button
