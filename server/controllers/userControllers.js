@@ -40,7 +40,7 @@ const getAllUserPosts = async (req, res) => {
 const createUserPost = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { content } = req.body;
+    const { content, profilePicture } = req.body;
 
     if (!content || content.trim() === "") {
       return res.status(400).json({ error: "Post content cannot be empty" });
@@ -62,10 +62,11 @@ const createUserPost = async (req, res) => {
     // Save post to the `posts` collection
     const postDoc = await addDoc(collection(db, "posts"), {
       userId,
-      userName, // Include user's name
+      userName, 
       content,
+      profilePicture,
       createdAt: new Date().toISOString(),
-      likes: [], // Initialize likes as an empty array
+      likes: [], 
     });
 
     const postId = postDoc.id;

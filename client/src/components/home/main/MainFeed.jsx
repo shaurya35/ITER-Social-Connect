@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Image, MessageCircle, Share2, ThumbsUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthProvider";
+import { useProfile } from "@/contexts/ProfileContext";
 import {
   Card,
   CardContent,
@@ -42,17 +43,17 @@ export default function MainFeed() {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
-  const [isHydrated, setIsHydrated] = useState(false);
+  // const [isHydrated, setIsHydrated] = useState(false);
   const [newPostContent, setNewPostContent] = useState("");
   const [username, setUsername] = useState("");
   const [fetchingUser, setFetchingUser] = useState(true);
   const [isPosting, setIsPosting] = useState(false);
   const { accessToken, user } = useAuth();
-
+  const { profile } = useProfile();
   const observer = useRef();
 
   useEffect(() => {
-    setIsHydrated(true);
+    // setIsHydrated(true);
 
     if (user && accessToken) {
       setFetchingUser(true);
@@ -122,15 +123,18 @@ export default function MainFeed() {
       id: "temp",
       userName: username,
       content: newPostContent,
+      profilePicture: profile.profilePicture,
       createdAt: new Date().toISOString(),
     };
+
+    console.log(tempPost)
 
     setNewPostContent("");
 
     try {
       const response = await axios.post(
         "http://localhost:8080/api/user/post",
-        { content: newPostContent },
+        { profilePicture: profile.profilePicture , content: newPostContent },
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -153,15 +157,23 @@ export default function MainFeed() {
     }
   };
 
-  useEffect(() => {
-    if (isHydrated) {
-      fetchPosts();
-    }
-  }, [fetchPosts, isHydrated]);
+  // useEffect(() => {
+  //   if (isHydrated) {
+  //     fetchPosts();
+  //   }
+  // }, [fetchPosts, isHydrated]);
 
-  if (!isHydrated) {
-    return null;
-  }
+  // if (!isHydrated) {
+  //   return null;
+  // }
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  const delay = () => {
+    new Promise((resolve) => setTimeout(resolve, 10000));
+  };
 
   return (
     <div className="flex-1 w-full max-w-2xl mx-auto space-y-4">
@@ -169,20 +181,28 @@ export default function MainFeed() {
       <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200">
         <CardContent className="p-4">
           <div className="flex items-center gap-4">
-            <NextImage
-              src="https://media.discordapp.net/attachments/1315342834278207540/1316064105588719707/pf2.jpg?ex=6759afb6&is=67585e36&hm=c74adb8fccdc099b5567f29ee46e26df2bacbb440f53b16aaee5618e4927fad9&=&format=webp&width=460&height=465"
-              alt="Avatar"
-              width={40}
-              height={40}
-              className="rounded-full"
-              priority
-              style={{
-                objectFit: "cover",
-                objectPosition: "center",
-                width: "40px",
-                height: "40px",
-              }}
-            />
+            {loading ? (
+              <div className="bg-gray-300 dark:bg-gray-700 animate-pulse rounded-full transition-all duration-700 w-10 h-10"></div>
+            ) : (
+              <NextImage
+                src={
+                  profile?.profilePicture ||
+                  "https://media.discordapp.net/attachments/1315342834278207540/1316064105588719707/pf2.jpg?ex=6759afb6&is=67585e36&hm=c74adb8fccdc099b5567f29ee46e26df2bacbb440f53b16aaee5618e4927fad9&=&format=webp&width=460&height=465"   
+                }
+                alt="Avatar"
+                width={40}
+                height={40}
+                className="rounded-full"
+                priority
+                style={{
+                  objectFit: "cover",
+                  objectPosition: "center",
+                  width: "40px",
+                  height: "40px",
+                }}
+              />
+            )}
+
             <div className="flex-1">
               <Textarea
                 placeholder="What's on your mind?"
@@ -254,7 +274,7 @@ export default function MainFeed() {
           >
             <CardHeader className="flex-row items-center gap-4 p-4">
               <NextImage
-                src="https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"
+                src={post.profilePicture || "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"}
                 alt="Avatar"
                 width={48}
                 height={48}
