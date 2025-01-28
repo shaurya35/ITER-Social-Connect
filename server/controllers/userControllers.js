@@ -66,7 +66,7 @@ const createUserPost = async (req, res) => {
       content,
       profilePicture,
       createdAt: new Date().toISOString(),
-      likes: [], 
+      likes: 0, 
     });
 
     const postId = postDoc.id;

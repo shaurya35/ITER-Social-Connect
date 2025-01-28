@@ -2,10 +2,11 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import NextImage from "next/image";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 import PostsPreloader from "@/components/preloaders/PostsPreloader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Image, MessageCircle, Share2, ThumbsUp } from "lucide-react";
+import { Image, MessageCircleMore, Forward, ThumbsUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthProvider";
 import { useProfile } from "@/contexts/ProfileContext";
 import {
@@ -15,7 +16,8 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 
-const timeAgo = (dateString) => {
+// Time Handler for Posts
+export const timeAgo = (dateString) => {
   const date = new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now - date) / 1000);
@@ -43,41 +45,21 @@ export default function MainFeed() {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
-  // const [isHydrated, setIsHydrated] = useState(false);
   const [newPostContent, setNewPostContent] = useState("");
-  const [username, setUsername] = useState("");
   const [fetchingUser, setFetchingUser] = useState(true);
   const [isPosting, setIsPosting] = useState(false);
-  const { accessToken, user } = useAuth();
+  const { accessToken } = useAuth();
   const { profile } = useProfile();
+  const router = useRouter();
   const observer = useRef();
 
   useEffect(() => {
-    // setIsHydrated(true);
-
-    if (user && accessToken) {
-      setFetchingUser(true);
-      axios
-        .get("http://localhost:8080/api/profile", {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        })
-        .then((response) => {
-          const { name } = response.data;
-          setUsername(name || "Explorer");
-        })
-        .catch((error) => {
-          console.error("Error fetching user profile:", error);
-        })
-        .finally(() => {
-          setFetchingUser(false);
-        });
-    } else {
+    if (profile) {
       setFetchingUser(false);
     }
-  }, [user, accessToken]);
+  });
 
+  // fetch the feed
   const fetchPosts = useCallback(async () => {
     if (!hasMore) return;
 
@@ -98,6 +80,7 @@ export default function MainFeed() {
     }
   }, [page, hasMore]);
 
+  // infinite posts functionality
   const lastPostRef = useCallback(
     (node) => {
       if (loading) return;
@@ -114,6 +97,7 @@ export default function MainFeed() {
     [loading, hasMore]
   );
 
+  // post creation function
   const handlePostSubmit = async () => {
     if (!newPostContent.trim()) return;
 
@@ -121,20 +105,21 @@ export default function MainFeed() {
 
     const tempPost = {
       id: "temp",
-      userName: username,
+      userName: profile.name,
       content: newPostContent,
       profilePicture: profile.profilePicture,
+      likes: 0,
       createdAt: new Date().toISOString(),
     };
 
-    console.log(tempPost)
+    console.log(tempPost);
 
     setNewPostContent("");
 
     try {
       const response = await axios.post(
         "http://localhost:8080/api/user/post",
-        { profilePicture: profile.profilePicture , content: newPostContent },
+        { profilePicture: profile.profilePicture, content: newPostContent },
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -157,20 +142,12 @@ export default function MainFeed() {
     }
   };
 
-  // useEffect(() => {
-  //   if (isHydrated) {
-  //     fetchPosts();
-  //   }
-  // }, [fetchPosts, isHydrated]);
-
-  // if (!isHydrated) {
-  //   return null;
-  // }
-
+  // function to fetchPosts
   useEffect(() => {
     fetchPosts();
   }, [fetchPosts]);
 
+  // Artificial Delay for Testing
   const delay = () => {
     new Promise((resolve) => setTimeout(resolve, 10000));
   };
@@ -187,7 +164,7 @@ export default function MainFeed() {
               <NextImage
                 src={
                   profile?.profilePicture ||
-                  "https://media.discordapp.net/attachments/1315342834278207540/1316064105588719707/pf2.jpg?ex=6759afb6&is=67585e36&hm=c74adb8fccdc099b5567f29ee46e26df2bacbb440f53b16aaee5618e4927fad9&=&format=webp&width=460&height=465"   
+                  "https://media.discordapp.net/attachments/1315342834278207540/1316064105588719707/pf2.jpg?ex=6759afb6&is=67585e36&hm=c74adb8fccdc099b5567f29ee46e26df2bacbb440f53b16aaee5618e4927fad9&=&format=webp&width=460&height=465"
                 }
                 alt="Avatar"
                 width={40}
@@ -268,13 +245,17 @@ export default function MainFeed() {
 
         return (
           <Card
-            className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200"
+            className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
             key={uniqueKey}
             ref={index === posts.length - 1 ? lastPostRef : null}
+            onClick={() => router.push(`/post/${post.id}`)}
           >
-            <CardHeader className="flex-row items-center gap-4 p-4">
+            <CardHeader className="flex-row items-center gap-4 p-4 lg:px-5 lg:pt-4">
               <NextImage
-                src={post.profilePicture || "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"}
+                src={
+                  post.profilePicture ||
+                  "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"
+                }
                 alt="Avatar"
                 width={48}
                 height={48}
@@ -297,7 +278,7 @@ export default function MainFeed() {
               </div>
             </CardHeader>
 
-            <CardContent className="px-4 py-2 w-full">
+            <CardContent className="px-4 py-2 lg:px-5 lg:pb-5 w-full">
               <p className="text-gray-700 dark:text-gray-300 break-words">
                 {post.content}
               </p>
@@ -309,15 +290,15 @@ export default function MainFeed() {
                   size="sm"
                   className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
                 >
-                  <ThumbsUp className="h-4 w-4 mr-2" />
-                  Like
+                  <ThumbsUp className="h-4 w-4" />
+                  {post.likes}
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
                 >
-                  <MessageCircle className="h-4 w-4 mr-2" />
+                  <MessageCircleMore className="h-4 w-4" />
                   Comment
                 </Button>
                 <Button
@@ -325,7 +306,7 @@ export default function MainFeed() {
                   size="sm"
                   className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
                 >
-                  <Share2 className="h-4 w-4 mr-2" />
+                  <Forward className="h-4 w-4" />
                   Share
                 </Button>
               </div>
