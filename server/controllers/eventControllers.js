@@ -13,9 +13,9 @@ const {
   // --- Event Form Submission ---
   const createEvent = async (req, res) => {
     try {
-      const { eventTitle, eventType, eventAddress, eventDescription, eventStartTime, eventEndTime, eventLink } = req.body;
+      const { eventTitle, eventType, eventAddress, eventDescription, eventStartTime, eventEndTime, eventLink, eventContact } = req.body;
   
-      if (!eventTitle || !eventDescription || !eventType || !eventAddress || !eventStartTime || !eventEndTime || !eventLink) {
+      if (!eventTitle || !eventDescription || !eventContact ) {
         return res.status(400).json({ message: "All fields are required." });
       }
   
@@ -29,6 +29,7 @@ const {
         eventStartTime,
         eventEndTime,
         eventLink,
+        eventContact,
         createdAt: Date.now(),
       });
   
