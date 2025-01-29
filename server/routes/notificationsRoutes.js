@@ -4,10 +4,10 @@ const express = require("express");
 // --- Router Configs ---
 const router = express.Router();
 
-const { getnotification } = require("../controllers/notificationControllers.js");
+const { getNotification } = require("../controllers/notificationControllers.js");
 
 const { isLoggedIn } = require("../middlewares/authMiddlewares");
 
-router.get("/" , isLoggedIn , getnotification);
+router.get("/" , isLoggedIn , getNotification);
 
 module.exports = router;
