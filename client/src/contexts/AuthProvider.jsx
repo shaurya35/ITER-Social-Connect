@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
   const scheduleTokenRefresh = (token) => {
     const expiration = getTokenExpiration(token);
     const now = Date.now();
-    const delay = expiration - now - 5000; // Refresh 5 seconds before expiration
+    const delay = expiration - now - 5000; 
 
     if (delay > 0) {
       setTimeout(async () => {

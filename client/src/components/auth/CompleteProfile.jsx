@@ -18,9 +18,12 @@ export default function CompleteProfile() {
   const [about, setAbout] = useState("");
   const [github, setGithub] = useState("");
   const [linkedin, setLinkedin] = useState("");
-  const [xUrl, setXUrl] = useState("");
+  const [x, setX] = useState("");
+  const [profilePicture, setProfilePicture] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadComplete, setUploadComplete] = useState(false);
   const router = useRouter();
   const { login, user } = useAuth();
 
@@ -37,6 +40,14 @@ export default function CompleteProfile() {
     setError("");
 
     try {
+      if (isUploading && profilePicture) {
+        await uploadPhoto(profilePicture);
+      }
+
+      if (!uploadComplete) {
+        throw new Error("Failed to complete the upload. Please try again.");
+      }
+
       // Send the profile data to the backend
       const response = await axios.post(
         "http://localhost:8080/api/auth/complete-profile",
@@ -47,7 +58,8 @@ export default function CompleteProfile() {
           about,
           github,
           linkedin,
-          xUrl,
+          x,
+          profilePicture,
         },
         { withCredentials: true }
       );
@@ -71,6 +83,40 @@ export default function CompleteProfile() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const uploadPhoto = async (file) => {
+    setIsUploading(true);
+    setUploadComplete(false);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("photo", file);
+
+      const response = await fetch("http://localhost:3001/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload the photo.");
+      }
+
+      const { imageUrl } = await response.json();
+      setProfilePicture(imageUrl);
+      setUploadComplete(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleIdCardChange = (e) => {
+    const file = e.target.files ? e.target.files[0] : null;
+    setProfilePicture(file);
+    if (file) uploadPhoto(file);
   };
 
   return (
@@ -192,13 +238,43 @@ export default function CompleteProfile() {
             X (Twitter) URL
           </Label>
           <Input
-            id="xUrl"
+            id="x"
             type="url"
-            value={xUrl}
-            onChange={(e) => setXUrl(e.target.value)}
+            value={x}
+            onChange={(e) => setX(e.target.value)}
             className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
           />
         </div>
+
+        <div>
+            <Label
+              htmlFor="idCard"
+              className="text-gray-700 dark:text-gray-300"
+            >
+              Profile Photo
+            </Label>
+            <div className="relative">
+              <Input
+                id="idCard"
+                type="file"
+                accept="image/*"
+                required
+                onChange={handleIdCardChange}
+                disabled={isUploading && !error}
+                className={`mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 ${
+                  isUploading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                // className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 
+                //   opacity-50 cursor-not-allowed" 
+              />
+              {isUploading && (
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  
+                </div>
+              )}
+            </div>
+          </div>
 
         {/* Error Handling */}
         {error && (

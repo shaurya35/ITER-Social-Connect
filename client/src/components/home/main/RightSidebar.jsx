@@ -1,9 +1,57 @@
+"use client";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { Check, X } from "lucide-react";
+import axios from "axios";
 
 export default function RightSidebar() {
+  const [connections, setConnections] = useState([]);
+  const [connectionLoading, setConnectionLoading] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [eventLoading, setEventLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [showAllEvents, setShowAllEvents] = useState(false);
+  const { accessToken } = useAuth();
+
+  useEffect(() => {
+    // const fetchConnections = () => {
+    //   todo
+    // }
+
+    const fetchEvents = async () => {
+      setEventLoading(true);
+      try {
+        const response = await axios.get("http://localhost:8080/api/event", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          withCredentials: true,
+        });
+        setEvents(response.data.events);
+        console.log(response.data.events);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setEventLoading(false);
+      }
+    };
+
+    if (accessToken) {
+      // fetchConnections();
+      fetchEvents();
+    }
+  }, [accessToken]);
+
+  const handleShowMore = () => setShowAllEvents((prev) => !prev);
+
+  // Artificial Delay for Testing
+  const delay = () => {
+    new Promise((resolve) => setTimeout(resolve, 10000));
+  };
+
   return (
     <aside className="w-full lg:w-80 lg:flex-1">
       <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200 mb-4">
@@ -56,42 +104,72 @@ export default function RightSidebar() {
         </CardContent>
       </Card>
 
+      {/* Events Section */}
       <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg font-semibold text-gray-800 dark:text-gray-200">
             Upcoming Events
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {[
-            {
-              title: "Tech Meetup 2024",
-              description:
-                "Join us for an evening of networking and tech talks!",
-            },
-            {
-              title: "Web Dev Workshop",
-              description:
-                "Learn the latest web development techniques and tools.",
-            },
-          ].map((event, index) => (
-            <div key={index} className="space-y-2">
-              <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200">
-                {event.title}
-              </h4>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {event.description}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300"
-              >
-                Learn More
-              </Button>
-            </div>
-          ))}
+        <CardContent className="space-y-4 overflow-y-auto max-h-[45vh]">
+          {eventLoading
+            ? Array.from({ length: 2 }).map((_, index) => (
+                <Card
+                  key={index}
+                  className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-700 animate-pulse"
+                >
+                  <CardHeader className="p-0 pt-4">
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-full"></div>
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
+                  </CardContent>
+                </Card>
+              ))
+            : (showAllEvents ? events : events.slice(0, 2)).map(
+                (event, index) => (
+                  <div key={index} className="space-y-2">
+                    <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200">
+                      {event.eventTitle}
+                    </h4>
+                    <p
+                      className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2"
+                      style={{
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        WebkitLineClamp: 2,
+                      }}
+                    >
+                      {event.eventDescription}
+                    </p>
+                    <Button
+                      as="a"
+                      href={event.eventLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300"
+                    >
+                      Learn More
+                    </Button>
+                  </div>
+                )
+              )}
         </CardContent>
+        {!eventLoading && events.length > 2 && (
+          <div className="px-4 pb-4 text-center">
+            <button
+              onClick={handleShowMore}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              {showAllEvents ? "Show Less" : "Show More"}
+            </button>
+          </div>
+        )}
+        {error}
       </Card>
     </aside>
   );

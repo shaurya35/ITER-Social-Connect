@@ -2,11 +2,17 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthProvider";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Logo } from "./logo";
 import { LogoMobile } from "./logoMobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   Users,
@@ -14,20 +20,24 @@ import {
   Settings,
   Search,
   MessageCircle,
+  Mail,
   Menu,
   Moon,
   Sun,
   User,
   X,
   Bookmark,
+  Home,
 } from "lucide-react";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [renderInput, setRenderInput] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const searchInputRef = useRef(null);
   const { isDarkMode, toggleDarkMode } = useTheme();
   const { user, loading, logout } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     if (isOpen) {
@@ -37,10 +47,16 @@ export default function Navbar() {
     }
   }, [isOpen]);
 
+  const handleNavigation = (route) => {
+    router.push(route);
+  };
+
   const menuItems = [
-    { icon: MessageCircle, label: "Messages" },
-    { icon: Bell, label: "Notifications" },
-    { icon: Settings, label: "Settings" },
+    { icon: Home, label: "Home", route: "/explore" },
+    // { icon: MessageCircle, label: "Messages", route: "/chat" },
+    { icon: Bell, label: "Notifications", route: "/notifications" },
+    { icon: Mail, label: "Messages", route: "/chat" },
+    { icon: Settings, label: "Settings", route: "/settings" },
     { icon: Users, label: "Connections" },
     { icon: Bookmark, label: "Saved Events" },
     { icon: User, label: "Profile" },
@@ -67,29 +83,37 @@ export default function Navbar() {
                 <Logo />
               </div>
             </Link>
-          </div>
-          <div className="hidden lg:flex lg:flex-row lg:flex-wrap lg:space-x-1">
-            <div className="relative mr-4">
-              <Input
-                type="search"
-                placeholder="Search..."
-                className="w-40 lg:w-64 pl-10 pr-4 py-2 rounded-full text-sm bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/50 transition-all duration-200 hover:bg-white dark:hover:bg-gray-600"
-              />
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none transition-colors duration-200" />
+            <div className="hidden lg:flex lg:flex-row lg:flex-wrap lg:space-x-0">
+              <div className="relative ml-4 mr-4">
+                <Input
+                  type="search"
+                  placeholder="Search..."
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  className={`w-40 lg:${
+                    isFocused ? "w-64" : "w-48"
+                  } pl-10 pr-4 py-2 rounded-full text-sm bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/50 transition-all duration-200 hover:bg-white dark:hover:bg-gray-600`}
+                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none transition-colors duration-200" />
+              </div>
             </div>
-            {menuItems.slice(0, 3).map((item, index) => (
-              <Button
-                key={index}
-                variant="ghost"
-                size="sm"
-                className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="sr-only">{item.label}</span>
-              </Button>
-            ))}
           </div>
+
           <div className="flex items-center">
+            <div className="hidden lg:flex lg:flex-row lg:flex-wrap lg:space-x-0">
+              {menuItems.slice(0, 4).map((item, index) => (
+                <Button
+                  key={index}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleNavigation(item.route)}
+                  className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span className="sr-only">{item.label}</span>
+                </Button>
+              ))}
+            </div>
             {user ? (
               // Show Logout button if user is logged in
               <Button
@@ -146,7 +170,7 @@ export default function Navbar() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-              <SheetTitle>Menu</SheetTitle>
+                <SheetTitle>Menu</SheetTitle>
                 <nav className="flex flex-col justify-between h-full">
                   <div className="space-y-4">
                     <div className="relative mb-7 mt-4">
@@ -188,7 +212,7 @@ export default function Navbar() {
                             onClick={() => {
                               setIsOpen(false);
                               logout();
-                              Router.push("/explore")
+                              Router.push("/explore");
                             }}
                           >
                             Logout?

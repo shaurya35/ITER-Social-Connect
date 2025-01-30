@@ -62,10 +62,12 @@ const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const connectionRoutes = require("./routes/connectionRoutes");
 const commentRoutes = require("./routes/commentRoutes");
-const profileRoutes = require("./routes/profileRoutes"); // New profile route
+const profileRoutes = require("./routes/profileRoutes");
 const settingRoutes = require("./routes/settingRoutes");
 const searchRoutes = require("./routes/searchRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const eventRoutes = require("./routes/eventRoutes");
+const notificationsRoutes = require("./routes/notificationsRoutes");
 
 // --- Use Routes ---
 app.use("/api/auth", authRoutes);
@@ -85,8 +87,12 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/settings", settingRoutes);
 //Search routes
 app.use("/api/search", searchRoutes);
-//Report routtes
+//Report routes
 app.use("/api/report", reportRoutes);
+//Event routes
+app.use("/api/event" , eventRoutes);
+//Notification routes
+app.use("/api/notifications" , notificationsRoutes);
 
 // --- Start the Server ---
 app.listen(port, () => {
