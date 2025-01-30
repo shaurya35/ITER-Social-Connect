@@ -12,7 +12,7 @@ const {
   completeProfile,
   logout,
   forgetPassword,
-  verifyOtpForForgetPassword,resetPassword
+  verifyOtpForForgetPassword,resetPassword,teacherSignup
 } = require("../controllers/authControllers");
 
 router.post("/signup", signup);
@@ -24,6 +24,7 @@ router.post("/refresh", refreshAccessToken);
 router.post("/forget-password", forgetPassword);
 router.post("/verify-forget-password-otp", verifyOtpForForgetPassword);
 router.post("/reset-password", resetPassword);
+router.post("/teacher-signup", teacherSignup);
 
 // --- Export Router ---
 module.exports = router;

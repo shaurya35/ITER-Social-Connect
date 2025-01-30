@@ -9,7 +9,8 @@ const {
   deleteDoc,
   getDoc,
   orderBy,
-  writeBatch,updateDoc
+  writeBatch,
+  updateDoc,
 } = require("firebase/firestore");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
@@ -117,12 +118,10 @@ const handleRequest = async (req, res) => {
   try {
     const { requestId, approved, comment } = req.body;
 
-    // Validate input data
     if (!requestId || typeof approved !== "boolean") {
       return res.status(400).json({ message: "Invalid request data." });
     }
 
-    // Fetch the verification request document
     const requestRef = doc(db, "verification_requests", requestId);
     const requestSnapshot = await getDoc(requestRef);
 
@@ -131,9 +130,8 @@ const handleRequest = async (req, res) => {
     }
 
     const requestData = requestSnapshot.data();
-
-    // Check if the user already exists
     const usersRef = collection(db, "users");
+
     const q = query(usersRef, where("email", "==", requestData.email));
     const querySnapshot = await getDocs(q);
 
@@ -146,41 +144,44 @@ const handleRequest = async (req, res) => {
     });
 
     if (approved) {
-      // Add user to the users collection
-      await addDoc(usersRef, {
+      // Determine if the request is for a student (has regNo) or a teacher (no regNo)
+      const userData = {
         email: requestData.email,
         password: requestData.password,
-        regNo: requestData.regNo,
-        discordUrl: requestData.discordUrl,
-        approved: true, // Set as approved by default
-        profileCompleted: false, // Set as incomplete by default
-        isContributor: false, // New field for contributor status
-        isBetaTester: false, // New field for beta tester status
-      });
+        approved: true,
+        profileCompleted: false,
+        isContributor: false,
+        isBetaTester: false,
+        isTeacher: requestData.regNo ? false : true, // Assign role
+      };
 
-      // Send approval email
+      if (requestData.regNo) {
+        userData.regNo = requestData.regNo; // Only for students
+      }
+      if (requestData.discordUrl) {
+        userData.discordUrl = requestData.discordUrl; // Only for students
+      }
+
+      await addDoc(usersRef, userData);
+
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: requestData.email,
         subject: "Your Profile Has Been Approved",
         text: `Dear ${requestData.name || "User"},
 
-Congratulations! We are pleased to inform you that your account has been successfully approved.
+Congratulations! Your account has been successfully approved.
 
-You can now complete your profile and explore all the features our application has to offer. To complete your profile, please visit the following link: ${
+You can now complete your profile and explore all the features our platform has to offer. To complete your profile, please visit the following link: ${
           process.env.LINK
         }
 
-If you have any questions or need assistance, feel free to contact our support team.
-
-Welcome aboard!
+If you have any questions, feel free to contact our support team.
 
 Best regards,  
-Iter Social Connect Team
-`,
+Iter Social Connect Team`,
       });
 
-      // Delete the verification request
       await deleteDoc(requestRef);
 
       return res.status(200).json({
@@ -188,9 +189,7 @@ Iter Social Connect Team
           "Request approved, user added, email sent, and verification request deleted.",
       });
     } else {
-      // Rejection handling
       try {
-        // Send rejection email
         await transporter.sendMail({
           from: process.env.EMAIL_USER,
           to: requestData.email,
@@ -201,26 +200,23 @@ We regret to inform you that your account verification request has been rejected
 
 Reason: ${comment || "No specific reason was provided."}
 
-If you believe this decision was made in error or need further assistance, please do not hesitate to reach out to our support team at [Support Email or Phone Number].
-
-Thank you for your interest in Iter Social Connect.
+If you believe this decision was made in error, please contact our support team.
 
 Sincerely,  
-Iter Social Connect Team
-`,
+Iter Social Connect Team`,
         });
 
         await deleteDoc(requestRef);
 
         return res.status(200).json({
           message:
-            "The verification request has been successfully rejected and deleted and a notification email has been sent to the user",
+            "The verification request has been rejected, deleted, and a notification email has been sent to the user.",
         });
       } catch (emailError) {
         console.error("Email Error:", emailError);
-        return res.status(500).json({
-          message: "Failed to send rejection email.",
-        });
+        return res
+          .status(500)
+          .json({ message: "Failed to send rejection email." });
       }
     }
   } catch (err) {
@@ -485,11 +481,9 @@ const updateUserBadges = async (req, res) => {
   }
 
   if (typeof isContributor !== "boolean" || typeof isBetaTester !== "boolean") {
-    return res
-      .status(400)
-      .json({
-        message: "isContributor and isBetaTester must be boolean values.",
-      });
+    return res.status(400).json({
+      message: "isContributor and isBetaTester must be boolean values.",
+    });
   }
 
   try {

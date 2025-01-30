@@ -17,19 +17,20 @@ const {
   userSignupSchema,
   userSigninSchema,
   completeProfileSchema,
+  teacherSignupSchema,
 } = require("../validations/userValidations");
 const db = require("../firebase/firebaseConfig");
 const jwt = require("jsonwebtoken");
 const { Timestamp } = require("firebase/firestore");
 
-// --- Checks for Valid URL ---
-const isValidUrl = (url, platform) => {
-  const regexes = {
-    linkedin: /^https?:\/\/(www\.)?linkedin\.com\/.*$/i,
-    github: /^https?:\/\/(www\.)?github\.com\/.*$/i,
-    x: /^https?:\/\/(www\.)?(x\.com|twitter\.com)\/.*$/i, // Allow both x.com and twitter.com
-  };
-  return regexes[platform]?.test(url);
+//function to generate a random 6 digits otp
+const generateOtp = () =>
+  Math.floor(100000 + Math.random() * 900000).toString();
+
+//function to generate a secure random token
+const generateResetToken = () => {
+  // Generate a random 32-byte token and encode it in hexadecimal format
+  return crypto.randomBytes(32).toString("hex");
 };
 
 // --- Generates Access Token for 15min ---
@@ -89,7 +90,6 @@ const sendOtpForgetPassowrd = async (email, otp) => {
   await transporter.sendMail(mailOptions);
 };
 
-// --- Signup Routes (takes email, pass and RegNo and Url as fields) ---
 const signup = async (req, res) => {
   try {
     const { email, password, regNo, discordUrl } = req.body;
@@ -107,6 +107,22 @@ const signup = async (req, res) => {
       return res
         .status(400)
         .json({ message: validationResult.error.errors[0].message });
+    }
+
+    const userRefInAdminReq = collection(db, "verification_requests");
+    const emailQueryinAdminReq = query(
+      userRefInAdminReq,
+      where("email", "==", email)
+    );
+
+    const [emailSnapshotinAdminReq] = await Promise.all([
+      getDocs(emailQueryinAdminReq),
+    ]);
+
+    if (!emailSnapshotinAdminReq.empty) {
+      return res
+        .status(400)
+        .json({ message: "This email is already under admin verification." });
     }
 
     // Check for duplicate email and registration number
@@ -172,7 +188,6 @@ const signup = async (req, res) => {
   }
 };
 
-// --- Final Function to verify otp (keeping email, pass in temp database) ---
 const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -209,14 +224,18 @@ const verifyOtp = async (req, res) => {
         .json({ message: "Invalid OTP. Please check and try again." });
     }
 
+    // Determine if the user is a student or a teacher
+    const isStudent = regNo !== undefined && regNo !== null;
+    console.log("checked");
+
     await addDoc(collection(db, "verification_requests"), {
       email,
       password,
-      regNo,
-      discordUrl,
+      ...(discordUrl ? { discordUrl } : {}),
       approved: false,
       profileCompleted: false,
-      createdAt: Timestamp.now(), // Add the createdAt field with the current timestamp
+      createdAt: Timestamp.now(),
+      ...(isStudent ? { regNo } : { isTeacher: true }), // Include regNo for students, role for teachers
     });
 
     await deleteDoc(doc(db, "otp_verifications", email));
@@ -242,33 +261,28 @@ const completeProfile = async (req, res) => {
       linkedin,
       x,
       profilePicture,
+      fieldsOfInterest,
       discordUrl,
     } = req.body;
 
     if (!email || !password) {
       return res
         .status(400)
-        .json({ message: "Email and password are required" });
+        .json({ message: "Email and password are required." });
     }
 
-    // Validate request body with Zod schema
+    // Validate request body using Zod schema
     const validationResult = completeProfileSchema.safeParse(req.body);
     if (!validationResult.success) {
-      const missingFields = validationResult.error.errors
-        .filter(
-          (error) =>
-            error.path.includes("name") ||
-            error.path.includes("about") ||
-            error.path.includes("profilePicture")
-        )
-        .map((error) => error.path[0])
-        .join(", ");
+      const errorMessages = validationResult.error.errors.map((error) => {
+        const field = error.path.join(".");
+        return `Field '${field}' is invalid: ${error.message}`;
+      });
 
-      const message = missingFields
-        ? `The following fields are required and missing: ${missingFields}`
-        : validationResult.error.errors[0].message;
-
-      return res.status(400).json({ message });
+      return res.status(400).json({
+        message: "Validation failed. Please correct the following errors:",
+        errors: errorMessages,
+      });
     }
 
     // Query Firestore to check if the user exists
@@ -279,17 +293,17 @@ const completeProfile = async (req, res) => {
     const querySnapshot = await getDocs(userQuery);
 
     if (querySnapshot.empty) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "User not found." });
     }
 
     const userDoc = querySnapshot.docs[0];
     const userData = userDoc.data();
-    const userRef = doc(db, "users", userDoc.id); // Add reference for updating
+    const userRef = doc(db, "users", userDoc.id); // Reference for updating user profile
 
     // Validate the password using bcrypt
     const passwordMatch = await bcrypt.compare(password, userData.password);
     if (!passwordMatch) {
-      return res.status(401).json({ message: "Incorrect password" });
+      return res.status(401).json({ message: "Incorrect password." });
     }
 
     // Check if the user's account is approved
@@ -307,16 +321,8 @@ const completeProfile = async (req, res) => {
       });
     }
 
-    // Validate social media links (if provided)
-    if (linkedin && !isValidUrl(linkedin, "linkedin")) {
-      return res.status(400).json({ message: "Invalid LinkedIn URL" });
-    }
-    if (github && !isValidUrl(github, "github")) {
-      return res.status(400).json({ message: "Invalid GitHub URL" });
-    }
-    if (x && !isValidUrl(x, "x")) {
-      return res.status(400).json({ message: "Invalid X URL" });
-    }
+    // Ensure fieldsOfInterest is an array before storing
+    const interests = Array.isArray(fieldsOfInterest) ? fieldsOfInterest : [];
 
     // Update user profile in Firestore
     await updateDoc(userRef, {
@@ -326,6 +332,8 @@ const completeProfile = async (req, res) => {
       linkedin: linkedin || "",
       x: x || "",
       profilePicture: profilePicture || "",
+      discordUrl: discordUrl || "",
+      fieldsOfInterest: interests,
       profileCompleted: true,
     });
 
@@ -334,30 +342,28 @@ const completeProfile = async (req, res) => {
       userId: userDoc.id,
     };
 
-    // Refresh Token System
+    // Generate access and refresh tokens
     const accessToken = generateAccessToken({ userId: userDoc.id, email });
     const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
 
+    // Set secure HTTP-only cookie for refresh token
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
-    res.status(200).json({
-      message: "Profile completed successfully",
+    return res.status(200).json({
+      message: "Profile completed successfully.",
       accessToken,
       user,
     });
   } catch (error) {
     console.error("Complete Profile Error:", error);
-    res.status(500).json({ message: "Failed to complete profile" });
+    return res.status(500).json({ message: "Failed to complete profile." });
   }
 };
-
-const generateOtp = () =>
-  Math.floor(100000 + Math.random() * 900000).toString();
 
 const signin = async (req, res) => {
   try {
@@ -514,12 +520,6 @@ const forgetPassword = async (req, res) => {
   }
 };
 
-//function to generate a secure random token
-const generateResetToken = () => {
-  // Generate a random 32-byte token and encode it in hexadecimal format
-  return crypto.randomBytes(32).toString("hex");
-};
-
 const verifyOtpForForgetPassword = async (req, res) => {
   const { email, otp } = req.body;
 
@@ -632,6 +632,91 @@ const resetPassword = async (req, res) => {
   }
 };
 
+const teacherSignup = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Emailand  password are required.",
+      });
+    }
+
+    // Validate input using Zod or another schema validator
+    const validationResult = teacherSignupSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res
+        .status(400)
+        .json({ message: validationResult.error.errors[0].message });
+    }
+
+    const teachersRefInAdminReq = collection(db, "verification_requests");
+    const emailQueryinAdminReq = query(
+      teachersRefInAdminReq,
+      where("email", "==", email)
+    );
+
+    const [emailSnapshotinAdminReq] = await Promise.all([
+      getDocs(emailQueryinAdminReq),
+    ]);
+
+    if (!emailSnapshotinAdminReq.empty) {
+      return res
+        .status(400)
+        .json({ message: "This email is already under admin verification." });
+    }
+
+    // Check for duplicate email and registration number
+    const teachersRef = collection(db, "users");
+    const emailQuery = query(teachersRef, where("email", "==", email));
+
+    const [emailSnapshot] = await Promise.all([getDocs(emailQuery)]);
+
+    if (!emailSnapshot.empty) {
+      return res.status(400).json({ message: "Email is already taken." });
+    }
+
+    // Check if an OTP request is already pending
+    const otpDocRef = doc(db, "otp_verifications", email);
+    const otpDocSnapshot = await getDoc(otpDocRef);
+
+    if (otpDocSnapshot.exists()) {
+      const { otpExpiresAt } = otpDocSnapshot.data();
+      const remainingTime = otpExpiresAt - Date.now();
+
+      if (remainingTime > 0) {
+        const remainingSeconds = Math.ceil(remainingTime / 1000);
+        return res.status(400).json({
+          message: `An OTP request is already pending. Please wait ${remainingSeconds} seconds before requesting a new OTP or submit the OTP sent to your email.`,
+        });
+      }
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Generate a new OTP and save it
+    const otp = crypto.randomInt(100000, 999999);
+
+    await setDoc(otpDocRef, {
+      otp,
+      otpExpiresAt: Date.now() + 5 * 60 * 1000, // OTP expires in 5 minutes
+      email,
+      password: hashedPassword, // Save hashed password
+    });
+
+    // Send OTP email
+    await sendOtpEmail(email, otp);
+
+    res
+      .status(200)
+      .json({ message: "OTP sent successfully. Please check your email." });
+  } catch (error) {
+    console.error("Teacher Signup Error:", error);
+    res.status(500).json({ message: "Internal Server Error." });
+  }
+};
+
 module.exports = {
   signup,
   completeProfile,
@@ -642,4 +727,5 @@ module.exports = {
   forgetPassword,
   verifyOtpForForgetPassword,
   resetPassword,
+  teacherSignup,
 };
