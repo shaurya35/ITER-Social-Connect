@@ -31,7 +31,6 @@ export default function RightSidebar() {
           withCredentials: true,
         });
         setEvents(response.data.events);
-        console.log(response.data.events);
       } catch (err) {
         setError(err);
       } finally {
