@@ -48,7 +48,7 @@ app.use((err, req, res, next) => {
 });
 
 // --- .env Port ---
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 3000;
 
 // --- Base Route ---
 app.get("/", (req, res) => {
