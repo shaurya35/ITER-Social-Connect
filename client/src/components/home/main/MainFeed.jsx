@@ -3,8 +3,9 @@
 /**
  * Todos: 1. Add Likes
  * 2. Add Share
- * 3. Bookmark fetch already existing 
+ * 3. Bookmark fetch already existing
  * post for particular user
+ * 4. save the scroll state
  */
 
 /** Imports */
@@ -41,20 +42,15 @@ export const timeAgo = (dateString) => {
   const date = new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now - date) / 1000);
-
   if (seconds < 60) return "1 min ago";
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes} min ago`;
-
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours} hours ago`;
-
   const days = Math.floor(hours / 24);
   if (days < 30) return `${days} days ago`;
-
   const months = Math.floor(days / 30);
   if (months < 12) return `${months} months ago`;
-
   const years = Math.floor(months / 12);
   return `${years} years ago`;
 };
@@ -83,7 +79,7 @@ export default function MainFeed() {
       setFetchingUser(false);
     }
   }, [profile]);
-  const didFetchPosts = useRef(false);
+  // const didFetchPosts = useRef(false);
 
   /* Fetch The User Feed (No Auth) */
   const fetchPosts = useCallback(async () => {
@@ -108,10 +104,8 @@ export default function MainFeed() {
 
   /* Function to Fetch posts */
   useEffect(() => {
-    if (didFetchPosts.current) return;
-    didFetchPosts.current = true;
     fetchPosts();
-  }, [fetchPosts]);
+  }, [page]);
 
   /* Infinite Post Functionality */
   const lastPostRef = useCallback(

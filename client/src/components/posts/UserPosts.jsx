@@ -1,4 +1,13 @@
 "use client";
+/**
+ * Todos: 1. Add Likes
+ * 2. Add Share
+ * 3. Bookmark system
+ * 4. Infinite Scroll
+ */
+
+/** Imports */
+
 import { useEffect, useState, useRef, useCallback } from "react";
 import NextImage from "next/image";
 import axios from "axios";
@@ -57,28 +66,25 @@ export default function UserPosts() {
     if (profile) {
       setFetchingUser(false);
     }
-  });
+  }, [profile]);
 
-  // fetch the feed
+  /* Fetch The User Feed (No Auth) */
   const fetchPosts = useCallback(async () => {
     if (!hasMore) return;
 
     setLoading(true);
     try {
       // await new Promise(resolve => setTimeout(resolve, 10000));
-      const response = await axios.get(
-        `http://localhost:8080/api/user/posts`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          withCredentials: true,
-          params: { page, limit: 10 },
-        }
-      );
+      const response = await axios.get(`http://localhost:8080/api/user/posts`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        withCredentials: true,
+        params: { page, limit: 10 },
+      });
       const newPosts = response.data.posts || [];
       setPosts((prevPosts) => [...prevPosts, ...newPosts]);
-      setHasMore(newPosts.length > 0);
+      setHasMore(newPosts.length === 0);
     } catch (err) {
       setError(err);
     } finally {
@@ -86,7 +92,12 @@ export default function UserPosts() {
     }
   }, [page, hasMore]);
 
-  // infinite posts functionality
+  /* Function to Fetch posts */
+  useEffect(() => {
+    fetchPosts();
+  }, [page]);
+
+  /* Infinite Post Functionality */
   const lastPostRef = useCallback(
     (node) => {
       if (loading) return;
@@ -103,7 +114,7 @@ export default function UserPosts() {
     [loading, hasMore]
   );
 
-  // post creation function
+  /* Post Creation */
   const handlePostSubmit = async () => {
     if (!newPostContent.trim()) return;
 
@@ -146,12 +157,7 @@ export default function UserPosts() {
     }
   };
 
-  // function to fetchPosts
-  useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
-
-  // Artificial Delay for Testing
+  /* Artificial Delay */
   const delay = () => {
     new Promise((resolve) => setTimeout(resolve, 10000));
   };
@@ -196,6 +202,7 @@ export default function UserPosts() {
                   variant="outline"
                   size="sm"
                   className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                  disabled
                 >
                   <Image className="h-4 w-4 mr-2" />
                   Image
@@ -294,7 +301,6 @@ export default function UserPosts() {
                   size="sm"
                   className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
                 >
-                  
                   <ThumbsUp className="h-4 w-4" />
                   {post.likes}
                 </Button>
@@ -304,7 +310,7 @@ export default function UserPosts() {
                   className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
                 >
                   <MessageCircleMore className="h-4 w-4" />
-                  Comment
+                  <div className="hidden md:block">Comments</div>{" "}
                 </Button>
                 <Button
                   variant="ghost"
@@ -312,7 +318,7 @@ export default function UserPosts() {
                   className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
                 >
                   <Forward className="h-4 w-4" />
-                  Share
+                  <div className="hidden md:block">Share</div>
                 </Button>
               </div>
             </CardFooter>

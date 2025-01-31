@@ -62,6 +62,16 @@ export default function Navbar() {
     { icon: User, label: "Profile" },
   ];
 
+  const phoneMenuItems = [
+    { icon: Home, label: "Home", route: "/explore" },
+    { icon: User, label: "Profile", route: "/profile" },
+    { icon: Bell, label: "Notifications", route: "/notifications" },
+    { icon: Mail, label: "Messages", route: "/chat" },
+    { icon: Users, label: "Connections" },
+    { icon: Bookmark, label: "Saved Events" },
+    { icon: Settings, label: "Settings", route: "/settings" },
+  ];
+
   if (loading) {
     return (
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 shadow-sm h-16 flex justify-center items-center">
@@ -187,13 +197,16 @@ export default function Navbar() {
                         <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                       </div>
                     </div>
-                    {menuItems.map((item, index) => (
+                    {phoneMenuItems.map((item, index) => (
                       <Button
                         key={index}
                         variant="ghost"
                         size="lg"
                         className="w-full justify-start text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
-                        onClick={() => setIsOpen(false)}
+                        onClick={() => {
+                          setIsOpen(false);
+                          handleNavigation(item.route);
+                        }}
                       >
                         <item.icon className="h-5 w-5 mr-3" />
                         {item.label}
