@@ -42,13 +42,15 @@ const getProfile = async (req, res) => {
     // Combine profile, posts, and connections count data
     const profileData = {
       name: userData.name,
+      email: userData.email,
       about: userData.about || "",
       profilePicture: userData.profilePicture || "",
       github: userData.github || "",
       linkedin: userData.linkedin || "",
       x: userData.x || "",
-      connectionsCount,  // Add connections count here
+      connectionsCount, 
       posts,
+      regNo: userData.regNo,
     };
 
     res.status(200).json(profileData);
@@ -86,6 +88,7 @@ const getUserProfile = async (req, res) => {
     // Build the profile response
     const profileData = {
       name: userData.name,
+      email: userData.email,
       about: userData.about || "",
       profilePicture: userData.profilePicture || "",
       github: userData.github || "",
@@ -93,6 +96,7 @@ const getUserProfile = async (req, res) => {
       x: userData.x || "",
       connectionsCount: userData.connectionsCount || 0,
       posts,
+      regNo: userData.regNo,
     };
 
     res.status(200).json(profileData);
