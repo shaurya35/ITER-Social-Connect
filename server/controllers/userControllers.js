@@ -201,7 +201,6 @@ const getUserPostById = async (req, res) => {
   }
 };
 
-// Function to like/unlike a post
 const likePost = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -227,14 +226,16 @@ const likePost = async (req, res) => {
       likes.push(userId);
     }
 
-    // Update Firestore document
-    await updateDoc(postRef, { likes });
+    // Calculate the new like count
+    const likeCount = likes.length;
+
+    await updateDoc(postRef, { likes, likeCount });
 
     res.status(200).json({
       message: userAlreadyLiked
         ? "Post unliked successfully"
         : "Post liked successfully",
-      totalLikes: likes.length,
+      totalLikes: likeCount,
     });
   } catch (error) {
     console.error("Like Post Error:", error);
