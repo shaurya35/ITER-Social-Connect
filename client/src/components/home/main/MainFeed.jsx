@@ -6,6 +6,7 @@
  * 3. Bookmark fetch already existing
  * post for particular user
  * 4. save the scroll state
+ * 5. without logging, the post button shows loading....
  */
 
 /** Imports */
