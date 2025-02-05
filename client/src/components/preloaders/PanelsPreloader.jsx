@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-export default function ConnectionsPreloader() {
+export default function PanelsPreloader() {
   return (
     <div className="space-y-4">
       {[...Array(3)].map((_, idx) => (

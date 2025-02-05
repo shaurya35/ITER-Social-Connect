@@ -90,7 +90,7 @@ app.use("/api/search", searchRoutes);
 //Report routes
 app.use("/api/report", reportRoutes);
 //Event routes
-app.use("/api/event" , eventRoutes);
+app.use("/api/events" , eventRoutes);
 //Notification routes
 app.use("/api/notifications" , notificationsRoutes);
 

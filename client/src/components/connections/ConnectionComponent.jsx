@@ -21,14 +21,13 @@ import {
 import axios from "axios";
 import LeftPanel from "@/components/panels/LeftPanel";
 import RightTopPanel from "@/components/panels/RightTopPanel";
-import ConnectionsPreloader from "../preloaders/ConnectionsPreloader";
+import PanelsPreloader from "../preloaders/PanelsPreloader";
 
 export default function ConnectionsComponent() {
   const [connections, setConnections] = useState([]);
   const [requests, setRequests] = useState([]);
   const [activeTab, setActiveTab] = useState("connections");
 
-  // Separate loading/error states for connections and requests.
   const [loadingConnections, setLoadingConnections] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [errorConnections, setErrorConnections] = useState(null);
@@ -43,7 +42,7 @@ export default function ConnectionsComponent() {
       onClick: () => setActiveTab("connections"),
       active: activeTab === "connections",
       showChevron: true,
-      key: "connections", // unique key
+      key: "connections", 
     },
     {
       label: "Pending Requests",
@@ -51,7 +50,7 @@ export default function ConnectionsComponent() {
       onClick: () => setActiveTab("requests"),
       active: activeTab === "requests",
       showChevron: true,
-      key: "requests", // unique key
+      key: "requests", 
     },
   ];
 
@@ -72,7 +71,7 @@ export default function ConnectionsComponent() {
         setConnections(response.data.connections);
         setErrorConnections(null);
       } catch (error) {
-        setErrorConnections(error.message);
+        setErrorConnections(error?.message || "Unexpected Error");
       } finally {
         setLoadingConnections(false);
       }
@@ -98,7 +97,7 @@ export default function ConnectionsComponent() {
         setRequests(response.data.requests);
         setErrorRequests(null);
       } catch (error) {
-        setErrorRequests(error.message);
+        setErrorRequests(error?.message || "Unexpected Error");
       } finally {
         setLoadingRequests(false);
       }
@@ -225,7 +224,7 @@ export default function ConnectionsComponent() {
   let content;
   if (activeTab === "connections") {
     if (loadingConnections) {
-      content = <ConnectionsPreloader />;
+      content = <PanelsPreloader />;
     } else if (errorConnections) {
       content = (
         <p className="text-center text-red-500">Error: {errorConnections}</p>
@@ -240,7 +239,7 @@ export default function ConnectionsComponent() {
     }
   } else if (activeTab === "requests") {
     if (loadingRequests) {
-      content = <ConnectionsPreloader />;
+      content = <PanelsPreloader />;
     } else if (errorRequests) {
       content = (
         <p className="text-center text-red-500">Error: {errorRequests}</p>
@@ -278,7 +277,7 @@ export default function ConnectionsComponent() {
           />
 
           {/* Render Content */}
-          <div className="grid gap-4">{content}</div>
+          <div className="grid gap-4" >{content}</div>
         </div>
       </div>
     </div>

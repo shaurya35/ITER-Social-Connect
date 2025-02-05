@@ -1,4 +1,4 @@
-import ConnectionComponent from "@/components/connections/ConnectionComponent"
+import SettingsComponent from "@/components/settings/SettingsComponent"
 
 export default function Connection() {
   return <>
@@ -6,7 +6,7 @@ export default function Connection() {
         <main className="container mx-auto flex justify-center items-start">
           <div className="flex flex-row justify-center gap-5 max-w-6xl w-full">
             <div className="flex-1 py-5 overflow-y-auto">
-              <ConnectionComponent/>
+              <SettingsComponent/>
             </div>
           </div>
         </main>

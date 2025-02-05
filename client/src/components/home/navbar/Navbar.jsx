@@ -55,7 +55,7 @@ export default function Navbar() {
     { icon: Home, label: "Home", route: "/explore" },
     // { icon: MessageCircle, label: "Messages", route: "/chat" },
     { icon: Bell, label: "Notifications", route: "/notifications" },
-    { icon: Mail, label: "Messages", route: "/chat" },
+    { icon: Mail, label: "Messages", route: "/chat", disabled: true },
     { icon: Settings, label: "Settings", route: "/settings" },
     { icon: Users, label: "Connections" },
     { icon: Bookmark, label: "Saved Events" },
@@ -83,7 +83,7 @@ export default function Navbar() {
   return (
     <>
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 shadow-sm h-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 h-full flex flex-row flex-wrap items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-2 h-full flex flex-row flex-wrap items-center justify-between">
           <div className="flex items-center justify-center">
             <Link href="/explore" className="flex-shrink-0 flex items-center">
               <div className="block lg:hidden">
@@ -118,6 +118,7 @@ export default function Navbar() {
                   size="sm"
                   onClick={() => handleNavigation(item.route)}
                   className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                  disabled={item.disabled}
                 >
                   <item.icon className="h-5 w-5" />
                   <span className="sr-only">{item.label}</span>
