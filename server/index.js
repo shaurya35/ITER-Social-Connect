@@ -68,6 +68,7 @@ const searchRoutes = require("./routes/searchRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const notificationsRoutes = require("./routes/notificationsRoutes");
+const filterRoutes = require("./routes/filterRoutes");
 
 // --- Use Routes ---
 app.use("/api/auth", authRoutes);
@@ -93,6 +94,7 @@ app.use("/api/report", reportRoutes);
 app.use("/api/event" , eventRoutes);
 //Notification routes
 app.use("/api/notifications" , notificationsRoutes);
+app.use("/api/filter" , filterRoutes);
 
 // --- Start the Server ---
 app.listen(port, () => {

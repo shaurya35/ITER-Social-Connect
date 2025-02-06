@@ -71,9 +71,10 @@ const completeProfileSchema = z.object({
       "Invalid Discord media URL."
     )
     .optional(),
-    fieldsOfInterest: z
+  fieldsOfInterest: z
     .array(z.string().nonempty("Interest must not be empty."))
     .min(1, "At least one interest is required.")
+    .optional(),
 });
 
 const changePasswordSchema = z.object({

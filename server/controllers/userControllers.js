@@ -62,11 +62,11 @@ const createUserPost = async (req, res) => {
     // Save post to the `posts` collection
     const postDoc = await addDoc(collection(db, "posts"), {
       userId,
-      userName, 
+      userName,
       content,
       profilePicture,
       createdAt: new Date().toISOString(),
-      likes: 0, 
+      likes: 0,
     });
 
     const postId = postDoc.id;
@@ -254,20 +254,21 @@ const bookmarkPost = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const bookmarks = userDoc.data().bookmarks || [];
+    const bookmarksCollectionRef = collection(userRef, "bookmarks");
 
     // Check if the post is already bookmarked
-    if (bookmarks.includes(postId)) {
-      // Remove the bookmark
-      await updateDoc(userRef, {
-        bookmarks: arrayRemove(postId),
+    const q = query(bookmarksCollectionRef, where("postId", "==", postId));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      // If the bookmark exists, remove it
+      querySnapshot.forEach(async (docSnapshot) => {
+        await deleteDoc(doc(bookmarksCollectionRef, docSnapshot.id));
       });
       return res.status(200).json({ message: "Post removed from bookmarks" });
     } else {
-      // Add the bookmark
-      await updateDoc(userRef, {
-        bookmarks: arrayUnion(postId),
-      });
+      // Add the bookmark as a new document
+      await addDoc(bookmarksCollectionRef, { postId });
       return res.status(200).json({ message: "Post bookmarked successfully" });
     }
   } catch (error) {
@@ -287,20 +288,22 @@ const getBookmarkedPosts = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const bookmarks = userDoc.data().bookmarks || []; // Get the bookmarks array
+    const bookmarksCollectionRef = collection(userRef, "bookmarks"); // Reference to the bookmarks subcollection
+    const bookmarksSnapshot = await getDocs(bookmarksCollectionRef);
 
-    if (bookmarks.length === 0) {
+    if (bookmarksSnapshot.empty) {
       return res
         .status(200)
         .json({ message: "No bookmarks found", bookmarks: [] });
     }
 
-    // If you want detailed information about the posts:
     const postsRef = collection(db, "posts");
     const bookmarkedPosts = [];
 
-    for (const postId of bookmarks) {
+    for (const bookmarkDoc of bookmarksSnapshot.docs) {
+      const postId = bookmarkDoc.data().postId;
       const postDoc = await getDoc(doc(postsRef, postId));
+
       if (postDoc.exists()) {
         bookmarkedPosts.push({ id: postDoc.id, ...postDoc.data() });
       }
@@ -311,6 +314,7 @@ const getBookmarkedPosts = async (req, res) => {
       bookmarks: bookmarkedPosts,
     });
   } catch (error) {
+    console.error("Error fetching bookmarked posts:", error);
     res.status(500).json({ error: "Error fetching bookmarked posts" });
   }
 };
