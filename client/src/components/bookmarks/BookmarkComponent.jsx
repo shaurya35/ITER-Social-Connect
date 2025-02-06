@@ -1,34 +1,23 @@
 "use client";
-
 /**
  * Todos: 1. Add Likes
  * 2. Add Share
- * 3. Bookmark fetch already existing
- * post for particular user
- * 4. save the scroll state
- * 5. without logging, the post button shows loading....
+ * 3. Bookmark system
+ * 4. Infinite Scroll
  */
 
 /** Imports */
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import NextImage from "next/image";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthProvider";
-import { useProfile } from "@/contexts/ProfileContext";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 import PostsPreloader from "@/components/preloaders/PostsPreloader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Image,
-  MessageCircleMore,
-  Forward,
-  ThumbsUp,
-  Bookmark,
-  BookmarkCheck,
-  Loader2,
-} from "lucide-react";
+import { Image, MessageCircleMore, Forward, ThumbsUp } from "lucide-react";
+import { useAuth } from "@/contexts/AuthProvider";
+import { useProfile } from "@/contexts/ProfileContext";
 import {
   Card,
   CardContent,
@@ -36,27 +25,30 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 
-/**
- * Time Handler Function
- */
+// Time Handler for Posts
 export const timeAgo = (dateString) => {
   const date = new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now - date) / 1000);
+
   if (seconds < 60) return "1 min ago";
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes} min ago`;
+
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours} hours ago`;
+
   const days = Math.floor(hours / 24);
   if (days < 30) return `${days} days ago`;
+
   const months = Math.floor(days / 30);
   if (months < 12) return `${months} months ago`;
+
   const years = Math.floor(months / 12);
   return `${years} years ago`;
 };
 
-export default function MainFeed() {
+export default function BookmarkComponent() {
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -65,11 +57,6 @@ export default function MainFeed() {
   const [newPostContent, setNewPostContent] = useState("");
   const [fetchingUser, setFetchingUser] = useState(true);
   const [isPosting, setIsPosting] = useState(false);
-  const [likeLoading, setLikeLoading] = useState(false);
-  const [likeError, setLikeError] = useState(false);
-  const [bookmarkedPosts, setBookmarkedPosts] = useState({});
-  const [bookmarkLoadingState, setBookmarkLoadingState] = useState({});
-  const [bookmarkError, setBookmarkError] = useState(null);
   const { accessToken } = useAuth();
   const { profile } = useProfile();
   const router = useRouter();
@@ -80,7 +67,6 @@ export default function MainFeed() {
       setFetchingUser(false);
     }
   }, [profile]);
-  // const didFetchPosts = useRef(false);
 
   /* Fetch The User Feed (No Auth) */
   const fetchPosts = useCallback(async () => {
@@ -89,13 +75,16 @@ export default function MainFeed() {
     setLoading(true);
     try {
       // await new Promise(resolve => setTimeout(resolve, 10000));
-      const response = await axios.get(`http://localhost:8080/api/feed`, {
-        params: { page, limit: 10 },
+      const response = await axios.get(`http://localhost:8080/api/user/posts`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
         withCredentials: true,
+        params: { page, limit: 10 },
       });
       const newPosts = response.data.posts || [];
       setPosts((prevPosts) => [...prevPosts, ...newPosts]);
-      setHasMore(newPosts.length === 10);
+      setHasMore(newPosts.length === 0);
     } catch (err) {
       setError(err);
     } finally {
@@ -139,7 +128,9 @@ export default function MainFeed() {
       likes: 0,
       createdAt: new Date().toISOString(),
     };
+
     setNewPostContent("");
+
     try {
       const response = await axios.post(
         "http://localhost:8080/api/user/post",
@@ -151,7 +142,9 @@ export default function MainFeed() {
           withCredentials: true,
         }
       );
+
       const { postId } = response.data;
+
       setPosts((prevPosts) => [
         { ...tempPost, id: postId },
         ...prevPosts.filter((post) => post.id !== "temp"),
@@ -161,38 +154,6 @@ export default function MainFeed() {
       alert("Failed to post. Please try again.");
     } finally {
       setIsPosting(false);
-    }
-  };
-
-  /* Like Service */
-  useEffect(() => {}, [accessToken]);
-
-  /* Bookmark Service */
-  const toggleBookmark = async (postId) => {
-    if (!accessToken) return;
-
-    setBookmarkLoadingState((prev) => ({ ...prev, [postId]: true }));
-    setBookmarkError(null);
-
-    try {
-      await axios.post(
-        `http://localhost:8080/api/user/post/${postId}/bookmark`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          withCredentials: true,
-        }
-      );
-      setBookmarkedPosts((prev) => ({
-        ...prev,
-        [postId]: !prev[postId],
-      }));
-    } catch (error) {
-      setBookmarkError(error.response?.data?.message || "Failed to bookmark");
-    } finally {
-      setBookmarkLoadingState((prev) => ({ ...prev, [postId]: false }));
     }
   };
 
@@ -298,11 +259,9 @@ export default function MainFeed() {
             className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
             key={uniqueKey}
             ref={index === posts.length - 1 ? lastPostRef : null}
+            onClick={() => router.push(`/post/${post.id}`)}
           >
-            <CardHeader
-              className="flex-row items-center gap-4 p-4 lg:px-5 lg:pt-4"
-              onClick={() => router.push(`/post/${post.id}`)}
-            >
+            <CardHeader className="flex-row items-center gap-4 p-4 lg:px-5 lg:pt-4">
               <NextImage
                 src={
                   post.profilePicture ||
@@ -330,10 +289,7 @@ export default function MainFeed() {
               </div>
             </CardHeader>
 
-            <CardContent
-              className="px-4 py-3 lg:px-5 lg:pb-5 w-full"
-              onClick={() => router.push(`/post/${post.id}`)}
-            >
+            <CardContent className="px-4 py-2 lg:px-5 lg:pb-5 w-full">
               <p className="text-gray-700 dark:text-gray-300 break-words">
                 {post.content}
               </p>
@@ -346,16 +302,15 @@ export default function MainFeed() {
                   className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
                 >
                   <ThumbsUp className="h-4 w-4" />
-                  {post.likes}{" "}
+                  {post.likes}
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
-                  onClick={() => router.push(`/post/${post.id}`)}
                 >
                   <MessageCircleMore className="h-4 w-4" />
-                  <div className="hidden md:block">Comments</div>
+                  <div className="hidden md:block">Comments</div>{" "}
                 </Button>
                 <Button
                   variant="ghost"
@@ -364,26 +319,6 @@ export default function MainFeed() {
                 >
                   <Forward className="h-4 w-4" />
                   <div className="hidden md:block">Share</div>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
-                  onClick={() => toggleBookmark(post.id)}
-                  disabled={bookmarkLoadingState[post.id]}
-                >
-                  {bookmarkLoadingState[post.id] ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
-                  ) : bookmarkedPosts[post.id] ? (
-                    <BookmarkCheck className="h-5 w-5 text-blue-600" />
-                  ) : (
-                    <Bookmark className="h-5 w-5  hover:text-gray-700" />
-                  )}
-
-                  <div className="hidden md:block">Bookmark</div>
-                  {bookmarkError && (
-                    <p className="text-red-500 text-sm mt-2">{bookmarkError}</p>
-                  )}
                 </Button>
               </div>
             </CardFooter>

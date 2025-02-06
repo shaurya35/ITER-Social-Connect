@@ -1,4 +1,12 @@
 "use client";
+/**
+ * Todos: 1. Comment Post System
+ * 2. Improve Fetch system
+ * 3. Bookmark system
+ * 4. 
+ */
+
+/** Imports */
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthProvider";
 import axios from "axios";
@@ -11,7 +19,6 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { useProfile } from "@/contexts/ProfileContext";
 
 export const timeAgo = (dateString) => {
@@ -177,7 +184,7 @@ export default function SinglePost({ postId }) {
               className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
             >
               <MessageCircleMore className="h-4 w-4" />
-              Comment
+              <div className="hidden md:block">Comments</div>{" "}
             </Button>
             <Button
               variant="ghost"
@@ -185,7 +192,7 @@ export default function SinglePost({ postId }) {
               className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
             >
               <Forward className="h-4 w-4" />
-              Share
+              <div className="hidden md:block">Share</div>
             </Button>
           </div>
         </CardFooter>
@@ -218,13 +225,13 @@ export default function SinglePost({ postId }) {
                   </p>
                 </div>
               </div>
-              <div className="mt-4 flex items-center gap-2">
+              <div className="mt-4 flex flex-wrap items-center gap-1 w-full max-w-[95%]">
                 <input
                   type="text"
                   placeholder="Add a comment..."
-                  className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 outline-none placeholder-gray-500 text-sm"
+                  className="flex-1 min-w-0 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-2 py-2 outline-none placeholder-gray-500 text-xs sm:text-sm"
                 />
-                <button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg px-4 py-2 text-sm">
+                <button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg px-4 py-2 text-xs sm:text-sm">
                   Post
                 </button>
               </div>

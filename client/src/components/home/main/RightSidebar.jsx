@@ -24,14 +24,13 @@ export default function RightSidebar() {
     const fetchEvents = async () => {
       setEventLoading(true);
       try {
-        const response = await axios.get("http://localhost:8080/api/event", {
+        const response = await axios.get("http://localhost:8080/api/events", {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
           withCredentials: true,
         });
         setEvents(response.data.events);
-        console.log(response.data.events);
       } catch (err) {
         setError(err);
       } finally {
@@ -53,7 +52,7 @@ export default function RightSidebar() {
   };
 
   return (
-    <aside className="w-full lg:w-80 lg:flex-1">
+    <aside className="w-full lg:w-72 lg:flex-1">
       <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200 mb-4">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg font-semibold text-gray-800 dark:text-gray-200">

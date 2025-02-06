@@ -152,8 +152,46 @@ const respondToConnectionRequest = async (req, res) => {
   }
 };
 
+// --- Get All Connections (Accepted) ---
+const getAllConnections = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Query to fetch all accepted connections for the logged-in user
+    const connectionsQuery = query(
+      collection(db, `users/${userId}/connections`),
+      where("status", "==", "accepted")
+    );
+
+    const connectionsSnapshot = await getDocs(connectionsQuery);
+    const connections = [];
+
+    for (const docSnapshot of connectionsSnapshot.docs) {
+      const connectionData = docSnapshot.data();
+      const userDoc = await getDoc(doc(db, "users", connectionData.userId));
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        connections.push({
+          connectionId: docSnapshot.id,
+          userId: connectionData.userId,
+          name: userData.name,
+          email: userData.email,
+          about: userData.about,
+        });
+      }
+    }
+
+    res.status(200).json({ connections });
+  } catch (error) {
+    console.error("Get All Connections Error:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
 module.exports = {
   sendConnectionRequest,
   getConnectionRequests,
   respondToConnectionRequest,
+  getAllConnections,
 };
