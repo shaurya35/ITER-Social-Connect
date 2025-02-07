@@ -6,7 +6,6 @@ const getAllPosts = async (req, res) => {
     const { page = 1, limit: limitParam = 10 } = req.query; 
     const limitValue = parseInt(limitParam, 10);
 
-    const userId = req.user.userId;
 
     if (isNaN(page) || isNaN(limitValue)) {
       return res.status(400).json({ error: "Invalid page or limit parameter" });
