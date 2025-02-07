@@ -347,11 +347,21 @@ const completeProfile = async (req, res) => {
     const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
 
     // Set secure HTTP-only cookie for refresh token
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: "Strict",
+    //   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    // });
+    
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
+      httpOnly: true, // Not accessible via client-side JS
+      secure: process.env.NODE_ENV === "production", // True in production (HTTPS)
+      sameSite: "none", // Necessary for cross-site requests
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      path: "/", // Available to all routes
+      // Optionally, if you need to force the cookie to your backend domain:
+      // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
     });
 
     return res.status(200).json({
@@ -411,11 +421,21 @@ const signin = async (req, res) => {
     const accessToken = generateAccessToken({ userId: userDoc.id, email });
     const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
 
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: "Strict",
+    //   maxAge: 30 * 24 * 60 * 60 * 1000,
+    // });
+
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
+      httpOnly: true, // Not accessible via client-side JS
+      secure: process.env.NODE_ENV === "production", // True in production (HTTPS)
+      sameSite: "none", // Necessary for cross-site requests
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      path: "/", // Available to all routes
+      // Optionally, if you need to force the cookie to your backend domain:
+      // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
     });
 
     res.status(200).json({
