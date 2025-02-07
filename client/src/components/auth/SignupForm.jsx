@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BACKEND_URL } from "@/configs/index";
+import { BACKEND_URL, BOT_URL } from "@/configs/index";
 import { AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -32,7 +32,7 @@ export function SignupForm() {
       const formData = new FormData();
       formData.append("photo", file);
 
-      const response = await fetch("http://localhost:3001/upload", {
+      const response = await fetch(`${BOT_URL}/upload`, {
         method: "POST",
         body: formData,
       });

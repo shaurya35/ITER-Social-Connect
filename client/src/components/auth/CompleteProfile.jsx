@@ -15,7 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Select from "react-select";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthProvider";
-import { BACKEND_URL } from "@/configs/index";
+import { BACKEND_URL, BOT_URL } from "@/configs/index";
 
 const interestOptions = [
   { value: "aiml", label: "AI/ML" },

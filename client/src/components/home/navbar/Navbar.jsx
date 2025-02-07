@@ -57,9 +57,9 @@ export default function Navbar() {
     { icon: Bell, label: "Notifications", route: "/notifications" },
     { icon: Mail, label: "Messages", route: "/chat", disabled: true },
     { icon: Settings, label: "Settings", route: "/settings" },
-    { icon: Users, label: "Connections" },
-    { icon: Bookmark, label: "Saved Events" },
-    { icon: User, label: "Profile" },
+    { icon: Users, label: "Connections", route: "/connections" },
+    { icon: Bookmark, label: "Bookmarks", route: "/bookmarks" },
+    { icon: User, label: "Profile", route: "/profile" },
   ];
 
   const phoneMenuItems = [
@@ -67,8 +67,8 @@ export default function Navbar() {
     { icon: User, label: "Profile", route: "/profile" },
     { icon: Bell, label: "Notifications", route: "/notifications" },
     { icon: Mail, label: "Messages", route: "/chat" },
-    { icon: Users, label: "Connections" },
-    { icon: Bookmark, label: "Saved Events" },
+    { icon: Users, label: "Connections", route: "/connections" },
+    { icon: Bookmark, label: "Bookmarks", route: "/bookmarks" },
     { icon: Settings, label: "Settings", route: "/settings" },
   ];
 
