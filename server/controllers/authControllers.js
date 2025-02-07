@@ -353,7 +353,7 @@ const completeProfile = async (req, res) => {
     //   sameSite: "Strict",
     //   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     // });
-    
+
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true, // Not accessible via client-side JS
       secure: process.env.NODE_ENV === "production", // True in production (HTTPS)
@@ -453,8 +453,11 @@ const logout = (req, res) => {
   try {
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
+      secure: process.env.NODE_ENV === "production", // Must be true in production
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Must match how the cookie was set
+      path: "/", // Ensure the cookie is removed from the entire site
+      // Optional: include the domain if you set it when creating the cookie:
+      // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
     });
 
     res.status(200).json({ message: "Logged out successfully" });
@@ -463,6 +466,7 @@ const logout = (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 const refreshAccessToken = (req, res) => {
   const refreshToken = req.cookies.refreshToken;
