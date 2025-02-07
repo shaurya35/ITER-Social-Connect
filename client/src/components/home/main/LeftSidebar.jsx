@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import NextImage from "next/image";
 import { useProfile } from "@/contexts/ProfileContext";
+import { BACKEND_URL } from "@/configs/index";
 import { useRouter } from "next/navigation";
 import {
   BookMarked,

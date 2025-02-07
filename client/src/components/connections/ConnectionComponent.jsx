@@ -7,6 +7,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthProvider";
+import { BACKEND_URL } from "@/configs/index";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -60,7 +61,7 @@ export default function ConnectionsComponent() {
       setLoadingConnections(true);
       try {
         const response = await axios.get(
-          "http://localhost:8080/api/connections",
+          `${BACKEND_URL}/api/connections`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -86,7 +87,7 @@ export default function ConnectionsComponent() {
       setLoadingRequests(true);
       try {
         const response = await axios.get(
-          "http://localhost:8080/api/connections/requests",
+          `${BACKEND_URL}/api/connections/requests`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,

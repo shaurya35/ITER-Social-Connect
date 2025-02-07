@@ -9,6 +9,7 @@
 /** Imports */
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthProvider";
+import { BACKEND_URL } from "@/configs/index";
 import axios from "axios";
 import NextImage from "next/image";
 import { Image, MessageCircleMore, Forward, ThumbsUp } from "lucide-react";
@@ -59,7 +60,7 @@ export default function SinglePost({ postId }) {
       try {
         // await new Promise((resolve) => setTimeout(resolve, 10000));
         const response = await axios.get(
-          `http://localhost:8080/api/user/post/${postId}`,
+          `${BACKEND_URL}/api/user/post/${postId}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -79,7 +80,7 @@ export default function SinglePost({ postId }) {
       setLoading(true);
       try {
         const response = await axios.get(
-          `http://localhost:8080/api/comments/${postId}`,
+          `${BACKEND_URL}/api/comments/${postId}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,

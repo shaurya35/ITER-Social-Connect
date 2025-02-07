@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Image, MessageCircleMore, Forward, ThumbsUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthProvider";
 import { useProfile } from "@/contexts/ProfileContext";
+import { BACKEND_URL } from "@/configs/index";
 import {
   Card,
   CardContent,
@@ -75,7 +76,7 @@ export default function UserPosts() {
     setLoading(true);
     try {
       // await new Promise(resolve => setTimeout(resolve, 10000));
-      const response = await axios.get(`http://localhost:8080/api/user/posts`, {
+      const response = await axios.get(`${BACKEND_URL}/api/user/posts`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -133,7 +134,7 @@ export default function UserPosts() {
 
     try {
       const response = await axios.post(
-        "http://localhost:8080/api/user/post",
+        `${BACKEND_URL}/api/user/post`,
         { profilePicture: profile.profilePicture, content: newPostContent },
         {
           headers: {

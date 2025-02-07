@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthProvider";
+import { BACKEND_URL } from "@/configs/index";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Bell, Clock } from "lucide-react"; // Using Bell as a notification icon
@@ -30,7 +31,7 @@ export default function NotificationComponent() {
       setLoading(true);
     //   await new Promise((resolve) => setTimeout(resolve, 100000))
       try {
-        const response = await axios.get("http://localhost:8080/api/notifications", {
+        const response = await axios.get(`${BACKEND_URL}/api/notifications`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },

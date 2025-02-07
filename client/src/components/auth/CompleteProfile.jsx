@@ -12,7 +12,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import Select from "react-select";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthProvider";
+import { BACKEND_URL } from "@/configs/index";
+
+const interestOptions = [
+  { value: "aiml", label: "AI/ML" },
+  { value: "webdev", label: "Web Development" },
+  { value: "mobile", label: "Mobile Development" },
+  { value: "cloud", label: "Cloud Computing" },
+  { value: "cybersecurity", label: "Cybersecurity" },
+  { value: "datascience", label: "Data Science" },
+  { value: "devops", label: "DevOps" },
+  { value: "blockchain", label: "Blockchain" },
+];
 
 export default function CompleteProfile() {
   const [email, setEmail] = useState("");
@@ -24,12 +38,14 @@ export default function CompleteProfile() {
   const [linkedin, setLinkedin] = useState("");
   const [x, setX] = useState("");
   const [profilePicture, setProfilePicture] = useState(null);
+  const [fieldsOfInterest, setFieldsOfInterest] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadComplete, setUploadComplete] = useState(false);
   const router = useRouter();
   const { login, user } = useAuth();
+  const { isDarkMode } = useTheme();
 
   useEffect(() => {
     // If the user is already logged in, redirect them to the explore page
@@ -37,6 +53,68 @@ export default function CompleteProfile() {
       router.push("/explore");
     }
   }, [user, router]);
+
+  const customStyles = {
+    control: (base, state) => ({
+      ...base,
+      backgroundColor: isDarkMode ? "#374151" : "#ffffff",
+      borderColor: isDarkMode ? "#4b5563" : "#d1d5db",
+      color: isDarkMode ? "#e5e7eb" : "#111827",
+      boxShadow: state.isFocused
+        ? isDarkMode
+          ? "0 0 0 1px #9ca3af"
+          : "0 0 0 1px #6b7280"
+        : null,
+      "&:hover": {
+        borderColor: isDarkMode ? "#9ca3af" : "#6b7280",
+      },
+    }),
+    menu: (base) => ({
+      ...base,
+      backgroundColor: isDarkMode ? "#1f2937" : "#ffffff",
+      color: isDarkMode ? "#e5e7eb" : "#111827",
+    }),
+    option: (base, { isFocused }) => ({
+      ...base,
+      backgroundColor: isDarkMode
+        ? isFocused
+          ? "#374151"
+          : "#1f2937"
+        : isFocused
+        ? "#e5e7eb"
+        : "#ffffff",
+      color: isDarkMode ? "#e5e7eb" : "#111827",
+    }),
+    multiValue: (base) => ({
+      ...base,
+      backgroundColor: isDarkMode ? "#2d3748" : "#e2e8f0",
+    }),
+    multiValueLabel: (base) => ({
+      ...base,
+      color: isDarkMode ? "#e5e7eb" : "#111827",
+    }),
+    multiValueRemove: (base) => ({
+      ...base,
+      color: isDarkMode ? "#e5e7eb" : "#111827",
+      cursor: "pointer",
+      ":hover": {
+        backgroundColor: isDarkMode ? "#4a5568" : "#cbd5e0",
+        color: isDarkMode ? "#ffffff" : "#000000",
+      },
+    }),
+    singleValue: (base) => ({
+      ...base,
+      color: isDarkMode ? "#e5e7eb" : "#111827",
+    }),
+    input: (base) => ({
+      ...base,
+      color: isDarkMode ? "#e5e7eb" : "#111827",
+    }),
+    placeholder: (base) => ({
+      ...base,
+      color: isDarkMode ? "#e5e7eb" : "#111827",
+    }),
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,7 +132,7 @@ export default function CompleteProfile() {
 
       // Send the profile data to the backend
       const response = await axios.post(
-        "http://localhost:8080/api/auth/complete-profile",
+        `${BACKEND_URL}/api/auth/complete-profile`,
         {
           email,
           password,
@@ -64,6 +142,7 @@ export default function CompleteProfile() {
           linkedin,
           x,
           profilePicture,
+          fieldsOfInterest,
         },
         { withCredentials: true }
       );
@@ -98,7 +177,7 @@ export default function CompleteProfile() {
       const formData = new FormData();
       formData.append("photo", file);
 
-      const response = await fetch("http://localhost:3001/upload", {
+      const response = await fetch(`${BOT_URL}/upload`, {
         method: "POST",
         body: formData,
       });
@@ -155,7 +234,7 @@ export default function CompleteProfile() {
           <div className="relative">
             <Input
               id="password"
-              type={showPassword ? "text" : "password"} 
+              type={showPassword ? "text" : "password"}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -163,13 +242,13 @@ export default function CompleteProfile() {
             />
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)} 
+              onClick={() => setShowPassword(!showPassword)}
               className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-600 dark:text-gray-300 focus:outline-none"
             >
               {showPassword ? (
                 <EyeOff className="h-5 w-5" />
               ) : (
-                <Eye className="h-5 w-5" /> 
+                <Eye className="h-5 w-5" />
               )}
             </button>
           </div>
@@ -250,35 +329,63 @@ export default function CompleteProfile() {
           />
         </div>
 
+        {/* Fields of interests */}
         <div>
-            <Label
-              htmlFor="idCard"
-              className="text-gray-700 dark:text-gray-300"
-            >
-              Profile Photo
-            </Label>
-            <div className="relative">
-              <Input
-                id="idCard"
-                type="file"
-                accept="image/*"
-                required
-                onChange={handleIdCardChange}
-                disabled={isUploading && !error}
-                className={`mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 ${
-                  isUploading ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-                // className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 
-                //   opacity-50 cursor-not-allowed" 
-              />
-              {isUploading && (
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  
-                </div>
-              )}
-            </div>
+          <Label
+            htmlFor="fieldsOfInterest"
+            className="text-gray-900 dark:text-gray-100"
+          >
+            Fields of Interest
+          </Label>
+          <Select
+            id="fieldsOfInterest"
+            isMulti
+            options={interestOptions}
+            className="mt-1"
+            classNamePrefix="select"
+            styles={customStyles}
+            value={interestOptions.filter(
+              (option) =>
+                Array.isArray(fieldsOfInterest) &&
+                fieldsOfInterest.includes(option.value)
+            )}
+            onChange={(selected) => {
+              const values =
+                Array.isArray(selected) && selected.length > 0
+                  ? selected
+                      .map((opt) => (opt ? opt.value : null))
+                      .filter((val) => typeof val === "string")
+                  : [];
+              setFieldsOfInterest(values);
+            }}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="idCard" className="text-gray-700 dark:text-gray-300">
+            Profile Photo
+          </Label>
+          <div className="relative">
+            <Input
+              id="idCard"
+              type="file"
+              accept="image/*"
+              required
+              onChange={handleIdCardChange}
+              disabled={isUploading && !error}
+              className={`mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 ${
+                isUploading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              // className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700
+              //   opacity-50 cursor-not-allowed"
+            />
+            {isUploading && (
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              </div>
+            )}
           </div>
+        </div>
 
         {/* Error Handling */}
         {error && (
