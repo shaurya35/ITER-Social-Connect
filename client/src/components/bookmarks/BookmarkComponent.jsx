@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Image, MessageCircleMore, Forward, ThumbsUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthProvider";
-import { BACKEND_URL } from "@/configs/index";
 import { useProfile } from "@/contexts/ProfileContext";
 import { BACKEND_URL } from "@/configs/index";
 import {
