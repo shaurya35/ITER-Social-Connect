@@ -484,16 +484,22 @@ const signin = async (req, res) => {
 
 const logout = (req, res) => {
   try {
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Must be true in production
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Must match how the cookie was set
+      path: "/", // Ensure the cookie is removed from the entire site
+      // Optional: include the domain if you set it when creating the cookie:
+      // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
+    });
+
     // res.clearCookie("refreshToken", {
     //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production", // Must be true in production
-    //   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Must match how the cookie was set
-    //   path: "/", // Ensure the cookie is removed from the entire site
-    //   // Optional: include the domain if you set it when creating the cookie:
-    //   // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    //   path: "/",
+    //   domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
     // });
-
-    res.clearCookie("refreshToken");
 
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
