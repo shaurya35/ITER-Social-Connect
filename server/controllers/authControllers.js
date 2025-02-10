@@ -493,13 +493,7 @@ const logout = (req, res) => {
     //   // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
     // });
 
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      path: "/",
-      domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
-    });
+    res.clearCookie("refreshToken");
 
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
