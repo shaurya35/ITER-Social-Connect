@@ -356,35 +356,6 @@ const completeProfile = async (req, res) => {
     const accessToken = generateAccessToken({ userId: userDoc.id, email });
     const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
 
-    // Set secure HTTP-only cookie for refresh token
-    // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "Strict",
-    //   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    // });
-
-    // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true, // Not accessible via client-side JS
-    //   secure: process.env.NODE_ENV === "production", // True in production (HTTPS)
-    //   sameSite: "none", // Necessary for cross-site requests
-    //   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    //   path: "/", // Available to all routes
-    //   // Optionally, if you need to force the cookie to your backend domain:
-    //   // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
-    // });
-
-    /* latest */
-    // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "none",
-    //   maxAge: 30 * 24 * 60 * 60 * 1000,
-    //   path: "/",
-    //   domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
-    // });
-
-    // ai gen
     res.cookie("refreshToken", refreshToken, getCookieSettings());
 
     return res.status(200).json({
@@ -444,34 +415,6 @@ const signin = async (req, res) => {
     const accessToken = generateAccessToken({ userId: userDoc.id, email });
     const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
 
-    /** original */
-    // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "Strict",
-    //   maxAge: 30 * 24 * 60 * 60 * 1000,
-    // });
-
-    /* prod error */
-    // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "none",
-    //   maxAge: 30 * 24 * 60 * 60 * 1000,
-    //   path: "/",
-    // });
-
-    /* latest */
-    // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "none",
-    //   maxAge: 30 * 24 * 60 * 60 * 1000,
-    //   path: "/",
-    //   domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
-    // });
-
-    // ai gen
     res.cookie("refreshToken", refreshToken, getCookieSettings());
 
     res.status(200).json({
@@ -485,45 +428,10 @@ const signin = async (req, res) => {
   }
 };
 
-// const logout = (req, res) => {
-//   try {
-//     res.clearCookie("refreshToken", {
-//       httpOnly: true,
-//       secure: process.env.NODE_ENV === "production",
-//       sameSite: "Strict",
-//     });
-
-//     res.status(200).json({ message: "Logged out successfully" });
-//   } catch (error) {
-//     console.error("Logout Error:", error);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// };
-
 const logout = (req, res) => {
   try {
-    // res.clearCookie("refreshToken", {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production", // Must be true in production
-    //   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Must match how the cookie was set
-    //   path: "/", // Ensure the cookie is removed from the entire site
-    //   // Optional: include the domain if you set it when creating the cookie:
-    //   // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
-    // });
-
-    // latest 
-    // res.clearCookie("refreshToken", {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    //   path: "/",
-    //   domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
-    // });
-
-    /** ai gen */
     res.clearCookie("refreshToken", getCookieSettings());
-
-
+    
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.error("Logout Error:", error);
