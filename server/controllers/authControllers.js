@@ -354,15 +354,25 @@ const completeProfile = async (req, res) => {
     //   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     // });
     
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true, // Not accessible via client-side JS
-      secure: process.env.NODE_ENV === "production", // True in production (HTTPS)
-      sameSite: "none", // Necessary for cross-site requests
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      path: "/", // Available to all routes
-      // Optionally, if you need to force the cookie to your backend domain:
-      // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
-    });
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true, // Not accessible via client-side JS
+    //   secure: process.env.NODE_ENV === "production", // True in production (HTTPS)
+    //   sameSite: "none", // Necessary for cross-site requests
+    //   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    //   path: "/", // Available to all routes
+    //   // Optionally, if you need to force the cookie to your backend domain:
+    //   // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
+    // });
+
+      /* latest */
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "none",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        path: "/",
+        domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
+      });
 
     return res.status(200).json({
       message: "Profile completed successfully.",
@@ -422,12 +432,12 @@ const signin = async (req, res) => {
     const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
 
     /** original */
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: "Strict",
+    //   maxAge: 30 * 24 * 60 * 60 * 1000,
+    // });
 
     /* prod error */
     // res.cookie("refreshToken", refreshToken, {
@@ -439,14 +449,14 @@ const signin = async (req, res) => {
     // });
     
     /* latest */
-    // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "none",
-    //   maxAge: 30 * 24 * 60 * 60 * 1000,
-    //   path: "/",
-    //   domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
-    // });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      path: "/",
+      domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
+    });
 
     res.status(200).json({
       message: "Signin successful",
