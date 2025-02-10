@@ -23,6 +23,16 @@ const db = require("../firebase/firebaseConfig");
 const jwt = require("jsonwebtoken");
 const { Timestamp } = require("firebase/firestore");
 
+/** cookie settings  */
+const getCookieSettings = () => ({
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+  path: "/",
+  domain: process.env.NODE_ENV === "production" ? "vercel.app" : "localhost",
+});
+
 //function to generate a random 6 digits otp
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
@@ -353,7 +363,7 @@ const completeProfile = async (req, res) => {
     //   sameSite: "Strict",
     //   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     // });
-    
+
     // res.cookie("refreshToken", refreshToken, {
     //   httpOnly: true, // Not accessible via client-side JS
     //   secure: process.env.NODE_ENV === "production", // True in production (HTTPS)
@@ -364,15 +374,18 @@ const completeProfile = async (req, res) => {
     //   // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
     // });
 
-      /* latest */
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "none",
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-        path: "/",
-        domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
-      });
+    /* latest */
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: "none",
+    //   maxAge: 30 * 24 * 60 * 60 * 1000,
+    //   path: "/",
+    //   domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
+    // });
+
+    // ai gen
+    res.cookie("refreshToken", refreshToken, getCookieSettings());
 
     return res.status(200).json({
       message: "Profile completed successfully.",
@@ -441,22 +454,25 @@ const signin = async (req, res) => {
 
     /* prod error */
     // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true, 
-    //   secure: process.env.NODE_ENV === "production", 
-    //   sameSite: "none", 
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: "none",
     //   maxAge: 30 * 24 * 60 * 60 * 1000,
-    //   path: "/", 
+    //   path: "/",
     // });
-    
+
     /* latest */
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      path: "/",
-      domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
-    });
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: "none",
+    //   maxAge: 30 * 24 * 60 * 60 * 1000,
+    //   path: "/",
+    //   domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
+    // });
+
+    // ai gen
+    res.cookie("refreshToken", refreshToken, getCookieSettings());
 
     res.status(200).json({
       message: "Signin successful",
@@ -495,13 +511,18 @@ const logout = (req, res) => {
     //   // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
     // });
 
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      path: "/",
-      domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
-    });
+    // latest 
+    // res.clearCookie("refreshToken", {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    //   path: "/",
+    //   domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
+    // });
+
+    /** ai gen */
+    res.clearCookie("refreshToken", getCookieSettings());
+
 
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
@@ -509,7 +530,6 @@ const logout = (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 const refreshAccessToken = (req, res) => {
   const refreshToken = req.cookies.refreshToken;
