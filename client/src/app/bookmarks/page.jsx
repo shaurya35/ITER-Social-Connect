@@ -1,5 +1,5 @@
 import LeftSidebar from "@/components/home/main/LeftSidebar";
-import BookmarkComponent from "@/components/bookmarks/BookmarkComponent"
+import BookmarkComponent from "@/components/bookmarks/BookmarkComponent";
 import RightSidebar from "@/components/home/main/RightSidebar";
 
 export default function Home() {

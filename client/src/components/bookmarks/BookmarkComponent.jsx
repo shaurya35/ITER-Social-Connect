@@ -76,7 +76,7 @@ export default function BookmarkComponent() {
     setLoading(true);
     try {
       // await new Promise(resolve => setTimeout(resolve, 10000));
-      const response = await axios.get(`${BACKEND_URL}/api/user/posts`, {
+      const response = await axios.get(`${BACKEND_URL}/api/user/bookmarks`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
