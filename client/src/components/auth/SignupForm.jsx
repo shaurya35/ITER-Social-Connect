@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +23,14 @@ export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadComplete, setUploadComplete] = useState(false);
+  const router = useRouter();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      router.push("/explore");
+    }
+  }, [user, router]);
 
   // Handle photo upload
   const uploadPhoto = async (file) => {
@@ -79,7 +89,9 @@ export function SignupForm() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to sign up. Please try again.");
+        throw new Error(
+          errorData.message || "Failed to sign up. Please try again."
+        );
       }
 
       setStep("verify");
@@ -203,7 +215,6 @@ export function SignupForm() {
               {isUploading && (
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  
                 </div>
               )}
             </div>

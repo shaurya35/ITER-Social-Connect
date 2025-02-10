@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthProvider";
+import { useRouter } from "next/navigation";
 import { BACKEND_URL } from "@/configs/index";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +17,13 @@ export default function NotificationComponent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { accessToken } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if(!accessToken){
+      router.push("/signin")
+    }
+  })
 
   const buttons = [
     {

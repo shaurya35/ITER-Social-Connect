@@ -64,6 +64,12 @@ export default function UserPosts() {
   const observer = useRef();
 
   useEffect(() => {
+    if(!accessToken){
+      router.push("/signin")
+    }
+  })
+
+  useEffect(() => {
     if (profile) {
       setFetchingUser(false);
     }

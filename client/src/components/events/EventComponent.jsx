@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthProvider";
 import { BACKEND_URL } from "@/configs/index";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,15 @@ export default function EventComponent() {
   const [eventLoading, setEventLoading] = useState(false);
   const [eventError, setEventError] = useState(null);
   const { accessToken } = useAuth();
+  const router = useRouter()
+
+  useEffect(() => {
+    if(!accessToken){
+      if (user) {
+        router.push("/signin");
+      }
+    }
+  })
 
   const buttons = [
     {

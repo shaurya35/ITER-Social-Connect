@@ -8,6 +8,7 @@
 
 /** Imports */
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthProvider";
 import { BACKEND_URL } from "@/configs/index";
 import axios from "axios";
@@ -52,6 +53,13 @@ export default function SinglePost({ postId }) {
   const [loading, setLoading] = useState(false);
   const { accessToken } = useAuth();
   const { profile } = useProfile();
+  const router = useRouter();
+
+  useEffect(() => {
+    if(!accessToken){
+      router.push("/signin")
+    }
+  })
 
   // fetch single post and comments
   useEffect(() => {

@@ -63,6 +63,12 @@ export default function BookmarkComponent() {
   const router = useRouter();
   const observer = useRef();
 
+  useEffect(()=> {
+    if(!profile){
+      router.replace("/signin"); 
+    }
+  })
+
   useEffect(() => {
     if (profile) {
       setFetchingUser(false);
