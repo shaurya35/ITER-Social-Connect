@@ -204,21 +204,21 @@ const getUserPostById = async (req, res) => {
 const likePost = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { postId } = req.body; 
+    const { postId } = req.body;
 
     if (!postId) {
       return res.status(400).json({ error: "Post ID is required" });
     }
 
-    const postRef = doc(db, "posts", postId); 
-    const postSnapshot = await getDoc(postRef); 
+    const postRef = doc(db, "posts", postId);
+    const postSnapshot = await getDoc(postRef);
 
     if (!postSnapshot.exists()) {
       return res.status(404).json({ error: "Post not found" });
     }
 
     const postData = postSnapshot.data();
-    const likes = postData.likes || [];
+    let likes = postData.likes || [];
 
     const userIndex = likes.indexOf(userId);
     const userAlreadyLiked = userIndex !== -1;
