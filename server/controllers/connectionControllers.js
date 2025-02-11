@@ -85,6 +85,7 @@ const getConnectionRequests = async (req, res) => {
           name: senderData.name,
           email: senderData.email,
           about: senderData.about,
+          profilePicture: senderData.profilePicture, // Add profile picture
         });
       }
     }
@@ -99,7 +100,7 @@ const getConnectionRequests = async (req, res) => {
 // --- Respond to Connection Request ---
 const respondToConnectionRequest = async (req, res) => {
   try {
-    const { targetEmail, action } = req.body; 
+    const { targetEmail, action } = req.body;
     const userId = req.user.userId;
 
     if (!targetEmail || !["true", "false"].includes(action)) {
@@ -143,8 +144,13 @@ const respondToConnectionRequest = async (req, res) => {
       await updateDoc(receiverDocRef, { connectionsCount: increment(1) });
     }
 
+    // Fetch the target user's profile picture
+    const targetUserDoc = await getDoc(doc(db, "users", targetUserId));
+    const targetUserData = targetUserDoc.data();
+
     res.status(200).json({
       message: `Connection request ${status} successfully.`,
+      profilePicture: targetUserData.profilePicture, // Include profile picture
     });
   } catch (error) {
     console.error("Respond to Connection Request Error:", error);
@@ -178,6 +184,7 @@ const getAllConnections = async (req, res) => {
           name: userData.name,
           email: userData.email,
           about: userData.about,
+          profilePicture: userData.profilePicture, // Add profile picture
         });
       }
     }
