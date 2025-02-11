@@ -76,7 +76,7 @@ const createEvent = async (req, res) => {
         eventId: newEventRef.id,
         timestamp: Date.now(),
         isRead: false,
-        "type": "event"
+        type: "event",
       });
     });
 
@@ -145,5 +145,5 @@ const getEvent = async (req, res) => {
 module.exports = {
   createEvent,
   getEvent,
-  markNotificationAsRead
+  markNotificationAsRead,
 };

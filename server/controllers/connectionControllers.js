@@ -1,20 +1,20 @@
-const { 
-  collection, 
-  doc, 
-  setDoc, 
-  getDoc, 
-  updateDoc, 
-  query, 
-  where, 
-  getDocs, 
-  increment 
+const {
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  query,
+  where,
+  getDocs,
+  increment,
 } = require("firebase/firestore");
 const db = require("../firebase/firebaseConfig");
 
 // --- Send Connection Request ---
 const sendConnectionRequest = async (req, res) => {
   try {
-    const { targetEmail } = req.body; 
+    const { targetEmail } = req.body;
     const senderId = req.user.userId;
 
     if (!targetEmail) {
@@ -22,7 +22,10 @@ const sendConnectionRequest = async (req, res) => {
     }
 
     // Find target user by email
-    const usersQuery = query(collection(db, "users"), where("email", "==", targetEmail));
+    const usersQuery = query(
+      collection(db, "users"),
+      where("email", "==", targetEmail)
+    );
     const usersSnapshot = await getDocs(usersQuery);
 
     if (usersSnapshot.empty) {
@@ -33,14 +36,19 @@ const sendConnectionRequest = async (req, res) => {
     const targetUserId = targetUser.id;
 
     // Check if the connection already exists
-    const senderConnectionRef = doc(db, `users/${senderId}/connections/${targetUserId}`);
+    const senderConnectionRef = doc(
+      db,
+      `users/${senderId}/connections/${targetUserId}`
+    );
     const senderConnectionDoc = await getDoc(senderConnectionRef);
 
     if (senderConnectionDoc.exists()) {
-      return res.status(400).json({ message: "Connection request already sent!" });
+      return res
+        .status(400)
+        .json({ message: "Connection request already sent!" });
     }
 
-    // Add connection to both users' subcollections
+    // Add connection request to both users' subcollections
     await setDoc(doc(db, `users/${senderId}/connections/${targetUserId}`), {
       userId: targetUserId,
       status: "pending",
@@ -51,6 +59,17 @@ const sendConnectionRequest = async (req, res) => {
       userId: senderId,
       status: "pending",
       createdAt: Date.now(),
+    });
+
+    // 🔥 Store Notification for Target User
+    const notificationRef = doc(collection(db, "notifications"));
+    await setDoc(notificationRef, {
+      userId: targetUserId, // Notification for the receiver
+      message: `You have a new connection request from ${senderId}.`,
+      senderId: senderId,
+      timestamp: Date.now(),
+      isRead: false,
+      type: "connection_request",
     });
 
     res.status(200).json({ message: "Connection request sent successfully!" });
@@ -108,7 +127,10 @@ const respondToConnectionRequest = async (req, res) => {
     }
 
     // Find target user by email
-    const usersQuery = query(collection(db, "users"), where("email", "==", targetEmail));
+    const usersQuery = query(
+      collection(db, "users"),
+      where("email", "==", targetEmail)
+    );
     const usersSnapshot = await getDocs(usersQuery);
 
     if (usersSnapshot.empty) {
@@ -119,8 +141,14 @@ const respondToConnectionRequest = async (req, res) => {
     const targetUserId = targetUser.id;
 
     // Update the connection status in both users' subcollections
-    const senderConnectionRef = doc(db, `users/${userId}/connections/${targetUserId}`);
-    const receiverConnectionRef = doc(db, `users/${targetUserId}/connections/${userId}`);
+    const senderConnectionRef = doc(
+      db,
+      `users/${userId}/connections/${targetUserId}`
+    );
+    const receiverConnectionRef = doc(
+      db,
+      `users/${targetUserId}/connections/${userId}`
+    );
 
     const status = action === "true" ? "accepted" : "rejected";
 
