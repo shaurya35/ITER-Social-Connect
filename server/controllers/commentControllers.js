@@ -40,6 +40,7 @@ const createComment = async (req, res) => {
       return res.status(400).json({ error: "Comment cannot be Empty!" });
     }
 
+    // Create the comment
     const commentDoc = await addDoc(
       collection(db, "posts", postId, "comments"),
       {
@@ -49,6 +50,17 @@ const createComment = async (req, res) => {
       }
     );
 
+    // Fetch user details
+    const userRef = doc(db, "users", userId);
+    const userSnapshot = await getDoc(userRef);
+
+    if (!userSnapshot.exists()) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userData = userSnapshot.data();
+
+    // Respond with comment ID and user details
     res.status(200).json({
       message: "Comment Created Successfully!",
       commentId: commentDoc.id,
