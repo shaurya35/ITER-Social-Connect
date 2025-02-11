@@ -37,10 +37,9 @@ const createComment = async (req, res) => {
     const userId = req.user.userId;
 
     if (!content || content.trim() === "") {
-      return res.status(400).json({ error: "Comment cannot be empty!" });
+      return res.status(400).json({ error: "Comment cannot be Empty!" });
     }
 
-    // Add the comment to Firestore
     const commentDoc = await addDoc(
       collection(db, "posts", postId, "comments"),
       {
@@ -50,34 +49,19 @@ const createComment = async (req, res) => {
       }
     );
 
-    // Fetch the post to get the post owner's ID
-    const postRef = doc(db, "posts", postId);
-    const postSnap = await getDoc(postRef);
-
-    if (!postSnap.exists()) {
-      return res.status(404).json({ error: "Post not found!" });
-    }
-
-    const postOwnerId = postSnap.data().userId; // Assuming post has a 'userId' field
-
-    // Create a notification only for the post owner
-    const notificationRef = doc(collection(db, "notifications"));
-    await setDoc(notificationRef, {
-      userId: postOwnerId,
-      message: `New comment added to your post: ${postId}`,
-      postId,
-      timestamp: Date.now(),
-      isRead: false,
-      type: "comment",
-    });
-
     res.status(200).json({
       message: "Comment Created Successfully!",
       commentId: commentDoc.id,
+      user: {
+        name: userData.name,
+        profilePicture: userData.profilePicture,
+      },
     });
   } catch (error) {
     console.error("Create Comment Error:", error);
-    res.status(500).json({ message: "Failed to create comment!" });
+    res.status(500).json({
+      message: "Failed to create comment!",
+    });
   }
 };
 

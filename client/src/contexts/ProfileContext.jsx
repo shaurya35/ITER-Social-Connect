@@ -4,6 +4,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "@/contexts/AuthProvider";
+import { BACKEND_URL } from "@/configs";
 
 const ProfileContext = createContext();
 
@@ -17,7 +18,7 @@ export const ProfileProvider = ({ children }) => {
       const fetchProfile = async () => {
         setLoading(true);
         try {
-          const response = await axios.get("http://localhost:8080/api/profile", {
+          const response = await axios.get(`${BACKEND_URL}/api/profile`, {
             headers: {
               Authorization: `Bearer ${accessToken}`,
             },

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BACKEND_URL, BOT_URL } from "@/configs/index";
 import { AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -31,7 +32,7 @@ export function SignupForm() {
       const formData = new FormData();
       formData.append("photo", file);
 
-      const response = await fetch("http://localhost:3001/upload", {
+      const response = await fetch(`${BOT_URL}/upload`, {
         method: "POST",
         body: formData,
       });
@@ -70,7 +71,7 @@ export function SignupForm() {
         throw new Error("Failed to complete the upload. Please try again.");
       }
 
-      const response = await fetch("http://localhost:8080/api/auth/signup", {
+      const response = await fetch(`${BACKEND_URL}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, regNo, discordUrl }),
@@ -95,7 +96,7 @@ export function SignupForm() {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/verify-otp", {
+      const response = await fetch(`${BACKEND_URL}/api/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp }),

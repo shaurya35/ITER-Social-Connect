@@ -16,6 +16,7 @@ import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthProvider";
 import { useProfile } from "@/contexts/ProfileContext";
+import { BACKEND_URL } from "@/configs/index";
 import axios from "axios";
 import PostsPreloader from "@/components/preloaders/PostsPreloader";
 import { Button } from "@/components/ui/button";
@@ -89,7 +90,7 @@ export default function MainFeed() {
     setLoading(true);
     try {
       // await new Promise(resolve => setTimeout(resolve, 10000));
-      const response = await axios.get(`http://localhost:8080/api/feed`, {
+      const response = await axios.get(`${BACKEND_URL}/api/feed`, {
         params: { page, limit: 10 },
         withCredentials: true,
       });
@@ -142,7 +143,7 @@ export default function MainFeed() {
     setNewPostContent("");
     try {
       const response = await axios.post(
-        "http://localhost:8080/api/user/post",
+        `${BACKEND_URL}/api/user/post`,
         { profilePicture: profile.profilePicture, content: newPostContent },
         {
           headers: {
@@ -176,7 +177,7 @@ export default function MainFeed() {
 
     try {
       await axios.post(
-        `http://localhost:8080/api/user/post/${postId}/bookmark`,
+        `${BACKEND_URL}/api/user/post/${postId}/bookmark`,
         {},
         {
           headers: {
@@ -213,7 +214,7 @@ export default function MainFeed() {
               <NextImage
                 src={
                   profile?.profilePicture ||
-                  "https://media.discordapp.net/attachments/1315342834278207540/1316064105588719707/pf2.jpg?ex=6759afb6&is=67585e36&hm=c74adb8fccdc099b5567f29ee46e26df2bacbb440f53b16aaee5618e4927fad9&=&format=webp&width=460&height=465"
+                  "https://media.discordapp.net/attachments/1315342834278207540/1315347576207179818/3.jpg?ex=67a77fe4&is=67a62e64&hm=9595ba0bd8dc572073cd4de5a794918f4af621a260b1990e01512188c5414bab&=&format=webp&width=347&height=350"
                 }
                 alt="Avatar"
                 width={40}

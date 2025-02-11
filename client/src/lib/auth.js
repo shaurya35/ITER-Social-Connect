@@ -1,4 +1,5 @@
 import { jwtDecode } from "jwt-decode";
+import { BACKEND_URL } from "@/configs";
 
 /**
  * Extracts the token expiration timestamp from a JWT.
@@ -21,7 +22,7 @@ export const getTokenExpiration = (token) => {
  */
 export const fetchAuthStateSSR = async () => {
   try {
-    const response = await fetch("http://localhost:8080/api/auth/refresh", {
+    const response = await fetch(`${BACKEND_URL}/api/auth/refresh`, {
       method: "POST",
       credentials: "include",
     });

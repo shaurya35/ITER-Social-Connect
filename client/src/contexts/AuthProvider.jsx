@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 import { fetchAuthStateSSR, getTokenExpiration, resetAuthState } from "../lib/auth";
+import { BACKEND_URL } from "@/configs";
 
 const AuthContext = createContext();
 
@@ -70,7 +71,7 @@ export const AuthProvider = ({ children }) => {
   // Handles logout
   const logout = async () => {
     try {
-      await fetch("http://localhost:8080/api/auth/logout", {
+      await fetch(`${BACKEND_URL}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
       });

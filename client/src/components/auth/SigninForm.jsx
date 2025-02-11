@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthProvider";
+import { BACKEND_URL } from "@/configs/index";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +34,7 @@ export function SigninForm() {
     try {
       // Send login credentials to the backend
       const response = await axios.post(
-        "http://localhost:8080/api/auth/signin",
+        `${BACKEND_URL}/api/auth/signin`,
         { email, password },
         { withCredentials: true }
       );

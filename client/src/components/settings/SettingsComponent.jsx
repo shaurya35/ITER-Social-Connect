@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthProvider";
+import { BACKEND_URL } from "@/configs/index";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Settings, User } from "lucide-react";
@@ -30,7 +31,7 @@ export default function SettingsComponent() {
     const getSettings = async () => {
       setSettingsLoading(true);
       try {
-        const response = await axios.get("http://localhost:8080/api/settings", {
+        const response = await axios.get(`${BACKEND_URL}/api/settings`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },

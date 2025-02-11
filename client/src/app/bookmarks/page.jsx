@@ -7,7 +7,7 @@ export default function Home() {
     <>
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
         <main className="container mx-auto  flex justify-center items-start">
-          <div className="flex flex-row justify-center gap-5 max-w-7xl w-full">
+          <div className="flex flex-row justify-center gap-5 max-w-6xl w-full">
             <div className="hidden xl:block lg:w-64 sticky pt-5 top-16 h-[calc(100vh-4rem)] overflow-y-auto">
               <LeftSidebar />
             </div>

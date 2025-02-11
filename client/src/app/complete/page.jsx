@@ -1,7 +1,7 @@
 import CompleteProfile from "@/components/auth/CompleteProfile";
 
 export const metadata = {
-  title: "Complete-Profile / ITER Connect",
+  title: "Complete / ITER Connect",
   description: "Create a new ITER Connect account",
 };
 

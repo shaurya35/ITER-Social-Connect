@@ -239,38 +239,42 @@ const getUserPostById = async (req, res) => {
 const likePost = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { postId } = req.params;
+    const { postId } = req.body; 
 
-    const postRef = doc(db, "posts", postId);
-    const postSnapshot = await getDoc(postRef);
+    if (!postId) {
+      return res.status(400).json({ error: "Post ID is required" });
+    }
+
+    const postRef = doc(db, "posts", postId); 
+    const postSnapshot = await getDoc(postRef); 
 
     if (!postSnapshot.exists()) {
       return res.status(404).json({ error: "Post not found" });
     }
 
     const postData = postSnapshot.data();
+    const likes = postData.likes || [];
 
-    let likes = postData.likes || [];
-    const userAlreadyLiked = likes.includes(userId);
+    const userIndex = likes.indexOf(userId);
+    const userAlreadyLiked = userIndex !== -1;
 
     if (userAlreadyLiked) {
-      // If user already liked, remove their ID (unlike functionality)
-      likes = likes.filter((id) => id !== userId);
+      // Remove user ID from likes array (unlike)
+      likes.splice(userIndex, 1);
     } else {
-      // Add user ID to the likes array
+      // Add user ID to likes array (like)
       likes.push(userId);
     }
 
-    // Calculate the new like count
-    const likeCount = likes.length;
-
-    await updateDoc(postRef, { likes, likeCount });
+    // Update the post with the new likes array and like count
+    await updateDoc(postRef, {
+      likes,
+      likeCount: likes.length,
+    });
 
     res.status(200).json({
-      message: userAlreadyLiked
-        ? "Post unliked successfully"
-        : "Post liked successfully",
-      totalLikes: likeCount,
+      message: userAlreadyLiked ? "Post unliked successfully" : "Post liked successfully",
+      totalLikes: likes.length,
     });
   } catch (error) {
     console.error("Like Post Error:", error);

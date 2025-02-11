@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthProvider";
+import { BACKEND_URL } from "@/configs/index";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserPlus, Mail, BookMarked } from "lucide-react";
@@ -30,7 +31,7 @@ export default function EventComponent() {
     const getAllEvents = async () => {
       setEventLoading(true);
       try {
-        const response = await axios.get("http://localhost:8080/api/events", {
+        const response = await axios.get(`${BACKEND_URL}/api/events`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
