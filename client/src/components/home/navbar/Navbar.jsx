@@ -66,7 +66,7 @@ export default function Navbar() {
     { icon: Home, label: "Home", route: "/explore" },
     { icon: User, label: "Profile", route: "/profile" },
     { icon: Bell, label: "Notifications", route: "/notifications" },
-    { icon: Mail, label: "Messages", route: "/chat" },
+    { icon: Mail, label: "Messages", route: "/chat", disabled:true },
     { icon: Users, label: "Connections", route: "/connections" },
     { icon: Bookmark, label: "Bookmarks", route: "/bookmarks" },
     { icon: Settings, label: "Settings", route: "/settings" },
@@ -208,6 +208,7 @@ export default function Navbar() {
                           setIsOpen(false);
                           handleNavigation(item.route);
                         }}
+                        disabled={item.disabled}
                       >
                         <item.icon className="h-5 w-5 mr-3" />
                         {item.label}

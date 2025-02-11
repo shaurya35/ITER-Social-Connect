@@ -346,6 +346,14 @@ const completeProfile = async (req, res) => {
     const accessToken = generateAccessToken({ userId: userDoc.id, email });
     const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
 
+    /** original */
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "Strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
     // Set secure HTTP-only cookie for refresh token
     // res.cookie("refreshToken", refreshToken, {
     //   httpOnly: true,
@@ -354,15 +362,15 @@ const completeProfile = async (req, res) => {
     //   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     // });
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true, // Not accessible via client-side JS
-      secure: process.env.NODE_ENV === "production", // True in production (HTTPS)
-      sameSite: "none", // Necessary for cross-site requests
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      path: "/", // Available to all routes
-      // Optionally, if you need to force the cookie to your backend domain:
-      // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
-    });
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true, // Not accessible via client-side JS
+    //   secure: process.env.NODE_ENV === "production", // True in production (HTTPS)
+    //   sameSite: "none", // Necessary for cross-site requests
+    //   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    //   path: "/", // Available to all routes
+    //   // Optionally, if you need to force the cookie to your backend domain:
+    //   // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
+    // });
 
     return res.status(200).json({
       message: "Profile completed successfully.",
@@ -421,22 +429,32 @@ const signin = async (req, res) => {
     const accessToken = generateAccessToken({ userId: userDoc.id, email });
     const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
 
+    /** original */
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "Strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    /* prod error */
     // res.cookie("refreshToken", refreshToken, {
     //   httpOnly: true,
     //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "Strict",
+    //   sameSite: "none",
     //   maxAge: 30 * 24 * 60 * 60 * 1000,
+    //   path: "/",
     // });
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true, // Not accessible via client-side JS
-      secure: process.env.NODE_ENV === "production", // True in production (HTTPS)
-      sameSite: "none", // Necessary for cross-site requests
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      path: "/", // Available to all routes
-      // Optionally, if you need to force the cookie to your backend domain:
-      // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
-    });
+    /* latest */
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: "none",
+    //   maxAge: 30 * 24 * 60 * 60 * 1000,
+    //   path: "/",
+    //   domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
+    // });
 
     res.status(200).json({
       message: "Signin successful",
@@ -448,6 +466,21 @@ const signin = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// const logout = (req, res) => {
+//   try {
+//     res.clearCookie("refreshToken", {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === "production",
+//       sameSite: "Strict",
+//     });
+
+//     res.status(200).json({ message: "Logged out successfully" });
+//   } catch (error) {
+//     console.error("Logout Error:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// };
 
 const logout = (req, res) => {
   try {
@@ -466,7 +499,6 @@ const logout = (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 const refreshAccessToken = (req, res) => {
   const refreshToken = req.cookies.refreshToken;

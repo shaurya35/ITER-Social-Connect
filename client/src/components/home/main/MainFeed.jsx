@@ -214,7 +214,7 @@ export default function MainFeed() {
               <NextImage
                 src={
                   profile?.profilePicture ||
-                  "https://media.discordapp.net/attachments/1315342834278207540/1315347576207179818/3.jpg?ex=67a77fe4&is=67a62e64&hm=9595ba0bd8dc572073cd4de5a794918f4af621a260b1990e01512188c5414bab&=&format=webp&width=347&height=350"
+                  "https://media.discordapp.net/attachments/1315342834278207540/1315347576207179818/3.jpg?ex=67a828a4&is=67a6d724&hm=eb17b9eed3b4bd485db30c8e59ceb7bb5c93470472b440e1e489f5f6026ba023&=&format=webp&width=483&height=488"
                 }
                 alt="Avatar"
                 width={40}
@@ -347,7 +347,7 @@ export default function MainFeed() {
                   className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
                 >
                   <ThumbsUp className="h-4 w-4" />
-                  {post.likes}{" "}
+                  {post.likeCount}{" "}
                 </Button>
                 <Button
                   variant="ghost"

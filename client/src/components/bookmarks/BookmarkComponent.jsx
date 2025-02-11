@@ -63,6 +63,12 @@ export default function BookmarkComponent() {
   const router = useRouter();
   const observer = useRef();
 
+  useEffect(()=> {
+    if(!profile){
+      router.replace("/signin"); 
+    }
+  })
+
   useEffect(() => {
     if (profile) {
       setFetchingUser(false);
@@ -76,7 +82,7 @@ export default function BookmarkComponent() {
     setLoading(true);
     try {
       // await new Promise(resolve => setTimeout(resolve, 10000));
-      const response = await axios.get(`${BACKEND_URL}/api/user/posts`, {
+      const response = await axios.get(`${BACKEND_URL}/api/user/bookmarks`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },

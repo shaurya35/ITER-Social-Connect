@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/AuthProvider";
 import { BACKEND_URL } from "@/configs/index";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,13 @@ export default function SettingsComponent() {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsError, setSettingsError] = useState(null);
   const { accessToken } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if(!accessToken){
+      router.push("/signin")
+    }
+  })
 
   const buttons = [
     {

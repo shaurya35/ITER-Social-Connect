@@ -26,7 +26,7 @@ export default function LeftSidebar() {
     { icon: User, label: "Profile", route: "/profile" },
     // { icon: MessageCircle, label: "Messages", route: "/chat" },
     { icon: Bell, label: "Notifications", route: "/notifications" },
-    { icon: Mail, label: "Messages", route: "/chat" },
+    { icon: Mail, label: "Messages", route: "/chat", disabled: true },
     { icon: Bookmark, label: "Saved Posts", route: "/bookmarks" },
     { icon: Users, label: "Connections", route: "/connections" },
     { icon: Settings, label: "Settings", route: "/settings" },
@@ -114,7 +114,8 @@ export default function LeftSidebar() {
               size="sm"
               onClick={() => handleNavigation(item.route)}
               className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
-            >
+              disabled={item.disabled}
+              >
               <item.icon className="h-5 w-5" />
               <span className="sr-only">{item.label}</span>
             </Button>
