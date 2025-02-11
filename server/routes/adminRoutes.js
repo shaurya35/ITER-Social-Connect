@@ -8,6 +8,7 @@ const {
   getPostReportDetails,
   getUserReportDetails,
   updateUserBadges,
+  deleteOldNotifications
 } = require("../controllers/adminControllers");
 const router = express.Router();
 const { authenticateAdmin } = require("../middlewares/authMiddlewares");
@@ -20,5 +21,7 @@ router.get("/reports", authenticateAdmin, getReports);
 router.get("/reports/post/:postId", authenticateAdmin, getPostReportDetails);
 router.get("/reports/user/:userId", authenticateAdmin, getUserReportDetails);
 router.post("/badges", authenticateAdmin, updateUserBadges);
+router.delete("/delete-old-notifications", deleteOldNotifications);
+
 
 module.exports = router;

@@ -12,27 +12,66 @@ const {
   deleteDoc,
   arrayUnion,
   arrayRemove,
+  orderBy,limit,
   writeBatch,
 } = require("firebase/firestore");
 
 const getAllUserPosts = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const { page = 1, limit: limitParam = 10 } = req.query;
+    const limitValue = parseInt(limitParam, 10);
 
-    const q = query(collection(db, "posts"), where("userId", "==", userId));
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      return res.status(200).json({ message: "User has no posts", posts: [] });
+    if (isNaN(page) || isNaN(limitValue)) {
+      return res.status(400).json({ error: "Invalid page or limit parameter" });
     }
 
-    const posts = querySnapshot.docs.map((doc) => ({
+    const postsCollection = collection(db, "posts");
+    let postsQuery = query(
+      postsCollection,
+      where("userId", "==", userId),
+      orderBy("createdAt", "desc"),
+      limit(limitValue)
+    );
+
+    if (page > 1) {
+      const allPostsSnapshot = await getDocs(
+        query(
+          postsCollection,
+          where("userId", "==", userId),
+          orderBy("createdAt", "desc")
+        )
+      );
+      const allPosts = allPostsSnapshot.docs;
+
+      const startIndex = (page - 1) * limitValue;
+      if (startIndex >= allPosts.length) {
+        return res.status(200).json({ posts: [], hasMore: false });
+      }
+
+      const startDoc = allPosts[startIndex];
+      postsQuery = query(
+        postsCollection,
+        where("userId", "==", userId),
+        orderBy("createdAt", "desc"),
+        startAfter(startDoc),
+        limit(limitValue)
+      );
+    }
+
+    const postsSnapshot = await getDocs(postsQuery);
+    const posts = postsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
 
-    res.status(200).json({ message: "Posts retrieved successfully", posts });
+    const hasMore = posts.length === limitValue;
+
+    res
+      .status(200)
+      .json({ message: "Posts retrieved successfully", posts, hasMore });
   } catch (error) {
+    console.error("Error fetching user posts:", error);
     res.status(500).json({ error: "Failed to fetch user posts" });
   }
 };
@@ -40,7 +79,7 @@ const getAllUserPosts = async (req, res) => {
 const createUserPost = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { content, profilePicture } = req.body;
+    const { content } = req.body;
 
     if (!content || content.trim() === "") {
       return res.status(400).json({ error: "Post content cannot be empty" });
@@ -53,13 +92,13 @@ const createUserPost = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const userName = userSnapshot.data().name;
+    const userData = userSnapshot.data();
+    const userName = userData.name;
+    const profilePicture = userData.profilePicture || "";
 
-    // Extract hashtags from content
     const hashtags =
       content.match(/#[a-zA-Z0-9_]+/g)?.map((tag) => tag.toLowerCase()) || [];
 
-    // Save post to the `posts` collection
     const postDoc = await addDoc(collection(db, "posts"), {
       userId,
       userName,
@@ -71,21 +110,18 @@ const createUserPost = async (req, res) => {
 
     const postId = postDoc.id;
 
-    // Update the `hashtags` collection
     const batch = writeBatch(db);
     const currentTime = new Date().toISOString();
 
     for (const tag of hashtags) {
       const hashtagRef = doc(db, "hashtags", tag);
-
       const hashtagSnapshot = await getDoc(hashtagRef);
+
       if (hashtagSnapshot.exists()) {
-        // Hashtag exists: Update it
         batch.update(hashtagRef, {
           posts: arrayUnion({ postId, createdAt: currentTime }),
         });
       } else {
-        // Hashtag does not exist: Create it
         batch.set(hashtagRef, {
           createdAt: currentTime,
           posts: [{ postId, createdAt: currentTime }],
@@ -93,7 +129,6 @@ const createUserPost = async (req, res) => {
       }
     }
 
-    // Commit the batch operation
     await batch.commit();
 
     res.status(201).json({

@@ -24,6 +24,7 @@ const createEvent = async (req, res) => {
       eventContact,
     } = req.body;
     const userId = req.user.userId;
+
     if (!userId) {
       return res.status(400).json({ message: "User ID is required." });
     }
@@ -64,9 +65,42 @@ const createEvent = async (req, res) => {
       createdAt: Date.now(),
     });
 
+    // 🔥 Store Notification for All Users
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    usersSnapshot.forEach(async (user) => {
+      const userId = user.id; // Get each user's ID
+      const notificationRef = doc(collection(db, "notifications"));
+      await setDoc(notificationRef, {
+        userId,
+        message: `New Event Created: ${eventTitle}`,
+        eventId: newEventRef.id,
+        timestamp: Date.now(),
+        isRead: false,
+        "type": "event"
+      });
+    });
+
     res.status(200).json({ message: "Event submitted successfully!" });
   } catch (error) {
     console.error("Submit Event Error:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+const markNotificationAsRead = async (req, res) => {
+  try {
+    const { notificationId } = req.body;
+
+    if (!notificationId) {
+      return res.status(400).json({ message: "Notification ID is required." });
+    }
+
+    const notificationRef = doc(db, "notifications", notificationId);
+    await updateDoc(notificationRef, { isRead: true });
+
+    res.status(200).json({ message: "Notification marked as read." });
+  } catch (error) {
+    console.error("Error updating notification:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 };
@@ -111,4 +145,5 @@ const getEvent = async (req, res) => {
 module.exports = {
   createEvent,
   getEvent,
+  markNotificationAsRead
 };
