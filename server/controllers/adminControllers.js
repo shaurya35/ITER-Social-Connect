@@ -517,6 +517,31 @@ const updateUserBadges = async (req, res) => {
   }
 };
 
+const deleteOldNotifications = async (req, res) => {
+  try {
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000; 
+
+    const notificationsRef = collection(db, "notifications");
+    const q = query(notificationsRef, where("timestamp", "<=", sevenDaysAgo));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return res.status(200).json({ message: "No old notifications to delete!" });
+    }
+
+    const deletePromises = snapshot.docs.map((docSnapshot) =>
+      deleteDoc(doc(db, "notifications", docSnapshot.id))
+    );
+
+    await Promise.all(deletePromises);
+
+    res.status(200).json({ message: "Old notifications deleted successfully!" });
+  } catch (error) {
+    console.error("Delete Notifications Error:", error);
+    res.status(500).json({ message: "Failed to delete old notifications!" });
+  }
+};
+
 module.exports = {
   adminLogin,
   pendingRequest,
@@ -526,4 +551,5 @@ module.exports = {
   getPostReportDetails,
   getUserReportDetails,
   updateUserBadges,
+  deleteOldNotifications
 };

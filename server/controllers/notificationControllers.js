@@ -1,33 +1,38 @@
-const { 
-  collection, 
-  getDocs, 
-  query, 
-  where, 
-  Timestamp 
+const {
+  collection,
+  getDocs,
+  query,
+  where,
+  Timestamp,
+  orderBy,
 } = require("firebase/firestore");
 const db = require("../firebase/firebaseConfig");
 
-const getNotification = async (req, res) => {
+const getNotifications = async (req, res) => {
   try {
-    const currentDate = new Date();
-    
-    const oneWeekAgo = new Date(currentDate);
-    oneWeekAgo.setDate(currentDate.getDate() - 7);
-    const oneWeekAgoTimestamp = Timestamp.fromDate(oneWeekAgo);
+    const userId = req.user.userId; // Get user ID from request query
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required." });
+    }
 
-    const eventsQuery = query(
-      collection(db, "events"),
-      where("eventDate", ">=", oneWeekAgoTimestamp)
+    const notificationsQuery = query(
+      collection(db, "notifications"),
+      where("userId", "==", userId),
+      orderBy("timestamp", "desc") // Order by timestamp in descending order
     );
 
-    const eventsSnapshot = await getDocs(eventsQuery);
+    const notificationsSnapshot = await getDocs(notificationsQuery);
 
-    const notifications = eventsSnapshot.docs.map(docSnapshot => ({
-      id: docSnapshot.id,
-      title: docSnapshot.data().eventTitle,
-      description: docSnapshot.data().eventDescription,
-      date: docSnapshot.data().eventDate.toDate()
-    }));
+    const notifications = notificationsSnapshot.docs.map((docSnapshot) => {
+      const data = docSnapshot.data();
+      return {
+        id: docSnapshot.id,
+        type: data.type,
+        message: data.message,
+        date: new Date(data.timestamp), // Convert timestamp to Date object
+        read: data.isRead || false, // Mark read/unread
+      };
+    });
 
     res.status(200).json({ notifications });
   } catch (error) {
@@ -37,5 +42,5 @@ const getNotification = async (req, res) => {
 };
 
 module.exports = {
-  getNotification
+  getNotifications,
 };

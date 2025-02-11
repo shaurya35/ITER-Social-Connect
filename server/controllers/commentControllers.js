@@ -6,6 +6,7 @@ const {
   doc,
   getDoc,
   deleteDoc,
+  setDoc,
 } = require("firebase/firestore");
 
 const getAllComments = async (req, res) => {
@@ -40,11 +41,14 @@ const createComment = async (req, res) => {
     }
 
     // Create the comment
-    const commentDoc = await addDoc(collection(db, "posts", postId, "comments"), {
-      userId,
-      content,
-      createdAt: new Date().toISOString(),
-    });
+    const commentDoc = await addDoc(
+      collection(db, "posts", postId, "comments"),
+      {
+        userId,
+        content,
+        createdAt: new Date().toISOString(),
+      }
+    );
 
     // Fetch user details
     const userRef = doc(db, "users", userId);

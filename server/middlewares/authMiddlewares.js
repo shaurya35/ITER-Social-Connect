@@ -84,10 +84,27 @@ const authenticateAdmin = (req, res, next) => {
   }
 };
 
+const authenticateUser = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (!err) {
+        req.user = decoded; // Attach user data if token is valid
+      }
+    });
+  }
+
+  next(); // Continue even if no token is present
+};
+
 // --- Export the function ---
 module.exports = {
   isLoggedIn,
   authenticateAdmin,
   verifyAccessToken,
   verifyToken,
+  authenticateUser,
 };
