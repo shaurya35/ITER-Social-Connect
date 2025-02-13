@@ -3,14 +3,12 @@
 /**
  * Todos: 1. Add Likes
  * 2. Add Share
- * 3. Bookmark fetch already existing
- * post for particular user
- * 4. save the scroll state
- * 5. without logging, the post button shows loading....
+ * 3. Bookmark fetch already existing post for particular user
+ * 4. Save the scroll state
+ * 5. Without logging, the post button shows loading....
  */
 
 /** Imports */
-
 import { useEffect, useState, useRef, useCallback } from "react";
 import NextImage from "next/image";
 import { useRouter } from "next/navigation";
@@ -66,9 +64,8 @@ export default function MainFeed() {
   const [newPostContent, setNewPostContent] = useState("");
   const [fetchingUser, setFetchingUser] = useState(true);
   const [isPosting, setIsPosting] = useState(false);
-  const [likeLoading, setLikeLoading] = useState(false);
-  const [likeError, setLikeError] = useState(false);
-  const [bookmarkedPosts, setBookmarkedPosts] = useState({});
+  const [likeLoadingState, setLikeLoadingState] = useState({});
+  const [likeError, setLikeError] = useState(null);
   const [bookmarkLoadingState, setBookmarkLoadingState] = useState({});
   const [bookmarkError, setBookmarkError] = useState(null);
   const { accessToken } = useAuth();
@@ -76,25 +73,52 @@ export default function MainFeed() {
   const router = useRouter();
   const observer = useRef();
 
+  /* Once the profile is loaded, we mark fetchingUser as false.*/
   useEffect(() => {
     if (profile) {
       setFetchingUser(false);
     }
   }, [profile]);
-  // const didFetchPosts = useRef(false);
 
-  /* Fetch The User Feed (No Auth) */
+  /* Fetch The User Feed */
   const fetchPosts = useCallback(async () => {
     if (!hasMore) return;
 
     setLoading(true);
     try {
-      // await new Promise(resolve => setTimeout(resolve, 10000));
       const response = await axios.get(`${BACKEND_URL}/api/feed`, {
         params: { page, limit: 10 },
         withCredentials: true,
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       });
-      const newPosts = response.data.posts || [];
+      let newPosts = response.data.posts || [];
+      const currentUserId = profile?.userId;
+      if (currentUserId) {
+        newPosts = newPosts.map((post) => ({
+          ...post,
+          isLiked: Array.isArray(post.likes)
+            ? post.likes.includes(currentUserId)
+            : false,
+          likeCount:
+            post.likeCount !== undefined
+              ? post.likeCount
+              : Array.isArray(post.likes)
+              ? post.likes.length
+              : 0,
+        }));
+      } else {
+        newPosts = newPosts.map((post) => ({
+          ...post,
+          isLiked: false,
+          likeCount:
+            post.likeCount !== undefined
+              ? post.likeCount
+              : Array.isArray(post.likes)
+              ? post.likes.length
+              : 0,
+        }));
+      }
+
       setPosts((prevPosts) => [...prevPosts, ...newPosts]);
       setHasMore(newPosts.length === 10);
     } catch (err) {
@@ -102,12 +126,31 @@ export default function MainFeed() {
     } finally {
       setLoading(false);
     }
-  }, [page, hasMore]);
+  }, [page, hasMore, accessToken, profile]);
 
-  /* Function to Fetch posts */
+  /* Update posts mapping once profile is available (or changes) */
+  useEffect(() => {
+    const currentUserId = profile?.userId || profile?.id;
+    if (currentUserId) {
+      setPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          const computedIsLiked = Array.isArray(post.likes)
+            ? post.likes.includes(currentUserId)
+            : false;
+          /* Only update if there is a difference.*/
+          if (computedIsLiked !== post.isLiked) {
+            return { ...post, isLiked: computedIsLiked };
+          }
+          return post;
+        })
+      );
+    }
+  }, [profile]);
+
+  /* Fetch posts when page changes */
   useEffect(() => {
     fetchPosts();
-  }, [page]);
+  }, [page, fetchPosts]);
 
   /* Infinite Post Functionality */
   const lastPostRef = useCallback(
@@ -131,13 +174,14 @@ export default function MainFeed() {
     if (!newPostContent.trim()) return;
 
     setIsPosting(true);
-
+    
     const tempPost = {
       id: "temp",
       userName: profile.name,
       content: newPostContent,
       profilePicture: profile.profilePicture,
-      likes: 0,
+      likes: [],
+      likeCount: 0,
       createdAt: new Date().toISOString(),
     };
     setNewPostContent("");
@@ -166,7 +210,59 @@ export default function MainFeed() {
   };
 
   /* Like Service */
-  useEffect(() => {}, [accessToken]);
+  const toggleLike = async (postId) => {
+    // Find the post to update and determine the new optimistic values.
+    setPosts(prevPosts =>
+      prevPosts.map(post => {
+        if (post.id === postId) {
+          // Optimistically update: if the post was not liked, add 1; if liked, subtract 1.
+          const newCount = post.isLiked ? post.likeCount - 1 : post.likeCount + 1;
+          return { ...post, isLiked: !post.isLiked, likeCount: newCount };
+        }
+        return post;
+      })
+    );
+  
+    try {
+      // Send the like/unlike request.
+      const response = await axios.post(
+        `${BACKEND_URL}/api/user/posts/${postId}/like`,
+        { postId },
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          withCredentials: true,
+        }
+      );
+  
+      // Reconcile with the server's response:
+      // The response should include the aggregated totalLikes.
+      const serverCount = response.data.totalLikes;
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId ? { ...post, likeCount: serverCount } : post
+        )
+      );
+    } catch (error) {
+      
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId
+            ? {
+                ...post,
+                isLiked: !post.isLiked,
+                likeCount: post.isLiked ? post.likeCount - 1 : post.likeCount + 1,
+              }
+            : post
+        )
+      );
+      setLikeError(
+        error.response?.data?.message || "Failed to like/unlike the post"
+      );
+    } finally {
+      setLikeLoadingState(prev => ({ ...prev, [postId]: false }));
+    }
+  };
+  
 
   /* Bookmark Service */
   const toggleBookmark = async (postId) => {
@@ -180,27 +276,28 @@ export default function MainFeed() {
         `${BACKEND_URL}/api/user/post/${postId}/bookmark`,
         {},
         {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+          headers: { Authorization: `Bearer ${accessToken}` },
           withCredentials: true,
         }
       );
-      setBookmarkedPosts((prev) => ({
-        ...prev,
-        [postId]: !prev[postId],
-      }));
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId
+            ? { ...post, isBookmarked: !post.isBookmarked }
+            : post
+        )
+      );
     } catch (error) {
-      setBookmarkError(error.response?.data?.message || "Failed to bookmark");
+      setBookmarkError(
+        error.response?.data?.message || "Failed to bookmark"
+      );
     } finally {
       setBookmarkLoadingState((prev) => ({ ...prev, [postId]: false }));
     }
   };
 
-  /* Artificial Delay */
-  const delay = () => {
-    new Promise((resolve) => setTimeout(resolve, 10000));
-  };
+  /* Artificial Delay (if needed) */
+  const delay = () => new Promise((resolve) => setTimeout(resolve, 10000));
 
   return (
     <div className="flex-1 w-full max-w-2xl mx-auto space-y-4">
@@ -214,7 +311,7 @@ export default function MainFeed() {
               <NextImage
                 src={
                   profile?.profilePicture ||
-                  "https://media.discordapp.net/attachments/1315342834278207540/1315347576207179818/3.jpg?ex=67a828a4&is=67a6d724&hm=eb17b9eed3b4bd485db30c8e59ceb7bb5c93470472b440e1e489f5f6026ba023&=&format=webp&width=483&height=488"
+                  "https://media.discordapp.net/attachments/1315342834278207540/1316064150744465488/pf3.jpg?ex=67aeb880&is=67ad6700&hm=6e6ddf2d18fafd444067157eadf5fca55fb42356917cc25053580375ee7d8940&=&format=webp&width=482&height=487"
                 }
                 alt="Avatar"
                 width={40}
@@ -229,7 +326,6 @@ export default function MainFeed() {
                 }}
               />
             )}
-
             <div className="flex-1">
               <Textarea
                 placeholder="What's on your mind?"
@@ -293,7 +389,6 @@ export default function MainFeed() {
       {/* Posts */}
       {posts.map((post, index) => {
         const uniqueKey = post.id ? `${post.id}-${index}` : index;
-
         return (
           <Card
             className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
@@ -330,7 +425,6 @@ export default function MainFeed() {
                 </p>
               </div>
             </CardHeader>
-
             <CardContent
               className="px-4 py-3 lg:px-5 lg:pb-5 w-full"
               onClick={() => router.push(`/post/${post.id}`)}
@@ -345,9 +439,23 @@ export default function MainFeed() {
                   variant="ghost"
                   size="sm"
                   className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleLike(post.id);
+                  }}
+                  disabled={likeLoadingState[post.id]}
                 >
-                  <ThumbsUp className="h-4 w-4" />
-                  {post.likeCount}{" "}
+                  {likeLoadingState[post.id] ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ThumbsUp
+                      className={`h-4 w-4 ${post.isLiked ? "text-blue-600" : ""}`}
+                    />
+                  )}
+                  <span>{post.likeCount}</span>
+                  {likeError && (
+                    <p className="text-red-500 text-sm mt-2">{likeError}</p>
+                  )}
                 </Button>
                 <Button
                   variant="ghost"
@@ -375,12 +483,11 @@ export default function MainFeed() {
                 >
                   {bookmarkLoadingState[post.id] ? (
                     <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
-                  ) : bookmarkedPosts[post.id] ? (
+                  ) : post.isBookmarked ? (
                     <BookmarkCheck className="h-5 w-5 text-blue-600" />
                   ) : (
-                    <Bookmark className="h-5 w-5  hover:text-gray-700" />
+                    <Bookmark className="h-5 w-5 hover:text-gray-700" />
                   )}
-
                   <div className="hidden md:block">Bookmark</div>
                   {bookmarkError && (
                     <p className="text-red-500 text-sm mt-2">{bookmarkError}</p>
@@ -391,13 +498,11 @@ export default function MainFeed() {
           </Card>
         );
       })}
-
       {loading && hasMore && (
         <div className="flex justify-center items-center py-4">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-600 dark:border-gray-300"></div>
         </div>
       )}
-
       {!hasMore && (
         <p className="flex justify-center align-center ">
           No more posts to load.

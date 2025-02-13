@@ -41,6 +41,7 @@ const getProfile = async (req, res) => {
 
     // Combine profile, posts, and connections count data
     const profileData = {
+      userId: userId,
       name: userData.name,
       email: userData.email,
       about: userData.about || "",
