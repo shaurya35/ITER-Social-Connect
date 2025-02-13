@@ -226,7 +226,7 @@ export default function MainFeed() {
     try {
       // Send the like/unlike request.
       const response = await axios.post(
-        `${BACKEND_URL}/api/user/posts/${postId}/like`,
+        `${BACKEND_URL}/api/user/posts/like`,
         { postId },
         {
           headers: { Authorization: `Bearer ${accessToken}` },
