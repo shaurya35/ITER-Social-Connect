@@ -358,19 +358,20 @@ const getBookmarkedPosts = async (req, res) => {
     res.status(500).json({ error: "Error fetching bookmarked posts" });
   }
 };
-
+  
 const sharePost = async (req, res) => {
   try {
-    const { postId } = req.params;
-    const baseUrl = process.env.BASE_URL; // Replace with your actual domain
+    const { postId } = req.body; 
+    if (!postId) {
+      return res.status(400).json({ error: "Post ID is required" });
+    }
 
-    const directLink = `${baseUrl}/${postId}`;
-
-    // Generate the WhatsApp sharable link
+    const baseUrl = process.env.BASE_URL || "https://itersocialconnect.vercel.app";
+    const directLink = `${baseUrl}/post/${postId}`;
     const whatsappLink = `https://wa.me/?text=${encodeURIComponent(
       `Check out this post: ${directLink}`
     )}`;
-
+    
     res.status(200).json({
       message: "Share links generated successfully",
       directLink,
@@ -381,6 +382,9 @@ const sharePost = async (req, res) => {
     res.status(500).json({ error: "Error generating share links" });
   }
 };
+
+module.exports = { sharePost };
+
 
 module.exports = {
   likePost,
