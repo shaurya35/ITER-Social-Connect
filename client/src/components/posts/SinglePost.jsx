@@ -3,7 +3,7 @@
  * Todos: 1. Comment Post System
  * 2. Improve Fetch system
  * 3. Bookmark system
- * 4. 
+ * 4.
  */
 
 /** Imports */
@@ -13,7 +13,15 @@ import { useAuth } from "@/contexts/AuthProvider";
 import { BACKEND_URL } from "@/configs/index";
 import axios from "axios";
 import NextImage from "next/image";
-import { Image, MessageCircleMore, Forward, ThumbsUp } from "lucide-react";
+import {
+  Image,
+  MessageCircleMore,
+  Forward,
+  ThumbsUp,
+  Bookmark,
+  BookmarkCheck,
+  Loader2,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -51,32 +59,36 @@ export default function SinglePost({ postId }) {
   const [newComment, setNewComment] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [likeLoadingState, setLikeLoadingState] = useState(false);
+  const [likeError, setLikeError] = useState(null);
+  const [bookmarkLoadingState, setBookmarkLoadingState] = useState(false);
+  const [bookmarkError, setBookmarkError] = useState(null);
   const { accessToken } = useAuth();
   const { profile } = useProfile();
   const router = useRouter();
 
   useEffect(() => {
-    if(!accessToken){
-      router.push("/signin")
+    if (!accessToken) {
+      router.push("/signin");
     }
-  })
+  });
 
   // fetch single post and comments
-  useEffect(() => {
+ 
     const fetchSinglePost = async () => {
       setLoading(true);
       try {
-        // await new Promise((resolve) => setTimeout(resolve, 10000));
-        const response = await axios.get(
-          `${BACKEND_URL}/api/user/post/${postId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-            withCredentials: true,
-          }
-        );
-        setPost(response.data.post);
+        const response = await axios.get(`${BACKEND_URL}/api/user/post/${postId}`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          withCredentials: true,
+        }); 
+        const currentUserId = profile?.userId;
+        const postData = response.data.post;
+        setPost({
+          ...postData,
+          isLiked: postData.likes.includes(currentUserId),
+        });
+       
       } catch (err) {
         setError(err.response?.data?.message || err.message);
       } finally {
@@ -104,11 +116,110 @@ export default function SinglePost({ postId }) {
       }
     };
 
-    if (postId) {
+    useEffect(() => {
       fetchSinglePost();
+    }, [profile])
+
+  useEffect(() => {
+    if (postId) {
       fetchSinglePostComments();
     }
-  }, [postId, accessToken]);
+  }, [postId, profile])
+
+  const toggleLike = async () => {
+    if (!post || likeLoadingState) return;
+
+    setLikeLoadingState(true);
+    const originalPost = { ...post };
+    
+    try {
+      // Optimistic update
+      const newIsLiked = !post.isLiked;
+      setPost(prev => ({
+        ...prev,
+        isLiked: newIsLiked,
+        likeCount: newIsLiked ? prev.likeCount + 1 : prev.likeCount - 1
+      }));
+
+      // API call
+      const response = await axios.post(
+        `${BACKEND_URL}/api/user/posts/like`,
+        { postId: post.id },
+        { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true }
+      );
+
+      // Sync with server count
+      setPost(prev => ({
+        ...prev,
+        likeCount: response.data.totalLikes
+      }));
+    } catch (error) {
+      // Rollback on error
+      setPost(originalPost);
+      setLikeError(error.response?.data?.message || "Failed to update like");
+    } finally {
+      setLikeLoadingState(false);
+    }
+  };
+
+  // Bookmark functionality
+  const toggleBookmark = async () => {
+    if (!post || bookmarkLoadingState) return;
+
+    setBookmarkLoadingState(true);
+    const originalPost = { ...post };
+
+    try {
+      // Optimistic update
+      setPost(prev => ({
+        ...prev,
+        isBookmarked: !prev.isBookmarked
+      }));
+
+      // API call
+      await axios.post(
+        `${BACKEND_URL}/api/user/post/${post.id}/bookmark`,
+        {},
+        { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true }
+      );
+    } catch (error) {
+      // Rollback on error
+      setPost(originalPost);
+      setBookmarkError(error.response?.data?.message || "Failed to update bookmark");
+    } finally {
+      setBookmarkLoadingState(false);
+    }
+  };
+
+  // Share functionality
+  const sharePost = async () => {
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/user/post/share`,
+        { postId: post.id },
+        { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true }
+      );
+
+      const { directLink, whatsappLink } = response.data;
+      
+      if (navigator.share) {
+        await navigator.share({
+          title: "Check out this post",
+          url: directLink
+        });
+      } else {
+        const shareChoice = window.confirm(
+          "Share via WhatsApp? OK for WhatsApp, Cancel to copy link"
+        );
+        shareChoice 
+          ? window.open(whatsappLink, "_blank")
+          : navigator.clipboard.writeText(directLink).then(() => alert("Link copied!"));
+      }
+    } catch (error) {
+      console.error("Sharing failed:", error);
+      alert("Failed to share post");
+    }
+  };
 
   if (loading) {
     return (
@@ -178,33 +289,72 @@ export default function SinglePost({ postId }) {
           </p>
         </CardContent>
         <CardFooter className="border-t border-gray-200 dark:border-gray-700 p-2">
-          <div className="flex justify-between w-full">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
-            >
-              <ThumbsUp className="h-4 w-4" />
-              {post.likes}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
-            >
-              <MessageCircleMore className="h-4 w-4" />
-              <div className="hidden md:block">Comments</div>{" "}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
-            >
-              <Forward className="h-4 w-4" />
-              <div className="hidden md:block">Share</div>
-            </Button>
-          </div>
-        </CardFooter>
+    <div className="flex justify-between w-full">
+      {/* Like Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleLike();
+        }}
+        disabled={likeLoadingState}
+      >
+        {likeLoadingState ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <ThumbsUp className={`h-4 w-4 ${post.isLiked ? "text-blue-600" : ""}`} />
+        )}
+        <span className="ml-2">{post.likeCount}</span>
+      </Button>
+
+      {/* Comments Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+      >
+        <MessageCircleMore className="h-4 w-4" />
+        <div className="hidden md:block">Comments</div>
+      </Button>
+
+      {/* Share Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+        onClick={(e) => {
+          e.stopPropagation();
+          sharePost();
+        }}
+      >
+        <Forward className="h-4 w-4" />
+        <div className="hidden md:block">Share</div>
+      </Button>
+
+      {/* Bookmark Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleBookmark();
+        }}
+        disabled={bookmarkLoadingState}
+      >
+        {bookmarkLoadingState ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : post.isBookmarked ? (
+          <BookmarkCheck className="h-4 w-4 text-blue-600" />
+        ) : (
+          <Bookmark className="h-4 w-4" />
+        )}
+        <div className="hidden md:block">Bookmark</div>
+      </Button>
+    </div>
+  </CardFooter>
 
         {/* comments  */}
         <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-b">

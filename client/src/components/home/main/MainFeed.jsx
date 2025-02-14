@@ -90,6 +90,7 @@ export default function MainFeed() {
         withCredentials: true,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       });
+      // console.log(profile)
       let newPosts = response.data.posts || [];
       const currentUserId = profile?.userId;
       if (currentUserId) {
