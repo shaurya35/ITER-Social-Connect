@@ -3,14 +3,12 @@
 /**
  * Todos: 1. Add Likes
  * 2. Add Share
- * 3. Bookmark fetch already existing
- * post for particular user
- * 4. save the scroll state
- * 5. without logging, the post button shows loading....
+ * 3. Bookmark fetch already existing post for particular user
+ * 4. Save the scroll state
+ * 5. Without logging, the post button shows loading....
  */
 
 /** Imports */
-
 import { useEffect, useState, useRef, useCallback } from "react";
 import NextImage from "next/image";
 import { useRouter } from "next/navigation";
@@ -66,9 +64,8 @@ export default function MainFeed() {
   const [newPostContent, setNewPostContent] = useState("");
   const [fetchingUser, setFetchingUser] = useState(true);
   const [isPosting, setIsPosting] = useState(false);
-  const [likeLoading, setLikeLoading] = useState(false);
-  const [likeError, setLikeError] = useState(false);
-  const [bookmarkedPosts, setBookmarkedPosts] = useState({});
+  const [likeLoadingState, setLikeLoadingState] = useState({});
+  const [likeError, setLikeError] = useState(null);
   const [bookmarkLoadingState, setBookmarkLoadingState] = useState({});
   const [bookmarkError, setBookmarkError] = useState(null);
   const { accessToken } = useAuth();
@@ -76,25 +73,51 @@ export default function MainFeed() {
   const router = useRouter();
   const observer = useRef();
 
+  // Once the profile is loaded, mark fetchingUser as false.
   useEffect(() => {
     if (profile) {
       setFetchingUser(false);
     }
   }, [profile]);
-  // const didFetchPosts = useRef(false);
 
-  /* Fetch The User Feed (No Auth) */
+  /* Fetch The User Feed */
   const fetchPosts = useCallback(async () => {
     if (!hasMore) return;
-
     setLoading(true);
     try {
-      // await new Promise(resolve => setTimeout(resolve, 10000));
       const response = await axios.get(`${BACKEND_URL}/api/feed`, {
         params: { page, limit: 10 },
         withCredentials: true,
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       });
-      const newPosts = response.data.posts || [];
+      // console.log(profile)
+      let newPosts = response.data.posts || [];
+      const currentUserId = profile?.userId;
+      if (currentUserId) {
+        newPosts = newPosts.map((post) => ({
+          ...post,
+          isLiked: Array.isArray(post.likes)
+            ? post.likes.includes(currentUserId)
+            : false,
+          likeCount:
+            post.likeCount !== undefined
+              ? post.likeCount
+              : Array.isArray(post.likes)
+              ? post.likes.length
+              : 0,
+        }));
+      } else {
+        newPosts = newPosts.map((post) => ({
+          ...post,
+          isLiked: false,
+          likeCount:
+            post.likeCount !== undefined
+              ? post.likeCount
+              : Array.isArray(post.likes)
+              ? post.likes.length
+              : 0,
+        }));
+      }
       setPosts((prevPosts) => [...prevPosts, ...newPosts]);
       setHasMore(newPosts.length === 10);
     } catch (err) {
@@ -102,25 +125,41 @@ export default function MainFeed() {
     } finally {
       setLoading(false);
     }
-  }, [page, hasMore]);
+  }, [page, hasMore, accessToken, profile]);
 
-  /* Function to Fetch posts */
+  /* Update posts mapping once profile is available (or changes) */
+  useEffect(() => {
+    const currentUserId = profile?.userId || profile?.id;
+    if (currentUserId) {
+      setPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          const computedIsLiked = Array.isArray(post.likes)
+            ? post.likes.includes(currentUserId)
+            : false;
+          if (computedIsLiked !== post.isLiked) {
+            return { ...post, isLiked: computedIsLiked };
+          }
+          return post;
+        })
+      );
+    }
+  }, [profile]);
+
+  /* Fetch posts when page changes */
   useEffect(() => {
     fetchPosts();
-  }, [page]);
+  }, [page, fetchPosts]);
 
   /* Infinite Post Functionality */
   const lastPostRef = useCallback(
     (node) => {
       if (loading) return;
       if (observer.current) observer.current.disconnect();
-
       observer.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && hasMore) {
           setPage((prevPage) => prevPage + 1);
         }
       });
-
       if (node) observer.current.observe(node);
     },
     [loading, hasMore]
@@ -129,15 +168,14 @@ export default function MainFeed() {
   /* Post Creation */
   const handlePostSubmit = async () => {
     if (!newPostContent.trim()) return;
-
     setIsPosting(true);
-
     const tempPost = {
       id: "temp",
       userName: profile.name,
       content: newPostContent,
       profilePicture: profile.profilePicture,
-      likes: 0,
+      likes: [],
+      likeCount: 0,
       createdAt: new Date().toISOString(),
     };
     setNewPostContent("");
@@ -146,9 +184,7 @@ export default function MainFeed() {
         `${BACKEND_URL}/api/user/post`,
         { profilePicture: profile.profilePicture, content: newPostContent },
         {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+          headers: { Authorization: `Bearer ${accessToken}` },
           withCredentials: true,
         }
       );
@@ -165,31 +201,77 @@ export default function MainFeed() {
     }
   };
 
-  /* Like Service */
-  useEffect(() => {}, [accessToken]);
+  /* Like Service with Optimistic Update */
+  const toggleLike = async (postId) => {
+    setPosts((prevPosts) =>
+      prevPosts.map((post) => {
+        if (post.id === postId) {
+          const newCount = post.isLiked
+            ? post.likeCount - 1
+            : post.likeCount + 1;
+          return { ...post, isLiked: !post.isLiked, likeCount: newCount };
+        }
+        return post;
+      })
+    );
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/user/posts/like`,
+        { postId },
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          withCredentials: true,
+        }
+      );
+      const serverCount = response.data.totalLikes;
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId ? { ...post, likeCount: serverCount } : post
+        )
+      );
+    } catch (error) {
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                isLiked: !post.isLiked,
+                likeCount: post.isLiked
+                  ? post.likeCount - 1
+                  : post.likeCount + 1,
+              }
+            : post
+        )
+      );
+      setLikeError(
+        error.response?.data?.message || "Failed to like/unlike the post"
+      );
+    } finally {
+      setLikeLoadingState((prev) => ({ ...prev, [postId]: false }));
+    }
+  };
 
   /* Bookmark Service */
   const toggleBookmark = async (postId) => {
     if (!accessToken) return;
-
     setBookmarkLoadingState((prev) => ({ ...prev, [postId]: true }));
     setBookmarkError(null);
-
     try {
       await axios.post(
         `${BACKEND_URL}/api/user/post/${postId}/bookmark`,
         {},
         {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+          headers: { Authorization: `Bearer ${accessToken}` },
           withCredentials: true,
         }
       );
-      setBookmarkedPosts((prev) => ({
-        ...prev,
-        [postId]: !prev[postId],
-      }));
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId
+            ? { ...post, isBookmarked: !post.isBookmarked }
+            : post
+        )
+      );
     } catch (error) {
       setBookmarkError(error.response?.data?.message || "Failed to bookmark");
     } finally {
@@ -197,10 +279,49 @@ export default function MainFeed() {
     }
   };
 
-  /* Artificial Delay */
-  const delay = () => {
-    new Promise((resolve) => setTimeout(resolve, 10000));
+  /* Share Service using POST route */
+  const sharePost = async (postId) => {
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/user/post/share`,
+        { postId },
+        {
+          withCredentials: true,
+          headers: accessToken
+            ? { Authorization: `Bearer ${accessToken}` }
+            : {},
+        }
+      );
+      const { directLink, whatsappLink } = response.data;
+      if (navigator.share) {
+        await navigator.share({
+          title: "Check out this post",
+          text: "I thought you might like this post:",
+          url: directLink,
+        });
+      } else {
+        const shareChoice = window.confirm(
+          "Share via WhatsApp? Press OK for WhatsApp, or Cancel to copy the direct link."
+        );
+        if (shareChoice) {
+          window.open(whatsappLink, "_blank");
+        } else {
+          if (navigator.clipboard) {
+            await navigator.clipboard.writeText(directLink);
+            alert("Direct link copied to clipboard!");
+          } else {
+            prompt("Copy this link:", directLink);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error sharing post:", error);
+      alert("Failed to generate share links. Please try again.");
+    }
   };
+
+  /* Artificial Delay (if needed) */
+  const delay = () => new Promise((resolve) => setTimeout(resolve, 10000));
 
   return (
     <div className="flex-1 w-full max-w-2xl mx-auto space-y-4">
@@ -214,7 +335,7 @@ export default function MainFeed() {
               <NextImage
                 src={
                   profile?.profilePicture ||
-                  "https://media.discordapp.net/attachments/1315342834278207540/1315347576207179818/3.jpg?ex=67a828a4&is=67a6d724&hm=eb17b9eed3b4bd485db30c8e59ceb7bb5c93470472b440e1e489f5f6026ba023&=&format=webp&width=483&height=488"
+                  "https://media.discordapp.net/attachments/1315342834278207540/1316064150744465488/pf3.jpg?ex=67aeb880&is=67ad6700&hm=6e6ddf2d18fafd444067157eadf5fca55fb42356917cc25053580375ee7d8940&=&format=webp&width=482&height=487"
                 }
                 alt="Avatar"
                 width={40}
@@ -229,7 +350,6 @@ export default function MainFeed() {
                 }}
               />
             )}
-
             <div className="flex-1">
               <Textarea
                 placeholder="What's on your mind?"
@@ -293,111 +413,126 @@ export default function MainFeed() {
       {/* Posts */}
       {posts.map((post, index) => {
         const uniqueKey = post.id ? `${post.id}-${index}` : index;
-
         return (
           <Card
-            className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
-            key={uniqueKey}
-            ref={index === posts.length - 1 ? lastPostRef : null}
+          className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
+          key={uniqueKey}
+          ref={index === posts.length - 1 ? lastPostRef : null}
+        >
+          <CardHeader
+            className="flex-row items-center gap-4 p-4 lg:px-5 lg:pt-4"
+            onClick={() => router.push(`/post/${post.id}`)}
           >
-            <CardHeader
-              className="flex-row items-center gap-4 p-4 lg:px-5 lg:pt-4"
-              onClick={() => router.push(`/post/${post.id}`)}
-            >
-              <NextImage
-                src={
-                  post.profilePicture ||
-                  "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"
-                }
-                alt="Avatar"
-                width={48}
-                height={48}
-                className="rounded-full"
-                priority
-                style={{
-                  objectFit: "cover",
-                  objectPosition: "center",
-                  width: "48px",
-                  height: "48px",
-                }}
-              />
-              <div>
-                <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
-                  {post.userName}
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {timeAgo(post.createdAt)}
-                </p>
-              </div>
-            </CardHeader>
-
-            <CardContent
-              className="px-4 py-3 lg:px-5 lg:pb-5 w-full"
-              onClick={() => router.push(`/post/${post.id}`)}
-            >
-              <p className="text-gray-700 dark:text-gray-300 break-words">
-                {post.content}
+            <NextImage
+              src={
+                post.profilePicture ||
+                "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"
+              }
+              alt="Avatar"
+              width={48}
+              height={48}
+              className="rounded-full"
+              priority
+              style={{
+                objectFit: "cover",
+                objectPosition: "center",
+                width: "48px",
+                height: "48px",
+              }}
+            />
+            <div>
+              <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                {post.userName}
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {timeAgo(post.createdAt)}
               </p>
-            </CardContent>
-            <CardFooter className="border-t border-gray-200 dark:border-gray-700 p-2">
-              <div className="flex justify-between w-full">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
-                >
-                  <ThumbsUp className="h-4 w-4" />
-                  {post.likeCount}{" "}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
-                  onClick={() => router.push(`/post/${post.id}`)}
-                >
-                  <MessageCircleMore className="h-4 w-4" />
-                  <div className="hidden md:block">Comments</div>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
-                >
-                  <Forward className="h-4 w-4" />
-                  <div className="hidden md:block">Share</div>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
-                  onClick={() => toggleBookmark(post.id)}
-                  disabled={bookmarkLoadingState[post.id]}
-                >
-                  {bookmarkLoadingState[post.id] ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
-                  ) : bookmarkedPosts[post.id] ? (
-                    <BookmarkCheck className="h-5 w-5 text-blue-600" />
-                  ) : (
-                    <Bookmark className="h-5 w-5  hover:text-gray-700" />
-                  )}
-
-                  <div className="hidden md:block">Bookmark</div>
-                  {bookmarkError && (
-                    <p className="text-red-500 text-sm mt-2">{bookmarkError}</p>
-                  )}
-                </Button>
-              </div>
-            </CardFooter>
-          </Card>
+            </div>
+          </CardHeader>
+          <CardContent
+            className="px-4 py-3 lg:px-5 lg:pb-5 w-full"
+            onClick={() => router.push(`/post/${post.id}`)}
+          >
+            <p className="text-gray-700 dark:text-gray-300 break-words">
+              {post.content}
+            </p>
+          </CardContent>
+          <CardFooter className="border-t border-gray-200 dark:border-gray-700 p-2">
+            <div className="flex justify-between w-full">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleLike(post.id);
+                }}
+                disabled={likeLoadingState[post.id]}
+              >
+                {likeLoadingState[post.id] ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ThumbsUp
+                    className={`h-4 w-4 ${
+                      post.isLiked ? "text-blue-600" : ""
+                    }`}
+                  />
+                )}
+                <span>{post.likeCount}</span>
+                {likeError && (
+                  <p className="text-red-500 text-sm mt-2">{likeError}</p>
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                onClick={() => router.push(`/post/${post.id}`)}
+              >
+                <MessageCircleMore className="h-4 w-4" />
+                <div className="hidden md:block">Comments</div>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  sharePost(post.id);
+                }}
+              >
+                <Forward className="h-4 w-4" />
+                <div className="hidden md:block">Share</div>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                onClick={() => toggleBookmark(post.id)}
+                disabled={bookmarkLoadingState[post.id]}
+              >
+                {bookmarkLoadingState[post.id] ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+                ) : post.isBookmarked ? (
+                  <BookmarkCheck className="h-5 w-5 text-blue-600" />
+                ) : (
+                  <Bookmark className="h-5 w-5 hover:text-gray-700" />
+                )}
+                <div className="hidden md:block">Bookmark</div>
+                {bookmarkError && (
+                  <p className="text-red-500 text-sm mt-2">{bookmarkError}</p>
+                )}
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
         );
       })}
-
       {loading && hasMore && (
         <div className="flex justify-center items-center py-4">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-600 dark:border-gray-300"></div>
         </div>
       )}
-
       {!hasMore && (
         <p className="flex justify-center align-center ">
           No more posts to load.
