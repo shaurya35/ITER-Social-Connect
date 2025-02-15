@@ -11,8 +11,8 @@ const {
   updateDoc,
   deleteDoc,
   arrayUnion,
-  arrayRemove,
-  orderBy,limit,
+  orderBy,
+  limit,
   writeBatch,
 } = require("firebase/firestore");
 
@@ -22,7 +22,7 @@ const getAllUserPosts = async (req, res) => {
     const { page = 1, limit: limitParam = 10 } = req.query;
     const limitValue = parseInt(limitParam, 10);
 
-    if (isNaN(page) || isNaN(limitValue)) {
+    if (isNaN(page) || isNaN(limitValue) || page < 1 || limitValue < 1) {
       return res.status(400).json({ error: "Invalid page or limit parameter" });
     }
 
@@ -60,16 +60,32 @@ const getAllUserPosts = async (req, res) => {
     }
 
     const postsSnapshot = await getDocs(postsQuery);
-    const posts = postsSnapshot.docs.map((doc) => ({
+    let posts = postsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
 
+    // Fetch bookmarked posts
+    let bookmarkedPosts = new Set();
+    const bookmarksCollectionRef = collection(db, `users/${userId}/bookmarks`);
+    const bookmarksSnapshot = await getDocs(bookmarksCollectionRef);
+
+    bookmarksSnapshot.forEach((doc) => {
+      bookmarkedPosts.add(doc.data().postId);
+    });
+
+    posts = posts.map((post) => ({
+      ...post,
+      isBookmarked: bookmarkedPosts.has(post.id),
+    }));
+
     const hasMore = posts.length === limitValue;
 
-    res
-      .status(200)
-      .json({ message: "Posts retrieved successfully", posts, hasMore });
+    res.status(200).json({
+      message: "Posts retrieved successfully",
+      posts,
+      hasMore,
+    });
   } catch (error) {
     console.error("Error fetching user posts:", error);
     res.status(500).json({ error: "Failed to fetch user posts" });
@@ -204,7 +220,7 @@ const deleteUserPost = async (req, res) => {
 
 const getUserPostById = async (req, res) => {
   try {
-    const userId = req.user.userId; // Authenticated user
+    const userId = req.user.userId;
     const { postId } = req.params;
 
     const postRef = doc(db, "posts", postId);
@@ -215,19 +231,30 @@ const getUserPostById = async (req, res) => {
     }
 
     const postData = postSnapshot.data();
-    //If the user is not logged in (userId is undefined)
+
     if (!userId) {
       return res
         .status(403)
         .json({ error: "You need to log in to view this private post" });
     }
 
-    // Successfully retrieve the post
+    // Fetch bookmarked status
+    let isBookmarked = false;
+    const bookmarksCollectionRef = collection(db, `users/${userId}/bookmarks`);
+    const bookmarksSnapshot = await getDocs(bookmarksCollectionRef);
+
+    bookmarksSnapshot.forEach((doc) => {
+      if (doc.data().postId === postId) {
+        isBookmarked = true;
+      }
+    });
+
     res.status(200).json({
       message: "Post retrieved successfully",
       post: {
         id: postSnapshot.id,
         ...postData,
+        isBookmarked,
       },
     });
   } catch (error) {
@@ -235,6 +262,7 @@ const getUserPostById = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch post" });
   }
 };
+
 
 const likePost = async (req, res) => {
   try {
@@ -273,7 +301,9 @@ const likePost = async (req, res) => {
     });
 
     res.status(200).json({
-      message: userAlreadyLiked ? "Post unliked successfully" : "Post liked successfully",
+      message: userAlreadyLiked
+        ? "Post unliked successfully"
+        : "Post liked successfully",
       totalLikes: likes.length,
     });
   } catch (error) {
