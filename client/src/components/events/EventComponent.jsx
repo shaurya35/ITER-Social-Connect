@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthProvider";
 import { BACKEND_URL } from "@/configs/index";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { UserPlus, Mail, BookMarked } from "lucide-react";
+import { UserPlus, BookMarked } from "lucide-react";
 import axios from "axios";
 import LeftPanel from "@/components/panels/LeftPanel";
 import RightTopPanel from "@/components/panels/RightTopPanel";
@@ -18,15 +17,14 @@ export default function EventComponent() {
   const [eventLoading, setEventLoading] = useState(false);
   const [eventError, setEventError] = useState(null);
   const { accessToken } = useAuth();
-  const router = useRouter()
+  const router = useRouter();
 
+  // Redirect to signin if not authenticated
   useEffect(() => {
-    if(!accessToken){
-      if (user) {
-        router.push("/signin");
-      }
+    if (!accessToken) {
+      router.push("/signin");
     }
-  })
+  }, [accessToken, router]);
 
   const buttons = [
     {
@@ -55,52 +53,74 @@ export default function EventComponent() {
       }
     };
 
-    getAllEvents();
+    if (accessToken) {
+      getAllEvents();
+    }
   }, [accessToken]);
 
-  /* Events Rendering */
+  /* Render an event card with expanded details */
   const renderEventCard = (event) => (
     <Card
       key={event.id}
-      className="bg-white dark:bg-gray-800 hover:shadow-md transition-shadow duration-200"
+      className="bg-white dark:bg-gray-800 hover:shadow-lg transition-shadow duration-200"
     >
-      <CardContent className="p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          {/* Profile Section */}
-          <div className="flex items-center gap-4 w-full sm:w-auto">
-            <div className="relative h-12 w-12 min-w-[48px] rounded-full overflow-hidden">
-              <Image
-                src="/placeholder.svg"
-                alt="Event Image"
-                layout="fill"
-                objectFit="cover"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate text-lg sm:text-xl">
-                {event.eventTitle}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
-                {event.eventLink}
+      <CardContent className="p-6">
+        <div className="flex flex-col gap-4">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-2xl">
+            {event.eventTitle}
+          </h3>
+          <p className="text-base text-gray-700 dark:text-gray-300">
+            {event.eventDescription}
+          </p>
+          <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+            <p>
+              <span className="font-medium">Event Type:</span> {event.eventType}
+            </p>
+            <p>
+              <span className="font-medium">Address:</span> {event.eventAddress}
+            </p>
+            <p>
+              <span className="font-medium">Start Time:</span>{" "}
+              {new Date(event.eventStartTime).toLocaleString(undefined, {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </p>
+            <p>
+              <span className="font-medium">End Time:</span>{" "}
+              {new Date(event.eventEndTime).toLocaleString(undefined, {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </p>
+            <p>
+              <span className="font-medium">Time Remaining:</span> {event.timeRemaining}
+            </p>
+            <p>
+              <span className="font-medium">Contact:</span> {event.eventContact}
+            </p>
+            {event.eventLink && (
+              <p>
+                <span className="font-medium">Link:</span>{" "}
+                <a
+                  href={event.eventLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  {event.eventLink}
+                </a>
               </p>
-              <p className="hidden sm:block text-sm text-gray-500 dark:text-gray-400">
-                {event.eventDescription}
-              </p>
-            </div>
+            )}
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center sm:gap-2 md:gap-3 w-full sm:w-auto sm:justify-start mt-4 sm:mt-0">
+          <div className="flex justify-end">
             <Button
               variant="outline"
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shrink-0 w-full sm:w-auto"
+              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
               disabled
             >
-              {/* <Mail className="h-4 w-4 md:mr-2" /> */}
-              <span className="block md:inline-block text-sm">
-                More Details
-              </span>
+              More Details
             </Button>
           </div>
         </div>
@@ -109,7 +129,7 @@ export default function EventComponent() {
   );
 
   return (
-    <div className="max-w-full mx-auto h-full">
+    <div className="max-w-full mx-auto h-full p-4">
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left Sidebar */}
         <LeftPanel
@@ -128,8 +148,8 @@ export default function EventComponent() {
             disabled={true}
           />
 
-          {/* Render Events with Preloader */}
-          <div className="grid gap-4">
+          {/* Render Events */}
+          <div className="mt-6 grid gap-6">
             {eventLoading ? (
               <PanelsPreloader />
             ) : eventError ? (
