@@ -1,7 +1,6 @@
 "use client";
 /**
- * Todo: Add Logics
- * 2. try to make UI good
+ * Updated: Integrated profile picture usage and connection request accept/reject actions.
  */
 
 import { useState, useEffect } from "react";
@@ -39,10 +38,10 @@ export default function ConnectionsComponent() {
   const router = useRouter();
 
   useEffect(() => {
-    if(!accessToken){
+    if (!accessToken) {
       router.push("/signin");
     }
-  })
+  }, [accessToken, router]);
 
   const buttons = [
     {
@@ -51,7 +50,7 @@ export default function ConnectionsComponent() {
       onClick: () => setActiveTab("connections"),
       active: activeTab === "connections",
       showChevron: true,
-      key: "connections", 
+      key: "connections",
     },
     {
       label: "Pending Requests",
@@ -59,7 +58,7 @@ export default function ConnectionsComponent() {
       onClick: () => setActiveTab("requests"),
       active: activeTab === "requests",
       showChevron: true,
-      key: "requests", 
+      key: "requests",
     },
   ];
 
@@ -86,7 +85,7 @@ export default function ConnectionsComponent() {
       }
     };
 
-    getAllConnections();
+    if (accessToken) getAllConnections();
   }, [accessToken]);
 
   // Fetch pending requests
@@ -112,8 +111,64 @@ export default function ConnectionsComponent() {
       }
     };
 
-    getPendingConnections();
+    if (accessToken) getPendingConnections();
   }, [accessToken]);
+
+  // Accept a pending connection request
+  const handleAccept = async (request) => {
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/connections/respond`,
+        { targetEmail: request.email, action: "true" },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          withCredentials: true,
+        }
+      );
+      // Add the accepted request to connections (update profile picture if returned)
+      setConnections((prev) => [
+        ...prev,
+        {
+          connectionId: request.requestId,
+          userId: request.senderId,
+          name: request.name,
+          email: request.email,
+          about: request.about,
+          profilePicture: response.data.profilePicture || request.profilePicture,
+        },
+      ]);
+      // Remove the request from pending list
+      setRequests((prev) =>
+        prev.filter((req) => req.requestId !== request.requestId)
+      );
+    } catch (error) {
+      console.error("Error accepting request", error);
+    }
+  };
+
+  // Reject a pending connection request
+  const handleReject = async (request) => {
+    try {
+      await axios.post(
+        `${BACKEND_URL}/api/connections/respond`,
+        { targetEmail: request.email, action: "false" },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          withCredentials: true,
+        }
+      );
+      // Remove the request from pending list
+      setRequests((prev) =>
+        prev.filter((req) => req.requestId !== request.requestId)
+      );
+    } catch (error) {
+      console.error("Error rejecting request", error);
+    }
+  };
 
   // Render connection card for "My Network"
   const renderConnectionCard = (connection) => (
@@ -127,8 +182,8 @@ export default function ConnectionsComponent() {
           <div className="flex items-center gap-4 w-full sm:w-auto">
             <div className="relative h-12 w-12 min-w-[48px] rounded-full overflow-hidden">
               <Image
-                src="/placeholder.svg"
-                alt={connection.name}
+                src={connection.profilePicture || "/placeholder.svg"}
+                alt={connection.name|| "User name"}
                 layout="fill"
                 objectFit="cover"
               />
@@ -179,7 +234,7 @@ export default function ConnectionsComponent() {
   // Render request card for "Pending Requests"
   const renderRequestCard = (request) => (
     <Card
-      key={request.connectionId}
+      key={request.requestId}
       className="bg-white dark:bg-gray-800 hover:shadow-md transition-shadow duration-200"
     >
       <CardContent className="p-4">
@@ -188,8 +243,8 @@ export default function ConnectionsComponent() {
           <div className="flex items-center gap-4 w-full sm:w-auto">
             <div className="relative h-12 w-12 min-w-[48px] rounded-full overflow-hidden">
               <Image
-                src="/placeholder.svg"
-                alt={request.name}
+                src={request.profilePicture || "/placeholder.svg"}
+                alt={request.name || " User name"}
                 layout="fill"
                 objectFit="cover"
               />
@@ -212,6 +267,7 @@ export default function ConnectionsComponent() {
             <Button
               size="sm"
               className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
+              onClick={() => handleAccept(request)}
             >
               <Check className="h-4 w-4" />
               <span className="sr-only">Accept</span>
@@ -220,9 +276,10 @@ export default function ConnectionsComponent() {
               size="sm"
               variant="outline"
               className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+              onClick={() => handleReject(request)}
             >
               <X className="h-4 w-4" />
-              <span className="sr-only">Ignore</span>
+              <span className="sr-only">Reject</span>
             </Button>
           </div>
         </div>
@@ -286,7 +343,7 @@ export default function ConnectionsComponent() {
           />
 
           {/* Render Content */}
-          <div className="grid gap-4" >{content}</div>
+          <div className="grid gap-4">{content}</div>
         </div>
       </div>
     </div>
