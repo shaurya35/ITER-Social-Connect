@@ -139,7 +139,7 @@ export default function SettingsComponent() {
   };
 
   return (
-    <div className="max-w-full mx-auto h-full p-4">
+    <div className="max-w-full mx-auto h-full">
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left Sidebar */}
         <LeftPanel
