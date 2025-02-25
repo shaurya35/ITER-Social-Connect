@@ -37,20 +37,15 @@ const updateProfile = async (req, res) => {
     const {
       name,
       about,
-      email,
-      password,
       github,
       linkedin,
       x,
       profilePicture,
     } = validatedData.data;
 
-    // Check if at least one field is provided
     if (
       !name &&
       !about &&
-      !email &&
-      !password &&
       !github &&
       !linkedin &&
       !x &&
@@ -84,7 +79,6 @@ const updateProfile = async (req, res) => {
     const updateData = {
       ...(name && { name }),
       ...(about && { about }),
-      ...(email && { email }),
       ...(github && { github }),
       ...(linkedin && { linkedin }),
       ...(x && { x }),
@@ -164,6 +158,8 @@ const changePassword = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
 
 module.exports = {
   updateProfile,

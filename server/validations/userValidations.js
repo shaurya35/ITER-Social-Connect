@@ -91,11 +91,6 @@ const changePasswordSchema = z.object({
 const updateProfileSchema = z.object({
   name: z.string().optional(),
   about: z.string().optional(),
-  email: z.string().email("Invalid email address.").optional(),
-  password: z
-    .string()
-    .min(6, "Password must be at least 6 characters long.")
-    .optional(),
   github: z.string().url("Invalid GitHub URL.").optional(),
   linkedin: z.string().url("Invalid LinkedIn URL.").optional(),
   x: z.any().optional(), // Accepts any type, optional

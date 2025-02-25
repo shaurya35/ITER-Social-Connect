@@ -16,6 +16,147 @@ const {
   writeBatch,
 } = require("firebase/firestore");
 
+// const getAllUserPosts = async (req, res) => {
+//   try {
+//     const userId = req.user.userId;
+//     const { page = 1, limit: limitParam = 10 } = req.query;
+//     const limitValue = parseInt(limitParam, 10);
+
+//     if (isNaN(page) || isNaN(limitValue) || page < 1 || limitValue < 1) {
+//       return res.status(400).json({ error: "Invalid page or limit parameter" });
+//     }
+
+//     const postsCollection = collection(db, "posts");
+//     let postsQuery = query(
+//       postsCollection,
+//       where("userId", "==", userId),
+//       orderBy("createdAt", "desc"),
+//       limit(limitValue)
+//     );
+
+//     if (page > 1) {
+//       const allPostsSnapshot = await getDocs(
+//         query(
+//           postsCollection,
+//           where("userId", "==", userId),
+//           orderBy("createdAt", "desc")
+//         )
+//       );
+//       const allPosts = allPostsSnapshot.docs;
+
+//       const startIndex = (page - 1) * limitValue;
+//       if (startIndex >= allPosts.length) {
+//         return res.status(200).json({ posts: [], hasMore: false });
+//       }
+
+//       const startDoc = allPosts[startIndex];
+//       postsQuery = query(
+//         postsCollection,
+//         where("userId", "==", userId),
+//         orderBy("createdAt", "desc"),
+//         startAfter(startDoc),
+//         limit(limitValue)
+//       );
+//     }
+
+//     const postsSnapshot = await getDocs(postsQuery);
+//     let posts = postsSnapshot.docs.map((doc) => ({
+//       id: doc.id,
+//       ...doc.data(),
+//     }));
+
+//     // Fetch bookmarked posts
+//     let bookmarkedPosts = new Set();
+//     const bookmarksCollectionRef = collection(db, `users/${userId}/bookmarks`);
+//     const bookmarksSnapshot = await getDocs(bookmarksCollectionRef);
+
+//     bookmarksSnapshot.forEach((doc) => {
+//       bookmarkedPosts.add(doc.data().postId);
+//     });
+
+//     posts = posts.map((post) => ({
+//       ...post,
+//       isBookmarked: bookmarkedPosts.has(post.id),
+//     }));
+
+//     const hasMore = posts.length === limitValue;
+
+//     res.status(200).json({
+//       message: "Posts retrieved successfully",
+//       posts,
+//       hasMore,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching user posts:", error);
+//     res.status(500).json({ error: "Failed to fetch user posts" });
+//   }
+// };
+
+// const createUserPost = async (req, res) => {
+//   try {
+//     const userId = req.user.userId;
+//     const { content } = req.body;
+
+//     if (!content || content.trim() === "") {
+//       return res.status(400).json({ error: "Post content cannot be empty" });
+//     }
+
+//     const userRef = doc(db, "users", userId);
+//     const userSnapshot = await getDoc(userRef);
+
+//     if (!userSnapshot.exists()) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     const userData = userSnapshot.data();
+//     const userName = userData.name;
+//     const profilePicture = userData.profilePicture || "";
+
+//     const hashtags =
+//       content.match(/#[a-zA-Z0-9_]+/g)?.map((tag) => tag.toLowerCase()) || [];
+
+//     const postDoc = await addDoc(collection(db, "posts"), {
+//       userId,
+//       userName,
+//       content,
+//       profilePicture,
+//       createdAt: new Date().toISOString(),
+//       likes: [],
+//     });
+
+//     const postId = postDoc.id;
+
+//     const batch = writeBatch(db);
+//     const currentTime = new Date().toISOString();
+
+//     for (const tag of hashtags) {
+//       const hashtagRef = doc(db, "hashtags", tag);
+//       const hashtagSnapshot = await getDoc(hashtagRef);
+
+//       if (hashtagSnapshot.exists()) {
+//         batch.update(hashtagRef, {
+//           posts: arrayUnion({ postId, createdAt: currentTime }),
+//         });
+//       } else {
+//         batch.set(hashtagRef, {
+//           createdAt: currentTime,
+//           posts: [{ postId, createdAt: currentTime }],
+//         });
+//       }
+//     }
+
+//     await batch.commit();
+
+//     res.status(201).json({
+//       message: "Post created successfully",
+//       postId,
+//     });
+//   } catch (error) {
+//     console.error("Create Post Error:", error);
+//     res.status(500).json({ error: "Failed to create post" });
+//   }
+// };
+
 const getAllUserPosts = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -26,6 +167,15 @@ const getAllUserPosts = async (req, res) => {
       return res.status(400).json({ error: "Invalid page or limit parameter" });
     }
 
+    const userRef = doc(db, "users", userId);
+    const userSnapshot = await getDoc(userRef);
+
+    if (!userSnapshot.exists()) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userData = userSnapshot.data();
+
     const postsCollection = collection(db, "posts");
     let postsQuery = query(
       postsCollection,
@@ -35,21 +185,21 @@ const getAllUserPosts = async (req, res) => {
     );
 
     if (page > 1) {
-      const allPostsSnapshot = await getDocs(
+      const previousPostsSnapshot = await getDocs(
         query(
           postsCollection,
           where("userId", "==", userId),
           orderBy("createdAt", "desc")
         )
       );
-      const allPosts = allPostsSnapshot.docs;
-
+      const previousPosts = previousPostsSnapshot.docs;
       const startIndex = (page - 1) * limitValue;
-      if (startIndex >= allPosts.length) {
+
+      if (startIndex >= previousPosts.length) {
         return res.status(200).json({ posts: [], hasMore: false });
       }
 
-      const startDoc = allPosts[startIndex];
+      const startDoc = previousPosts[startIndex];
       postsQuery = query(
         postsCollection,
         where("userId", "==", userId),
@@ -59,24 +209,21 @@ const getAllUserPosts = async (req, res) => {
       );
     }
 
-    const postsSnapshot = await getDocs(postsQuery);
+    const [postsSnapshot, bookmarksSnapshot] = await Promise.all([
+      getDocs(postsQuery),
+      getDocs(collection(db, `users/${userId}/bookmarks`)),
+    ]);
+
+    const bookmarkedPosts = new Set(
+      bookmarksSnapshot.docs.map((doc) => doc.data().postId)
+    );
+
     let posts = postsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    }));
-
-    // Fetch bookmarked posts
-    let bookmarkedPosts = new Set();
-    const bookmarksCollectionRef = collection(db, `users/${userId}/bookmarks`);
-    const bookmarksSnapshot = await getDocs(bookmarksCollectionRef);
-
-    bookmarksSnapshot.forEach((doc) => {
-      bookmarkedPosts.add(doc.data().postId);
-    });
-
-    posts = posts.map((post) => ({
-      ...post,
-      isBookmarked: bookmarkedPosts.has(post.id),
+      userName: userData.name,
+      profilePicture: userData.profilePicture || "",
+      isBookmarked: bookmarkedPosts.has(doc.id),
     }));
 
     const hasMore = posts.length === limitValue;
@@ -101,33 +248,21 @@ const createUserPost = async (req, res) => {
       return res.status(400).json({ error: "Post content cannot be empty" });
     }
 
-    const userRef = doc(db, "users", userId);
-    const userSnapshot = await getDoc(userRef);
-
-    if (!userSnapshot.exists()) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const userData = userSnapshot.data();
-    const userName = userData.name;
-    const profilePicture = userData.profilePicture || "";
-
-    const hashtags =
-      content.match(/#[a-zA-Z0-9_]+/g)?.map((tag) => tag.toLowerCase()) || [];
-
+    // Store only userId in posts collection (No name or profilePicture)
     const postDoc = await addDoc(collection(db, "posts"), {
       userId,
-      userName,
       content,
-      profilePicture,
       createdAt: new Date().toISOString(),
       likes: [],
     });
 
     const postId = postDoc.id;
 
+    // Handle hashtags
     const batch = writeBatch(db);
     const currentTime = new Date().toISOString();
+    const hashtags =
+      content.match(/#[a-zA-Z0-9_]+/g)?.map((tag) => tag.toLowerCase()) || [];
 
     for (const tag of hashtags) {
       const hashtagRef = doc(db, "hashtags", tag);
@@ -218,36 +353,82 @@ const deleteUserPost = async (req, res) => {
   }
 };
 
+// const getUserPostById = async (req, res) => {
+//   try {
+//     const userId = req.user.userId;
+//     const { postId } = req.params;
+
+//     const postRef = doc(db, "posts", postId);
+//     const postSnapshot = await getDoc(postRef);
+
+//     if (!postSnapshot.exists()) {
+//       return res.status(404).json({ error: "Post not found" });
+//     }
+
+//     const postData = postSnapshot.data();
+
+//     if (!userId) {
+//       return res
+//         .status(403)
+//         .json({ error: "You need to log in to view this private post" });
+//     }
+
+//     // Fetch bookmarked status
+//     let isBookmarked = false;
+//     const bookmarksCollectionRef = collection(db, `users/${userId}/bookmarks`);
+//     const bookmarksSnapshot = await getDocs(bookmarksCollectionRef);
+
+//     bookmarksSnapshot.forEach((doc) => {
+//       if (doc.data().postId === postId) {
+//         isBookmarked = true;
+//       }
+//     });
+
+//     res.status(200).json({
+//       message: "Post retrieved successfully",
+//       post: {
+//         id: postSnapshot.id,
+//         ...postData,
+//         isBookmarked,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Get Post by ID Error:", error);
+//     res.status(500).json({ error: "Failed to fetch post" });
+//   }
+// };
+
 const getUserPostById = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user?.userId;
     const { postId } = req.params;
 
+    if (!userId) {
+      return res.status(403).json({ error: "You need to log in to view this private post" });
+    }
+
+    // Fetch post and user details in parallel
     const postRef = doc(db, "posts", postId);
-    const postSnapshot = await getDoc(postRef);
+    const userRef = doc(db, "users", userId);
+    const bookmarkRef = doc(db, `users/${userId}/bookmarks`, postId);
+
+    const [postSnapshot, userSnapshot, bookmarkSnapshot] = await Promise.all([
+      getDoc(postRef),
+      getDoc(userRef),
+      getDoc(bookmarkRef),
+    ]);
 
     if (!postSnapshot.exists()) {
       return res.status(404).json({ error: "Post not found" });
     }
 
-    const postData = postSnapshot.data();
-
-    if (!userId) {
-      return res
-        .status(403)
-        .json({ error: "You need to log in to view this private post" });
+    if (!userSnapshot.exists()) {
+      return res.status(404).json({ error: "User not found" });
     }
 
-    // Fetch bookmarked status
-    let isBookmarked = false;
-    const bookmarksCollectionRef = collection(db, `users/${userId}/bookmarks`);
-    const bookmarksSnapshot = await getDocs(bookmarksCollectionRef);
-
-    bookmarksSnapshot.forEach((doc) => {
-      if (doc.data().postId === postId) {
-        isBookmarked = true;
-      }
-    });
+    const postData = postSnapshot.data();
+    const userData = userSnapshot.data();
+    const isBookmarked = bookmarkSnapshot.exists();
 
     res.status(200).json({
       message: "Post retrieved successfully",
@@ -255,6 +436,8 @@ const getUserPostById = async (req, res) => {
         id: postSnapshot.id,
         ...postData,
         isBookmarked,
+        userName: userData.name,
+        profilePicture: userData.profilePicture || "",
       },
     });
   } catch (error) {
@@ -262,7 +445,6 @@ const getUserPostById = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch post" });
   }
 };
-
 
 const likePost = async (req, res) => {
   try {
@@ -388,20 +570,21 @@ const getBookmarkedPosts = async (req, res) => {
     res.status(500).json({ error: "Error fetching bookmarked posts" });
   }
 };
-  
+
 const sharePost = async (req, res) => {
   try {
-    const { postId } = req.body; 
+    const { postId } = req.body;
     if (!postId) {
       return res.status(400).json({ error: "Post ID is required" });
     }
 
-    const baseUrl = process.env.BASE_URL || "https://itersocialconnect.vercel.app";
+    const baseUrl =
+      process.env.BASE_URL || "https://itersocialconnect.vercel.app";
     const directLink = `${baseUrl}/post/${postId}`;
     const whatsappLink = `https://wa.me/?text=${encodeURIComponent(
       `Check out this post: ${directLink}`
     )}`;
-    
+
     res.status(200).json({
       message: "Share links generated successfully",
       directLink,
@@ -414,7 +597,6 @@ const sharePost = async (req, res) => {
 };
 
 module.exports = { sharePost };
-
 
 module.exports = {
   likePost,

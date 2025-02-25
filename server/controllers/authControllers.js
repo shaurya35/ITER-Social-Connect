@@ -424,7 +424,7 @@ const signin = async (req, res) => {
       email: userData.email,
       userId: userDoc.id,
     };
-    
+
     // Refresh Token System
     const accessToken = generateAccessToken({ userId: userDoc.id, email });
     const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
@@ -466,21 +466,6 @@ const signin = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
-// const logout = (req, res) => {
-//   try {
-//     res.clearCookie("refreshToken", {
-//       httpOnly: true,
-//       secure: process.env.NODE_ENV === "production",
-//       sameSite: "Strict",
-//     });
-
-//     res.status(200).json({ message: "Logged out successfully" });
-//   } catch (error) {
-//     console.error("Logout Error:", error);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// };
 
 const logout = (req, res) => {
   try {
@@ -785,4 +770,3 @@ module.exports = {
   resetPassword,
   teacherSignup,
 };
-
