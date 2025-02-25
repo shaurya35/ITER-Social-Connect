@@ -235,7 +235,7 @@ const verifyOtp = async (req, res) => {
       approved: false,
       profileCompleted: false,
       createdAt: Timestamp.now(),
-      ...(isStudent ? { regNo } : { isTeacher: true }), // Include regNo for students, role for teachers
+      ...(isStudent ? { regNo } : { role: "teacher" }), // Include regNo for students, role for teachers
     });
 
     await deleteDoc(doc(db, "otp_verifications", email));
@@ -785,3 +785,4 @@ module.exports = {
   resetPassword,
   teacherSignup,
 };
+

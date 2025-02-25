@@ -7,6 +7,7 @@ const {
   query,
   where,
   getDocs,
+  writeBatch,
 } = require("firebase/firestore");
 const db = require("../firebase/firebaseConfig");
 
@@ -40,7 +41,7 @@ const createEvent = async (req, res) => {
     const userData = userSnap.data();
 
     // Check if the user is a teacher
-    if (!userData.isTeacher) {
+    if (userData.role !== "teacher") {
       return res
         .status(403)
         .json({ message: "Only teachers can create events." });
@@ -65,13 +66,19 @@ const createEvent = async (req, res) => {
       createdAt: Date.now(),
     });
 
-    // 🔥 Store Notification for All Users
+    // 🔥 Store Notification for All Users using batched writes
     const usersSnapshot = await getDocs(collection(db, "users"));
-    usersSnapshot.forEach(async (user) => {
-      const userId = user.id; // Get each user's ID
+    const batch = writeBatch(db);
+
+    usersSnapshot.forEach((user) => {
+      const recipientId = user.id;
       const notificationRef = doc(collection(db, "notifications"));
-      await setDoc(notificationRef, {
-        userId,
+
+      batch.set(notificationRef, {
+        userId: recipientId,
+        senderId: userId,
+        senderName: userData.name || "Unknown",
+        senderProfilePicture: userData.profilePicture || "",
         message: `New Event Created: ${eventTitle}`,
         eventId: newEventRef.id,
         timestamp: Date.now(),
@@ -79,6 +86,8 @@ const createEvent = async (req, res) => {
         type: "event",
       });
     });
+
+    await batch.commit(); // Commit all writes at once
 
     res.status(200).json({ message: "Event submitted successfully!" });
   } catch (error) {

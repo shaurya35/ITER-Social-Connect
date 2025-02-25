@@ -29,6 +29,10 @@ const getNotifications = async (req, res) => {
         id: docSnapshot.id,
         type: data.type,
         message: data.message,
+        senderId: data.senderId || null, // Sender's ID
+        senderName: data.senderName || "Unknown", // Sender's Name
+        senderProfilePicture: data.senderProfilePicture || "", // Sender's Profile Picture
+        timestamp: data.timestamp || null, // Raw timestamp
         date: new Date(data.timestamp), // Convert timestamp to Date object
         read: data.isRead || false, // Mark read/unread
       };

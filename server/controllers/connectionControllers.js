@@ -35,7 +35,6 @@ const sendConnectionRequest = async (req, res) => {
     const targetUser = usersSnapshot.docs[0];
     const targetUserId = targetUser.id;
 
-    // Check if the connection already exists
     const senderConnectionRef = doc(
       db,
       `users/${senderId}/connections/${targetUserId}`
@@ -48,7 +47,18 @@ const sendConnectionRequest = async (req, res) => {
         .json({ message: "Connection request already sent!" });
     }
 
-    // Add connection request to both users' subcollections
+    const senderRef = doc(db, "users", senderId);
+    const senderSnapshot = await getDoc(senderRef);
+
+    let senderName = "Someone"; 
+    let senderProfilePicture = ""; 
+
+    if (senderSnapshot.exists()) {
+      const senderData = senderSnapshot.data();
+      senderName = senderData.name || senderName; 
+      senderProfilePicture = senderData.profilePicture || ""; 
+    }
+
     await setDoc(doc(db, `users/${senderId}/connections/${targetUserId}`), {
       userId: targetUserId,
       status: "pending",
@@ -61,12 +71,13 @@ const sendConnectionRequest = async (req, res) => {
       createdAt: Date.now(),
     });
 
-    // 🔥 Store Notification for Target User
     const notificationRef = doc(collection(db, "notifications"));
     await setDoc(notificationRef, {
-      userId: targetUserId, // Notification for the receiver
-      message: `You have a new connection request from ${senderId}.`,
+      userId: targetUserId,
+      message: `You have a new connection request from ${senderName}.`,
       senderId: senderId,
+      senderName: senderName, 
+      senderProfilePicture: senderProfilePicture, 
       timestamp: Date.now(),
       isRead: false,
       type: "connection_request",
