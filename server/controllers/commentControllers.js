@@ -13,20 +13,45 @@ const getAllComments = async (req, res) => {
   try {
     const { postId } = req.params;
 
+    if (!postId) {
+      return res.status(400).json({ error: "Post ID is required." });
+    }
+
+    // Reference to the "comments" subcollection inside "posts"
     const commentRef = collection(db, "posts", postId, "comments");
     const commentsSnapshot = await getDocs(commentRef);
 
-    const comments = commentsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const comments = await Promise.all(
+      commentsSnapshot.docs.map(async (commentDoc) => {
+        const commentData = commentDoc.data();
+        console.log(commentData)
+
+        // Check if `userId` exists in the comment data
+        let user = { name: "Unknown User", profilePicture: null };
+        if (commentData.userId) {
+          const userRef = doc(db, "users", commentData.userId);
+          const userSnap = await getDoc(userRef);
+
+          if (userSnap.exists()) {
+            user = {
+              name: userSnap.data().name || "Unknown User",
+              profilePicture: userSnap.data().profilePicture || null,
+            };
+          }
+        }
+
+        return {
+          id: commentDoc.id,
+          ...commentData,
+          user, // Include user details
+        };
+      })
+    );
 
     return res.status(200).json({ comments });
   } catch (error) {
     console.error("Get All Comments Error:", error);
-    res.status(500).json({
-      error: "Failed to Fetch Comments!",
-    });
+    res.status(500).json({ error: "Failed to Fetch Comments!" });
   }
 };
 
