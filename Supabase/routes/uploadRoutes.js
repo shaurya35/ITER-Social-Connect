@@ -1,0 +1,46 @@
+const express = require("express");
+const multer = require("multer");
+const sharp = require("sharp");
+const supabase = require("../config/supabaseConfig");
+const router = express.Router();
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+router.post("/upload", upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    // Compress the image
+    const compressedImage = await sharp(req.file.buffer)
+      .resize({ width: 800 }) // Resize width to 800px
+      .toFormat("jpeg", { quality: 80 }) // Convert to JPEG format with 80% quality
+      .toBuffer();
+
+    const fileName = `${Date.now()}-${req.file.originalname}`;
+
+    // Add metadata (upload timestamp)
+    const metadata = { uploadDate: new Date().toISOString() };
+
+    const { data, error } = await supabase.storage
+      .from("uploads")
+      .upload(fileName, compressedImage, {
+        contentType: "image/jpeg",
+        upsert: false, // Avoid overwriting existing files
+        cacheControl: "3600", // Optional cache control
+        metadata, // Include metadata (timestamp)
+      });
+
+    if (error) throw error;
+
+    const publicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/uploads/${fileName}`;
+    res.json({ success: true, url: publicUrl, metadata });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+module.exports = router;

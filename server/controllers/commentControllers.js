@@ -6,7 +6,6 @@ const {
   doc,
   getDoc,
   deleteDoc,
-  setDoc,
 } = require("firebase/firestore");
 
 const getAllComments = async (req, res) => {
