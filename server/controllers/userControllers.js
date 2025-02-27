@@ -212,101 +212,6 @@ const deleteUserPost = async (req, res) => {
   }
 };
 
-// const getUserPostById = async (req, res) => {
-//   try {
-//     const userId = req.user.userId;
-//     const { postId } = req.params;
-
-//     const postRef = doc(db, "posts", postId);
-//     const postSnapshot = await getDoc(postRef);
-
-//     if (!postSnapshot.exists()) {
-//       return res.status(404).json({ error: "Post not found" });
-//     }
-
-//     const postData = postSnapshot.data();
-
-//     if (!userId) {
-//       return res
-//         .status(403)
-//         .json({ error: "You need to log in to view this private post" });
-//     }
-
-//     // Fetch bookmarked status
-//     let isBookmarked = false;
-//     const bookmarksCollectionRef = collection(db, `users/${userId}/bookmarks`);
-//     const bookmarksSnapshot = await getDocs(bookmarksCollectionRef);
-
-//     bookmarksSnapshot.forEach((doc) => {
-//       if (doc.data().postId === postId) {
-//         isBookmarked = true;
-//       }
-//     });
-
-//     res.status(200).json({
-//       message: "Post retrieved successfully",
-//       post: {
-//         id: postSnapshot.id,
-//         ...postData,
-//         isBookmarked,
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Get Post by ID Error:", error);
-//     res.status(500).json({ error: "Failed to fetch post" });
-//   }
-// };
-
-// const getUserPostById = async (req, res) => {
-//   try {
-//     const userId = req.user?.userId;
-//     const { postId } = req.params;
-
-//     if (!userId) {
-//       return res
-//         .status(403)
-//         .json({ error: "You need to log in to view this private post" });
-//     }
-
-//     // Fetch post and user details in parallel
-//     const postRef = doc(db, "posts", postId);
-//     const userRef = doc(db, "users", userId);
-//     const bookmarkRef = doc(db, `users/${userId}/bookmarks`, postId);
-
-//     const [postSnapshot, userSnapshot, bookmarkSnapshot] = await Promise.all([
-//       getDoc(postRef),
-//       getDoc(userRef),
-//       getDoc(bookmarkRef),
-//     ]);
-
-//     if (!postSnapshot.exists()) {
-//       return res.status(404).json({ error: "Post not found" });
-//     }
-
-//     if (!userSnapshot.exists()) {
-//       return res.status(404).json({ error: "User not found" });
-//     }
-
-//     const postData = postSnapshot.data();
-//     const userData = userSnapshot.data();
-//     const isBookmarked = bookmarkSnapshot.exists();
-
-//     res.status(200).json({
-//       message: "Post retrieved successfully",
-//       post: {
-//         id: postSnapshot.id,
-//         ...postData,
-//         isBookmarked,
-//         userName: userData.name,
-//         profilePicture: userData.profilePicture || "",
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Get Post by ID Error:", error);
-//     res.status(500).json({ error: "Failed to fetch post" });
-//   }
-// };
-
 const getUserPostById = async (req, res) => {
   try {
     const { postId } = req.params;
@@ -357,7 +262,6 @@ const getUserPostById = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch post" });
   }
 };
-
 
 const likePost = async (req, res) => {
   try {
