@@ -1,12 +1,5 @@
 "use client";
-/**
- * Todos: 1. Comment Post System
- * 2. Improve Fetch system
- * 3. Bookmark system
- * 4.
- */
 
-/** Imports */
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthProvider";
@@ -63,6 +56,7 @@ export default function SinglePost({ postId }) {
   const [likeError, setLikeError] = useState(null);
   const [bookmarkLoadingState, setBookmarkLoadingState] = useState(false);
   const [bookmarkError, setBookmarkError] = useState(null);
+  const [commentPosting, setCommentPosting] = useState(false);
   const { accessToken } = useAuth();
   const { profile } = useProfile();
   const router = useRouter();
@@ -74,7 +68,6 @@ export default function SinglePost({ postId }) {
     }
   }, [accessToken, router]);
 
-  // Guard flag to ensure fetch happens only once per post
   const hasFetchedRef = useRef(false);
 
   // Fetch single post data
@@ -101,7 +94,7 @@ export default function SinglePost({ postId }) {
     }
   };
 
-  // Fetch comments for the post
+  // Fetch and sort comments for the post 
   const fetchSinglePostComments = async () => {
     setLoading(true);
     try {
@@ -112,7 +105,9 @@ export default function SinglePost({ postId }) {
           withCredentials: true,
         }
       );
-      setComments(response.data.comments || []);
+      const commentsData = response.data.comments || [];
+      commentsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setComments(commentsData);
     } catch (err) {
       setError(err.response?.data?.message || err.message);
     } finally {
@@ -121,8 +116,6 @@ export default function SinglePost({ postId }) {
   };
 
   // Run fetching once when postId and profile are available.
-  // The guard flag prevents repeated fetches even if profile updates or
-  // React Strict Mode causes double invocation in development.
   useEffect(() => {
     if (!postId || !profile) return;
     if (hasFetchedRef.current) return;
@@ -138,7 +131,6 @@ export default function SinglePost({ postId }) {
     const originalPost = { ...post };
 
     try {
-      // Optimistic update
       const newIsLiked = !post.isLiked;
       setPost((prev) => ({
         ...prev,
@@ -146,7 +138,6 @@ export default function SinglePost({ postId }) {
         likeCount: newIsLiked ? prev.likeCount + 1 : prev.likeCount - 1,
       }));
 
-      // API call
       const response = await axios.post(
         `${BACKEND_URL}/api/user/posts/like`,
         { postId: post.id },
@@ -156,13 +147,11 @@ export default function SinglePost({ postId }) {
         }
       );
 
-      // Sync with server count
       setPost((prev) => ({
         ...prev,
         likeCount: response.data.totalLikes,
       }));
     } catch (error) {
-      // Rollback on error
       setPost(originalPost);
       setLikeError(
         error.response?.data?.message || "Failed to update like"
@@ -172,14 +161,13 @@ export default function SinglePost({ postId }) {
     }
   };
 
-  // Bookmark functionality
+  // Bookmark functionality 
   const toggleBookmark = async () => {
     if (!post || bookmarkLoadingState) return;
     setBookmarkLoadingState(true);
     const originalPost = { ...post };
 
     try {
-      // Optimistic update
       setPost((prev) => ({
         ...prev,
         isBookmarked: !prev.isBookmarked,
@@ -195,7 +183,6 @@ export default function SinglePost({ postId }) {
         }
       );
     } catch (error) {
-      // Rollback on error
       setPost(originalPost);
       setBookmarkError(
         error.response?.data?.message || "Failed to update bookmark"
@@ -205,7 +192,7 @@ export default function SinglePost({ postId }) {
     }
   };
 
-  // Share functionality
+  // Share functionality 
   const sharePost = async () => {
     try {
       const response = await axios.post(
@@ -236,6 +223,42 @@ export default function SinglePost({ postId }) {
     } catch (error) {
       console.error("Sharing failed:", error);
       alert("Failed to share post");
+    }
+  };
+
+  const handlePostComment = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+    setCommentPosting(true);
+
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/comments/${postId}/`,
+        { content: newComment },
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          withCredentials: true,
+        }
+      );
+
+      const newCommentObj = {
+        id: response.data.commentId,
+        createdAt: new Date().toISOString(),
+        userId: profile.userId,
+        content: newComment,
+        user: {
+          name: profile.name,
+          profilePicture: profile.profilePicture,
+        },
+      };
+
+      setComments((prevComments) => [newCommentObj, ...prevComments]);
+      setNewComment(""); 
+    } catch (err) {
+      console.error("Error posting comment:", err);
+      setError(err.response?.data?.error || err.message);
+    } finally {
+      setCommentPosting(false);
     }
   };
 
@@ -379,6 +402,7 @@ export default function SinglePost({ postId }) {
             Comments
           </h4>
 
+          {/* Comment Input */}
           <div className="space-y-4 mt-4">
             <div className="bg-white dark:bg-gray-800 shadow rounded-2xl p-4">
               <div className="flex items-center gap-4">
@@ -401,76 +425,82 @@ export default function SinglePost({ postId }) {
                   </p>
                 </div>
               </div>
-              <div className="mt-4 flex flex-wrap items-center gap-1 w-full max-w-[95%]">
+              <form
+                onSubmit={handlePostComment}
+                className="mt-4 flex flex-wrap items-center gap-1 w-full max-w-[95%]"
+              >
                 <input
                   type="text"
                   placeholder="Add a comment..."
                   className="flex-1 min-w-0 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-2 py-2 outline-none placeholder-gray-500 text-xs sm:text-sm"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  disabled={commentPosting}
                 />
-                <button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg px-4 py-2 text-xs sm:text-sm">
-                  Post
+                <button
+                  type="submit"
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg px-4 py-2 text-xs sm:text-sm"
+                  disabled={commentPosting}
+                >
+                  {commentPosting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Post"
+                  )}
                 </button>
-              </div>
+              </form>
             </div>
           </div>
 
-          {loading ? (
-            <div className="space-y-4 animate-pulse mt-4">
-              {Array(3)
-                .fill(null)
-                .map((_, index) => (
-                  <div
-                    key={index}
-                    className="bg-white dark:bg-gray-800 shadow rounded-2xl p-4"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="rounded-full bg-gray-300 dark:bg-gray-700 h-9 w-9"></div>
-                      <div className="flex-1">
-                        <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/3 mb-2"></div>
-                        <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-1/4"></div>
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-full mb-2"></div>
-                      <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-2/3"></div>
-                    </div>
+          {/* Comments List with Skeleton Preloader for new comment */}
+          <div className="space-y-4 mt-4">
+            {commentPosting && (
+              <div className="bg-white dark:bg-gray-800 shadow rounded-2xl p-4 animate-pulse">
+                <div className="flex items-center gap-4">
+                  <div className="rounded-full bg-gray-300 dark:bg-gray-700 h-9 w-9"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/3"></div>
+                    <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-1/4"></div>
                   </div>
-                ))}
-            </div>
-          ) : (
-            <div className="space-y-4 mt-4">
-              {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="bg-white dark:bg-gray-800 shadow rounded-2xl p-4"
-                >
-                  <div className="flex items-center gap-4">
-                    <NextImage
-                      src={
-                        comment.user.profilePicture ||
-                        "https://media.discordapp.net/attachments/1315342834278207540/1316064105588719707/pf2.jpg"
-                      }
-                      alt="Avatar"
-                      width={36}
-                      height={36}
-                      className="rounded-full"
-                    />
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">
-                        {comment.user.name || "User"}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {timeAgo(comment.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="mt-2 text-gray-700 dark:text-gray-300">
-                    {comment.content}
-                  </p>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="mt-2 space-y-2">
+                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-full"></div>
+                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-2/3"></div>
+                </div>
+              </div>
+            )}
+
+            {comments.map((comment) => (
+              <div
+                key={comment.id}
+                className="bg-white dark:bg-gray-800 shadow rounded-2xl p-4"
+              >
+                <div className="flex items-center gap-4">
+                  <NextImage
+                    src={
+                      comment.user.profilePicture ||
+                      "https://media.discordapp.net/attachments/1315342834278207540/1316064105588719707/pf2.jpg"
+                    }
+                    alt="Avatar"
+                    width={36}
+                    height={36}
+                    className="rounded-full"
+                  />
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">
+                      {comment.user.name || "User"}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {timeAgo(comment.createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-2 text-gray-700 dark:text-gray-300">
+                  {comment.content}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </Card>
     </>

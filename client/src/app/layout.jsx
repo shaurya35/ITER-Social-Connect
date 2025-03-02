@@ -32,7 +32,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${poppins.className} ${geistMono.variable} ${geistSans.variable} antialiased`}
+        className={`${poppins.className} ${geistMono.variable} ${geistSans.variable} min-h-screen antialiased`}
       >
         <ThemeProvider>
           <AuthProvider>
