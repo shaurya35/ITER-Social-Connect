@@ -64,6 +64,7 @@ const getProfile = async (req, res) => {
       connectionsCount,
       posts,
       regNo: userData.regNo,
+      role: userData.role,
     };
 
     res.status(200).json(profileData);

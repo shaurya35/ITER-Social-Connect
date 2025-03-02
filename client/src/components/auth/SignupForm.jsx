@@ -11,12 +11,18 @@ import { AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function SignupForm() {
+  // New state for switching between student and teacher signup flows.
+  const [userType, setUserType] = useState("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Student-specific states
   const [regNo, setRegNo] = useState("");
   const [idCard, setIdCard] = useState(null);
   const [discordUrl, setDiscordUrl] = useState("");
+
+  // Common states for both flows
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState("signup");
   const [error, setError] = useState("");
@@ -32,7 +38,7 @@ export function SignupForm() {
     }
   }, [user, router]);
 
-  // Handle photo upload
+  // Photo upload is needed only for student signup.
   const uploadPhoto = async (file) => {
     setIsUploading(true);
     setUploadComplete(false);
@@ -73,27 +79,40 @@ export function SignupForm() {
     setError("");
 
     try {
-      if (isUploading && idCard) {
-        await uploadPhoto(idCard);
+      if (userType === "student") {
+        if (isUploading && idCard) {
+          await uploadPhoto(idCard);
+        }
+        if (!uploadComplete) {
+          throw new Error("Failed to complete the upload. Please try again.");
+        }
+
+        const response = await fetch(`${BACKEND_URL}/api/auth/signup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, regNo, discordUrl }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.message || "Failed to sign up. Please try again."
+          );
+        }
+      } else if (userType === "teacher") {
+        const response = await fetch(`${BACKEND_URL}/api/auth/teacher-signup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.message || "Failed to sign up. Please try again."
+          );
+        }
       }
-
-      if (!uploadComplete) {
-        throw new Error("Failed to complete the upload. Please try again.");
-      }
-
-      const response = await fetch(`${BACKEND_URL}/api/auth/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, regNo, discordUrl }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || "Failed to sign up. Please try again."
-        );
-      }
-
       setStep("verify");
     } catch (err) {
       setError(err.message);
@@ -128,6 +147,32 @@ export function SignupForm() {
 
   return (
     <div className="space-y-6">
+      {/* Toggle Switch for Student/Teacher Signup */}
+      <div className="flex items-center justify-center mb-6">
+        <div className="inline-flex items-center bg-gray-200 dark:bg-gray-700 rounded-full p-2">
+          <button
+            onClick={() => setUserType("student")}
+            className={`px-4 py-2 rounded-full transition-colors duration-200 ${
+              userType === "student"
+                ? "bg-white text-gray-900 shadow-md"
+                : "bg-transparent text-gray-600 dark:text-gray-300 hover:text-gray-900"
+            }`}
+          >
+            Student
+          </button>
+          <button
+            onClick={() => setUserType("teacher")}
+            className={`px-4 py-2 rounded-full transition-colors duration-200 ${
+              userType === "teacher"
+                ? "bg-white text-gray-900 shadow-md"
+                : "bg-transparent text-gray-600 dark:text-gray-300 hover:text-gray-900"
+            }`}
+          >
+            Teacher
+          </button>
+        </div>
+      </div>
+
       {/* Signup Form */}
       {step === "signup" && (
         <form onSubmit={handleSignup} className="space-y-6">
@@ -177,48 +222,56 @@ export function SignupForm() {
             </div>
           </div>
 
-          {/* Registration Number */}
-          <div>
-            <Label htmlFor="regNo" className="text-gray-700 dark:text-gray-300">
-              Registration Number
-            </Label>
-            <Input
-              id="regNo"
-              type="text"
-              required
-              value={regNo}
-              onChange={(e) => setRegNo(e.target.value)}
-              className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
-            />
-          </div>
+          {/* Student-specific Fields */}
+          {userType === "student" && (
+            <>
+              {/* Registration Number */}
+              <div>
+                <Label
+                  htmlFor="regNo"
+                  className="text-gray-700 dark:text-gray-300"
+                >
+                  Registration Number
+                </Label>
+                <Input
+                  id="regNo"
+                  type="text"
+                  required
+                  value={regNo}
+                  onChange={(e) => setRegNo(e.target.value)}
+                  className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                />
+              </div>
 
-          {/* ID Card Photo */}
-          <div>
-            <Label
-              htmlFor="idCard"
-              className="text-gray-700 dark:text-gray-300"
-            >
-              Upload ID Card
-            </Label>
-            <div className="relative">
-              <Input
-                id="idCard"
-                type="file"
-                accept="image/*"
-                required
-                onChange={handleIdCardChange}
-                disabled={isUploading && !error}
-                className={`mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 ${
-                  isUploading ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              />
-              {isUploading && (
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {/* ID Card Photo */}
+              <div>
+                <Label
+                  htmlFor="idCard"
+                  className="text-gray-700 dark:text-gray-300"
+                >
+                  Upload ID Card
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="idCard"
+                    type="file"
+                    accept="image/*"
+                    required
+                    onChange={handleIdCardChange}
+                    disabled={isUploading && !error}
+                    className={`mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 ${
+                      isUploading ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  />
+                  {isUploading && (
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            </>
+          )}
 
           {/* Error Handling */}
           {error && (

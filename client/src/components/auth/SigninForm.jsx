@@ -15,6 +15,8 @@ export function SigninForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  // New state for switching between student and teacher sign-in flows.
+  const [userType, setUserType] = useState("student"); // "student" or "teacher"
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { user, login } = useAuth();
@@ -57,74 +59,102 @@ export function SigninForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
-          Email address
-        </Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">
-          Password
-        </Label>
-        <div className="relative">
-          <Input
-            id="password"
-            type={showPassword ? "text" : "password"} 
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 pr-10" 
-          />
+    <div className="space-y-6">
+      {/* Toggle Switch for Student/Teacher Signin */}
+      <div className="flex items-center justify-center mb-6">
+        <div className="inline-flex items-center bg-gray-200 dark:bg-gray-700 rounded-full p-1">
           <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-600 dark:text-gray-300 focus:outline-none"
+            onClick={() => setUserType("student")}
+            className={`px-4 py-2 rounded-full transition-colors duration-200 ${
+              userType === "student"
+                ? "bg-white text-gray-900 shadow-md"
+                : "bg-transparent text-gray-600 dark:text-gray-300 hover:text-gray-900"
+            }`}
           >
-            {showPassword ? (
-              <EyeOff className="h-5 w-5" /> 
-            ) : (
-              <Eye className="h-5 w-5" /> 
-            )}
+            Student
+          </button>
+          <button
+            onClick={() => setUserType("teacher")}
+            className={`px-4 py-2 rounded-full transition-colors duration-200 ${
+              userType === "teacher"
+                ? "bg-white text-gray-900 shadow-md"
+                : "bg-transparent text-gray-600 dark:text-gray-300 hover:text-gray-900"
+            }`}
+          >
+            Teacher
           </button>
         </div>
       </div>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
+            Email address
+          </Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          />
+        </div>
 
-      <div>
-        <Button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Signing in...
-            </>
-          ) : (
-            "Sign in"
-          )}
-        </Button>
-      </div>
-    </form>
+        <div>
+          <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">
+            Password
+          </Label>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-600 dark:text-gray-300 focus:outline-none"
+            >
+              {showPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <div>
+          <Button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              "Sign in"
+            )}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }
