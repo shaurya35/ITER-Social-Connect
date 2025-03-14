@@ -107,21 +107,21 @@ const createUserPost = async (req, res) => {
       return res.status(400).json({ error: "Post content cannot be empty" });
     }
 
-    // Store only userId in posts collection (No name or profilePicture)
-    const postDoc = await addDoc(collection(db, "posts"), {
+    // Store only userId in posts collection
+    const postRef = await addDoc(collection(db, "posts"), {
       userId,
       content,
       createdAt: new Date().toISOString(),
       likes: [],
     });
 
-    const postId = postDoc.id;
+    const postId = postRef.id;
 
-    // Handle hashtags
+    // Extract hashtags from post content
     const batch = writeBatch(db);
-    const currentTime = new Date().toISOString();
     const hashtags =
       content.match(/#[a-zA-Z0-9_]+/g)?.map((tag) => tag.toLowerCase()) || [];
+    const currentTime = new Date().toISOString();
 
     for (const tag of hashtags) {
       const hashtagRef = doc(db, "hashtags", tag);

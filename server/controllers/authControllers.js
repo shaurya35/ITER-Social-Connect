@@ -385,7 +385,6 @@ const completeProfile = async (req, res) => {
 
 const signin = async (req, res) => {
   try {
-    // Validate the request body using zod or any schema validation library
     const validationResult = userSigninSchema.safeParse(req.body);
     if (!validationResult.success) {
       return res
@@ -395,7 +394,6 @@ const signin = async (req, res) => {
 
     const { email, password } = req.body;
 
-    // Query Firestore to check if the user exists
     const userQuery = query(
       collection(db, "users"),
       where("email", "==", email)
@@ -417,44 +415,27 @@ const signin = async (req, res) => {
 
     if (!userData.profileCompleted) {
       return res.status(200).json({
-        message: "Your profile is not completed. Please complete it .",
+        message: "Your profile is not completed. Please complete it.",
       });
     }
+
     const user = {
       email: userData.email,
       userId: userDoc.id,
+      role: userData.role, // Include the role in response
+      
     };
 
     // Refresh Token System
     const accessToken = generateAccessToken({ userId: userDoc.id, email });
     const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
 
-    /** original */
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "Strict",
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
-
-    /* prod error */
-    // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "none",
-    //   maxAge: 30 * 24 * 60 * 60 * 1000,
-    //   path: "/",
-    // });
-
-    /* latest */
-    // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "none",
-    //   maxAge: 30 * 24 * 60 * 60 * 1000,
-    //   path: "/",
-    //   domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined,
-    // });
 
     res.status(200).json({
       message: "Signin successful",

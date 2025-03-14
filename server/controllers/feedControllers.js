@@ -6,7 +6,9 @@ const {
   orderBy,
   limit,
   startAfter,
-  where,doc,getDoc
+  where,
+  doc,
+  getDoc,
 } = require("firebase/firestore");
 
 // Get All Posts Route (Now Uses Middleware)
@@ -65,6 +67,9 @@ const getAllPosts = async (req, res) => {
         profilePicture: userSnapshot.exists()
           ? userSnapshot.data().profilePicture || ""
           : "",
+        role: userSnapshot.exists()
+          ? userSnapshot.data().role || "user"
+          : "user",
       };
     });
 
