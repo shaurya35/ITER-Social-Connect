@@ -271,6 +271,24 @@ const completeProfile = async (req, res) => {
         .json({ message: "Email and password are required." });
     }
 
+    const predefinedFields = [
+      "Artificial Intelligence",
+      "Machine Learning",
+      "Data Science",
+      "Web Development",
+      "Mobile App Development",
+      "Cloud Computing",
+      "Cybersecurity",
+      "Blockchain",
+      "Internet of Things (IoT)",
+      "Software Engineering",
+      "Database Management",
+      "Networking",
+      "Game Development",
+      "DevOps",
+      "UI/UX Design",
+    ];
+
     // Validate request body using Zod schema
     const validationResult = completeProfileSchema.safeParse(req.body);
     if (!validationResult.success) {
@@ -283,6 +301,21 @@ const completeProfile = async (req, res) => {
         message: "Validation failed. Please correct the following errors:",
         errors: errorMessages,
       });
+    }
+
+    // Validate fieldsOfInterest
+    if (fieldsOfInterest && Array.isArray(fieldsOfInterest)) {
+      const invalidFields = fieldsOfInterest.filter(
+        (field) => !predefinedFields.includes(field)
+      );
+
+      if (invalidFields.length > 0) {
+        return res.status(400).json({
+          message: "Invalid fields of interest selected.",
+          invalidFields,
+          validFields: predefinedFields,
+        });
+      }
     }
 
     // Query Firestore to check if the user exists
@@ -346,31 +379,12 @@ const completeProfile = async (req, res) => {
     const accessToken = generateAccessToken({ userId: userDoc.id, email });
     const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
 
-    /** original */
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "Strict",
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
-
-    // Set secure HTTP-only cookie for refresh token
-    // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "Strict",
-    //   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    // });
-
-    // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true, // Not accessible via client-side JS
-    //   secure: process.env.NODE_ENV === "production", // True in production (HTTPS)
-    //   sameSite: "none", // Necessary for cross-site requests
-    //   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    //   path: "/", // Available to all routes
-    //   // Optionally, if you need to force the cookie to your backend domain:
-    //   // domain: process.env.NODE_ENV === "production" ? "your-backend-domain.com" : undefined,
-    // });
 
     return res.status(200).json({
       message: "Profile completed successfully.",
