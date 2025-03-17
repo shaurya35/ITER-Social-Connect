@@ -42,3 +42,62 @@ cd ITER-Social-Connect
 ## Client Setup
 
 Redirect to client:
+
+```bash
+cd client
+```
+
+Install the dependencies:
+```bash
+npm install
+```
+
+Run client Interface:
+```bash
+npm run dev
+```
+## Server Setup
+
+Redirect to server:
+
+```bash
+cd server
+```
+
+Install the dependencies:
+```bash
+npm install
+```
+
+Create a .env file:
+```bash
+
+apiKey=
+authDomain=
+projectId=
+storageBucket=
+messagingSenderId=
+appId=
+measurementId=
+port=
+JWT_SECRET= 
+JWT_REFRESH_SECRET=
+EMAIL_USER=
+EMAIL_PASS=
+```
+
+4. Run Server:
+```bash
+npm run dev
+```
+
+## Usage
+
+Access the app in your web browser at `https://itersocialconnect.vercel.app/explore`.
+
+## Contributors
+
+- Shaurya ([LinkedIn](https://www.linkedin.com/in/shaurya--jha/))
+- Om Shankar Deshmukh ([LinkedIn](https://www.linkedin.com/in/om-shankar-deshmukh-7431b9245/))
+- Satyam Kumar ([LinkedIn](https://www.linkedin.com/in/satyamkumar1018/))
+
