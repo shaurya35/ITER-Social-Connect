@@ -24,3 +24,13 @@ We understand the challenges of finding the right project partners, seeking guid
 - ⁠Find Hackathon Teams - No more going solo—team up with skilled peers.
 - ⁠Collaborate on Projects - From college assignments to passion projects, connect with the right talent.
 - ⁠Expand Your Network - Meet developers, coders, and innovators just like you.
+
+## Dependencies
+
+- Express
+- Git
+- Github
+
+## Git-Setup
+
+Clone the repository:
