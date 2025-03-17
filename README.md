@@ -17,4 +17,4 @@ We understand the challenges of finding the right project partners, seeking guid
 
 ## Overview
 
--ITER Social Connect is a platform designed to help students collaborate, innovate, and grow. It facilitates finding project partners, gaining mentorship from experienced individuals, and building connections with like-minded peers. Ideal for final-year or passion projects, it offers expert guidance and networking opportunities with coding and development enthusiasts at ITER. Join to find your dream team, learn from the best, and expand your network in a community of passionate innovators.
+- ITER Social Connect is a platform designed to help students collaborate, innovate, and grow. It facilitates finding project partners, gaining mentorship from experienced individuals, and building connections with like-minded peers. Ideal for final-year or passion projects, it offers expert guidance and networking opportunities with coding and development enthusiasts at ITER. Join to find your dream team, learn from the best, and expand your network in a community of passionate innovators.
