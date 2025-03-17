@@ -34,3 +34,11 @@ We understand the challenges of finding the right project partners, seeking guid
 ## Git-Setup
 
 Clone the repository:
+
+```bash
+git clone https://github.com/shaurya35/ITER-Social-Connect
+cd ITER-Social-Connect
+```
+## Client Setup
+
+Redirect to client:
