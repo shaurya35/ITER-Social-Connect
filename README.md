@@ -1,1 +1,1 @@
-![Example Image]()
+![Example Image](server/views/banner.png)
