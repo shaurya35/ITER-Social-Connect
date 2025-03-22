@@ -29,7 +29,7 @@ const nextConfig = {
     ];
   },
   images: {
-    domains: ["media.discordapp.net","res.cloudinary.com"],
+    domains: ["media.discordapp.net","res.cloudinary.com","cdlsaecoineiohkdextf.supabase.co" ],
   },
 };
 

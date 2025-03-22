@@ -36,10 +36,14 @@ export default function LeftSidebar() {
     router.push(route);
   };
 
+  const handleBioNavigation = (route) => {
+    router.push(`/bio`);
+  }
+
   return (
     <>
       <aside className="w-64 lg:flex-shrink-0">
-        <Card className="bg-white dark:bg-gray-800 overflow-hidden mb-3">
+        <Card className="bg-white dark:bg-gray-800 overflow-hidden mb-3 cursor-pointer"  onClick={() => handleBioNavigation()}>
           <CardContent className="p-0">
             {/* Banner */}
             <div className="relative h-32">

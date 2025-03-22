@@ -27,7 +27,7 @@ import {
   Bookmark,
   BookmarkCheck,
   Loader2,
-  BadgeCheck
+  BadgeCheck,
 } from "lucide-react";
 import {
   Card,
@@ -73,6 +73,18 @@ export default function MainFeed() {
   const { profile } = useProfile();
   const router = useRouter();
 
+  const [selectedCategory, setSelectedCategory] = useState("general");
+  const [categories] = useState([
+    { value: "general", label: "General" },
+    { value: "aiml", label: "AI/ML" },
+    { value: "webdev", label: "Web Dev" },
+    { value: "mobile", label: "Mobile" },
+    { value: "cloud", label: "Cloud" },
+    { value: "cybersecurity", label: "Security" },
+    { value: "datascience", label: "Data Science" },
+    { value: "devops", label: "DevOps" },
+    { value: "blockchain", label: "Blockchain" },
+  ]);
   // Ref for the sentinel element used for infinite scrolling
   const sentinelRef = useRef(null);
   // Ref to track if a fetch is in progress
@@ -98,42 +110,60 @@ export default function MainFeed() {
         withCredentials: true,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       });
-      let newPosts = response.data.posts || [];
+      
+      const newPosts = response.data.posts || [];
       const currentUserId = profile?.userId;
-      if (currentUserId) {
-        newPosts = newPosts.map((post) => ({
-          ...post,
-          isLiked: Array.isArray(post.likes)
-            ? post.likes.includes(currentUserId)
-            : false,
-          likeCount:
-            post.likeCount !== undefined
-              ? post.likeCount
-              : Array.isArray(post.likes)
-              ? post.likes.length
-              : 0,
-        }));
-      } else {
-        newPosts = newPosts.map((post) => ({
-          ...post,
-          isLiked: false,
-          likeCount:
-            post.likeCount !== undefined
-              ? post.likeCount
-              : Array.isArray(post.likes)
-              ? post.likes.length
-              : 0,
-        }));
-      }
-      setPosts((prevPosts) => [...prevPosts, ...newPosts]);
-      setHasMore(newPosts.length === 10);
+  
+      // Process posts with category filtering
+      const processedPosts = newPosts.map(post => ({
+        ...post,
+        isLiked: Array.isArray(post.likes) ? post.likes.includes(currentUserId) : false,
+        likeCount: post.likeCount ?? (Array.isArray(post.likes) ? post.likes.length : 0),
+        category: post.category || 'general'
+      }));
+  
+      setPosts(prev => [...prev, ...processedPosts]);
+      setHasMore(response.data.hasMore);
     } catch (err) {
       setError(err);
     } finally {
       isFetchingRef.current = false;
       setLoading(false);
     }
-  }, [page, hasMore, accessToken, profile]);
+  }, [page, accessToken, profile?.userId]);
+  
+  // Filter posts based on selected category
+  const filteredPosts = posts.filter(post => 
+    selectedCategory === 'general' ? true : post.category === selectedCategory
+  );
+  
+  // Updated category change handler
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+    // No need to reset posts/page since we're filtering client-side
+  };
+// Add near your other hooks
+const navRef = useRef(null);
+
+// Add this useEffect hook
+useEffect(() => {
+  const handleWheel = (e) => {
+    const container = navRef.current;
+    if (container && Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+    
+    if (container) {
+      container.scrollLeft += e.deltaY;
+      e.preventDefault();
+    }
+  };
+
+  const container = navRef.current;
+  if (container) {
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }
+}, []);
+  
 
   /* Update posts mapping once profile is available (or changes) */
   useEffect(() => {
@@ -226,7 +256,9 @@ export default function MainFeed() {
     setPosts((prevPosts) =>
       prevPosts.map((post) => {
         if (post.id === postId) {
-          const newCount = post.isLiked ? post.likeCount - 1 : post.likeCount + 1;
+          const newCount = post.isLiked
+            ? post.likeCount - 1
+            : post.likeCount + 1;
           return { ...post, isLiked: !post.isLiked, likeCount: newCount };
         }
         return post;
@@ -343,6 +375,42 @@ export default function MainFeed() {
 
   return (
     <div className="flex-1 w-full max-w-2xl mx-auto space-y-4">
+    {/* Category Navigation */}
+{/* Category Navigation */}
+<div className="z-50 bg-white dark:bg-gray-800 pt-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+  <div className="relative group">
+    {/* Scroll gradient indicators */}
+    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-gray-800 to-transparent pointer-events-none z-20" />
+    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-gray-800 to-transparent pointer-events-none z-20 opacity-0 group-hover:opacity-100 transition-opacity" />
+    
+    {/* Scrollable container */}
+    <div 
+      className="flex space-x-2 overflow-x-auto pb-2 px-4 scroll-container"
+      ref={navRef}
+      style={{ scrollbarWidth: 'thin' }} // For Firefox
+    >
+      {categories.map((category) => (
+        <button
+          key={category.value}
+          onClick={() => setSelectedCategory(category.value)}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
+            ${
+              selectedCategory === category.value
+                ? "bg-blue-600 text-white shadow-md dark:bg-blue-500"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            }`}
+        >
+          {category.label}
+        </button>
+      ))}
+    </div>
+  </div>
+</div>
+      {/* Error message */}
+      {error && (
+        <p className="text-red-500">Error loading posts: {error.message}</p>
+      )}
+
       {/* Post creation */}
       <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200">
         <CardContent className="p-4">
@@ -429,15 +497,17 @@ export default function MainFeed() {
       )}
 
       {/* Posts */}
-      {posts.map((post, index) => {
+      {filteredPosts.map((post, index) => {
         const uniqueKey = post.id ? `${post.id}-${index}` : index;
         return (
           <Card
             className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
             key={uniqueKey}
-            
           >
-            <CardHeader className="flex-row items-center gap-4 p-4 lg:px-5 lg:pt-4" onClick={() => router.push(`/post/${post.id}`)}>
+            <CardHeader
+              className="flex-row items-center gap-4 p-4 lg:px-5 lg:pt-4"
+              onClick={() => router.push(`/post/${post.id}`)}
+            >
               <NextImage
                 src={
                   post.profilePicture ||
@@ -464,7 +534,10 @@ export default function MainFeed() {
                 </p>
               </div>
             </CardHeader>
-            <CardContent className="px-4 py-3 lg:px-5 lg:pb-5 w-full" onClick={() => router.push(`/post/${post.id}`)} >
+            <CardContent
+              className="px-4 py-3 lg:px-5 lg:pb-5 w-full"
+              onClick={() => router.push(`/post/${post.id}`)}
+            >
               <p className="text-gray-700 dark:text-gray-300 break-words">
                 {post.content}
               </p>
@@ -540,6 +613,13 @@ export default function MainFeed() {
           </Card>
         );
       })}
+
+        {/* No Posts Message - Add this */}
+        {filteredPosts.length === 0 && !loading && (
+        <p className="text-center py-4 text-gray-500">
+          No posts found in {categories.find(c => c.value === selectedCategory)?.label} category
+        </p>
+      )}
 
       {/* Sentinel element for infinite scrolling with a set height */}
       <div ref={sentinelRef} style={{ height: "20px" }} />

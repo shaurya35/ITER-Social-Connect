@@ -29,15 +29,68 @@ import {
   Bookmark,
   Home,
 } from "lucide-react";
+import { debounce } from "lodash";
+import { BACKEND_URL } from "@/configs";
 
 export default function Navbar() {
+  // Search functionality states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const searchContainerRef = useRef(null);
+  const mobileSearchContainerRef = useRef(null);
+
+  // Existing states
   const [isOpen, setIsOpen] = useState(false);
   const [renderInput, setRenderInput] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const searchInputRef = useRef(null);
   const { isDarkMode, toggleDarkMode } = useTheme();
   const { user, loading, logout } = useAuth();
   const router = useRouter();
+
+  // Debounced search function
+  const performSearch = debounce(async (query) => {
+    if (!query.trim()) {
+      setSearchResults(null);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${BACKEND_URL}/api/search?query=${encodeURIComponent(query)}`);
+      const data = await response.json();
+      setSearchResults(data);
+    } catch (error) {
+      console.error("Search failed:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, 300);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchContainerRef.current && 
+          !searchContainerRef.current.contains(event.target)) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleMobileClickOutside = (event) => {
+      if (mobileSearchContainerRef.current && 
+          !mobileSearchContainerRef.current.contains(event.target)) {
+        setSearchResults(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleMobileClickOutside);
+    return () => document.removeEventListener("mousedown", handleMobileClickOutside);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -53,7 +106,6 @@ export default function Navbar() {
 
   const menuItems = [
     { icon: Home, label: "Home", route: "/explore" },
-    // { icon: MessageCircle, label: "Messages", route: "/chat" },
     { icon: Bell, label: "Notifications", route: "/notifications" },
     { icon: Mail, label: "Messages", route: "/chat", disabled: true },
     { icon: Settings, label: "Settings", route: "/settings" },
@@ -66,11 +118,130 @@ export default function Navbar() {
     { icon: Home, label: "Home", route: "/explore" },
     { icon: User, label: "Profile", route: "/profile" },
     { icon: Bell, label: "Notifications", route: "/notifications" },
-    { icon: Mail, label: "Messages", route: "/chat", disabled:true },
+    { icon: Mail, label: "Messages", route: "/chat", disabled: true },
     { icon: Users, label: "Connections", route: "/connections" },
     { icon: Bookmark, label: "Bookmarks", route: "/bookmarks" },
     { icon: Settings, label: "Settings", route: "/settings" },
   ];
+
+  const SearchResultsDropdown = ({ results, isLoading, onClose }) => (
+    <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-50 max-h-[400px] overflow-y-auto transition-all duration-300 origin-top transform opacity-100 scale-y-100">
+      <div className="p-2 border-b dark:border-gray-700 flex items-center justify-between">
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          Search results
+        </span>
+        <button
+          onClick={() => onClose()}
+          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors duration-150"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="p-4 text-center text-gray-500 animate-pulse">
+          <div className="flex items-center justify-center">
+            <div className="w-4 h-4 border-2 border-blue-500 rounded-full animate-spin border-t-transparent" />
+            <span className="ml-2">Searching...</span>
+          </div>
+        </div>
+      ) : results ? (
+        <div className="divide-y dark:divide-gray-700">
+          {results.users?.length > 0 && (
+            <div className="p-2">
+              <h3 className="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                Users
+              </h3>
+              {results.users.map((user) => (
+                <Link
+                  key={user.id}
+                  href={`/profile/${user.id}`}
+                  className="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-150"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onClose();
+                    setTimeout(() => router.push(`/profile/${user.id}`), 150);
+                  }}
+                >
+                  <img
+                    src={user.profilePicture || "/default-avatar.png"}
+                    alt={user.name}
+                    className="w-10 h-10 rounded-full mr-3 object-cover transition-transform duration-150 hover:scale-105"
+                  />
+                  <div>
+                    <div className="font-medium dark:text-gray-200">
+                      {user.name}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                      {user.about}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {results.posts?.length > 0 && (
+            <div className="p-2">
+              <h3 className="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                Posts
+              </h3>
+              {results.posts.map((post) => (
+                <Link
+                  key={post.id}
+                  href={`/post/${post.id}`}
+                  className="block p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-150"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onClose();
+                    setTimeout(() => router.push(`/post/${post.id}`), 150);
+                  }}
+                >
+                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                    {post.content.substring(0, 60)}
+                    {post.content.length > 60 && "..."}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {results.hashtags?.length > 0 && (
+            <div className="p-2">
+              <h3 className="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                Hashtags
+              </h3>
+              {results.hashtags.map((hashtag) => (
+                <button
+                  key={hashtag}
+                  className="w-full text-left p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-blue-600 dark:text-blue-400 transition-colors duration-150"
+                  onClick={() => {
+                    const tag = hashtag.startsWith("#") ? hashtag.slice(1) : hashtag;
+                    setSearchQuery(`#${tag}`);
+                    performSearch(tag);
+                  }}
+                >
+                  #{hashtag}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {!results.users?.length &&
+            !results.posts?.length &&
+            !results.hashtags?.length && (
+              <div className="p-4 text-center text-gray-500">
+                No results found
+              </div>
+            )}
+        </div>
+      ) : (
+        <div className="p-4 text-center text-gray-500">
+          Type to search users, posts, and hashtags
+        </div>
+      )}
+    </div>
+  );
 
   if (loading) {
     return (
@@ -94,17 +265,35 @@ export default function Navbar() {
               </div>
             </Link>
             <div className="hidden lg:flex lg:flex-row lg:flex-wrap lg:space-x-0">
-              <div className="relative ml-4 mr-4">
+              <div className="relative ml-4 mr-4" ref={searchContainerRef}>
                 <Input
                   type="search"
                   placeholder="Search..."
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    performSearch(e.target.value);
+                    setIsSearchOpen(true);
+                  }}
+                  onFocus={() => {
+                    setIsFocused(true);
+                    setIsSearchOpen(true);
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => setIsFocused(false), 200);
+                  }}
                   className={`w-40 lg:${
                     isFocused ? "w-64" : "w-48"
-                  } pl-10 pr-4 py-2 rounded-full text-sm bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/50 transition-all duration-200 hover:bg-white dark:hover:bg-gray-600`}
+                  } pl-10 pr-4 py-2 rounded-full text-sm bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/50 transition-all duration-300 ease-out`}
                 />
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none transition-colors duration-200" />
+                {isSearchOpen && (
+                  <SearchResultsDropdown
+                    results={searchResults}
+                    isLoading={isLoading}
+                    onClose={() => setIsSearchOpen(false)}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -126,7 +315,6 @@ export default function Navbar() {
               ))}
             </div>
             {user ? (
-              // Show Logout button if user is logged in
               <Button
                 size="sm"
                 className="ml-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white hidden lg:block"
@@ -135,7 +323,6 @@ export default function Navbar() {
                 Logout
               </Button>
             ) : (
-              // Show Signin/Signup buttons if user is not logged in
               <>
                 <Link href="/signin" passHref>
                   <Button
@@ -184,19 +371,31 @@ export default function Navbar() {
                 <SheetTitle>Menu</SheetTitle>
                 <nav className="flex flex-col justify-between h-full">
                   <div className="space-y-4">
-                    <div className="relative mb-7 mt-4">
+                    <div className="relative mb-7 mt-4" ref={mobileSearchContainerRef}>
                       {renderInput && (
-                        <Input
-                          ref={searchInputRef}
-                          type="search"
-                          placeholder="Search..."
-                          className="w-full pl-10 pr-4 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                          // onFocus={(e) => e.target.blur()}
-                        />
+                        <div className="relative">
+                          <Input
+                            type="search"
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                              setSearchQuery(e.target.value);
+                              performSearch(e.target.value);
+                            }}
+                            className="w-full pl-10 pr-4 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                          />
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                          </div>
+                          {searchResults && (
+                            <SearchResultsDropdown
+                              results={searchResults}
+                              isLoading={isLoading}
+                              onClose={() => setSearchResults(null)}
+                            />
+                          )}
+                        </div>
                       )}
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-                      </div>
                     </div>
                     {phoneMenuItems.map((item, index) => (
                       <Button
@@ -227,7 +426,7 @@ export default function Navbar() {
                             onClick={() => {
                               setIsOpen(false);
                               logout();
-                              Router.push("/explore");
+                              router.push("/explore");
                             }}
                           >
                             Logout?

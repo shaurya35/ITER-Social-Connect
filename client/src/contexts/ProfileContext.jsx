@@ -1,4 +1,3 @@
-// contexts/ProfileContext.jsx
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";

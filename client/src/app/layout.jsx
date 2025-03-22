@@ -30,9 +30,9 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className="!scroll-smooth">
       <body
-        className={`${poppins.className} ${geistMono.variable} ${geistSans.variable} min-h-screen antialiased`}
+        className={`${poppins.className} ${geistMono.variable} ${geistSans.variable} min-h-screen antialiased overflow-x-hidden`}
       >
         <ThemeProvider>
           <AuthProvider>

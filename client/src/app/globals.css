@@ -79,3 +79,117 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse {
+  50% { opacity: 0.5; }
+}
+
+.animate-spin {
+  animation: spin 1s
+}
+
+/* Add to your global CSS */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth transitions for category buttons */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Add to your global CSS */
+.active {
+  cursor: grab;
+  scroll-behavior: smooth;
+}
+
+.active:active {
+  cursor: grabbing;
+}
+
+/* Hide scrollbar for category navigation */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Prevent category buttons from wrapping */
+.whitespace-nowrap {
+  white-space: nowrap;
+}
+/* Enable smooth scrolling behavior */
+.scroll-container {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Style the scrollbar */
+::-webkit-scrollbar {
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-500;
+}
+
+/* Scroll container */
+.scroll-container {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
+}
+
+/* Custom scrollbar for WebKit browsers */
+.scroll-container::-webkit-scrollbar {
+  height: 8px;
+  background: transparent;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 4px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.6);
+}
+
+/* Firefox scrollbar */
+.scroll-container {
+  scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+  scrollbar-width: thin;
+}
+
+/* Dark mode */
+.dark .scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.4);
+}
+
+.dark .scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.6);
+}
+
+.dark .scroll-container {
+  scrollbar-color: rgba(75, 85, 99, 0.4) transparent;
+}
