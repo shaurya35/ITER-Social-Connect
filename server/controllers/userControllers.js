@@ -80,6 +80,7 @@ const getAllUserPosts = async (req, res) => {
     let posts = postsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
+      category: doc.data().category || "Uncategorized", // Ensure category is included
       userName: userData.name,
       profilePicture: userData.profilePicture || "",
       isBookmarked: bookmarkedPosts.has(doc.id),
@@ -101,16 +102,23 @@ const getAllUserPosts = async (req, res) => {
 const createUserPost = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { content } = req.body;
+    const { content, category } = req.body;
 
     if (!content || content.trim() === "") {
       return res.status(400).json({ error: "Post content cannot be empty" });
     }
 
-    // Store only userId in posts collection
+    if (!category || typeof category !== "string" || category.trim() === "") {
+      return res
+        .status(400)
+        .json({ error: "Category is required and must be a string" });
+    }
+
+    // Store userId and category in posts collection
     const postRef = await addDoc(collection(db, "posts"), {
       userId,
       content,
+      category, // Added category
       createdAt: new Date().toISOString(),
       likes: [],
     });

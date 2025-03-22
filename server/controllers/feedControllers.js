@@ -22,8 +22,8 @@ const getAllPosts = async (req, res) => {
     }
 
     const userId = req.user?.userId || null;
-
     const postsCollection = collection(db, "posts");
+
     let postsQuery = query(
       postsCollection,
       orderBy("createdAt", "desc"),
@@ -35,29 +35,41 @@ const getAllPosts = async (req, res) => {
         query(postsCollection, orderBy("createdAt", "desc"))
       );
       const allPosts = allPostsSnapshot.docs;
-      const startIndex = (page - 1) * limitValue;
 
+      const startIndex = (page - 1) * limitValue;
       if (startIndex >= allPosts.length) {
         return res.status(200).json({ posts: [], hasMore: false });
       }
 
       const startDoc = allPosts[startIndex];
-      postsQuery = query(
-        postsCollection,
-        orderBy("createdAt", "desc"),
-        startAfter(startDoc),
-        limit(limitValue)
-      );
+
+      if (startDoc) {
+        postsQuery = query(
+          postsCollection,
+          orderBy("createdAt", "desc"),
+          startAfter(startDoc), // Ensure `startDoc` is valid
+          limit(limitValue)
+        );
+      }
     }
 
     const postsSnapshot = await getDocs(postsQuery);
     let posts = postsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
+      category: doc.data().category || "Uncategorized", // Default category
     }));
 
-    // Fetch user details for each post
+    // Fetch user details for each post (Ensure userId exists)
     const userPromises = posts.map(async (post) => {
+      if (!post.userId)
+        return {
+          ...post,
+          userName: "Unknown",
+          profilePicture: "",
+          role: "user",
+        };
+
       const userRef = doc(db, "users", post.userId);
       const userSnapshot = await getDoc(userRef);
 
