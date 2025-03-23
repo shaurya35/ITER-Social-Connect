@@ -14,6 +14,9 @@ import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthProvider";
 import { useProfile } from "@/contexts/ProfileContext";
+import { Label } from "@/components/ui/label";
+import Select from "react-select";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useProfileNavigation } from "@/contexts/ProfileNavigation";
 import { BACKEND_URL } from "@/configs/index";
 import axios from "axios";
@@ -29,6 +32,18 @@ import {
   BookmarkCheck,
   Loader2,
   BadgeCheck,
+  Tag,
+  Brain,
+  Globe,
+  Smartphone,
+  Cloud,
+  Shield,
+  Database,
+  Settings,
+  Link2,
+  ImageIcon,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import {
   Card,
@@ -57,6 +72,34 @@ export const timeAgo = (dateString) => {
   return `${years} years ago`;
 };
 
+const categories = [
+  { value: "general", label: "General", icon: <Tag className="h-4 w-4" /> },
+  { value: "aiml", label: "AI/ML", icon: <Brain className="h-4 w-4" /> },
+  { value: "webdev", label: "Web Dev", icon: <Globe className="h-4 w-4" /> },
+  {
+    value: "mobile",
+    label: "Mobile",
+    icon: <Smartphone className="h-4 w-4" />,
+  },
+  { value: "cloud", label: "Cloud", icon: <Cloud className="h-4 w-4" /> },
+  {
+    value: "cybersecurity",
+    label: "Security",
+    icon: <Shield className="h-4 w-4" />,
+  },
+  {
+    value: "datascience",
+    label: "Data Science",
+    icon: <Database className="h-4 w-4" />,
+  },
+  { value: "devops", label: "DevOps", icon: <Settings className="h-4 w-4" /> },
+  {
+    value: "blockchain",
+    label: "Blockchain",
+    icon: <Link2 className="h-4 w-4" />,
+  },
+];
+
 export default function MainFeed() {
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState(null);
@@ -72,21 +115,14 @@ export default function MainFeed() {
   const [bookmarkError, setBookmarkError] = useState(null);
   const { accessToken } = useAuth();
   const { profile } = useProfile();
+  const { isDarkMode } = useTheme();
   const redirectToProfile = useProfileNavigation();
   const router = useRouter();
 
+  const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("general");
-  const [categories] = useState([
-    { value: "general", label: "General" },
-    { value: "aiml", label: "AI/ML" },
-    { value: "webdev", label: "Web Dev" },
-    { value: "mobile", label: "Mobile" },
-    { value: "cloud", label: "Cloud" },
-    { value: "cybersecurity", label: "Security" },
-    { value: "datascience", label: "Data Science" },
-    { value: "devops", label: "DevOps" },
-    { value: "blockchain", label: "Blockchain" },
-  ]);
+  const [categoriesPosting, setCategoriesPosting] = useState(categories[0]);
+
   // Ref for the sentinel element used for infinite scrolling
   const sentinelRef = useRef(null);
   // Ref to track if a fetch is in progress
@@ -223,20 +259,33 @@ export default function MainFeed() {
   const handlePostSubmit = async () => {
     if (!newPostContent.trim()) return;
     setIsPosting(true);
+    let processedContent = newPostContent.trim();
+    if (categoriesPosting.value !== "general") {
+      const categoryHashtag = `#${categoriesPosting.value}`;
+      if (!processedContent.includes(categoryHashtag)) {
+        processedContent += `\n${categoryHashtag}`;
+      }
+    }
     const tempPost = {
       id: "temp",
       userName: profile.name,
-      content: newPostContent,
+      content: processedContent,
       profilePicture: profile.profilePicture,
       likes: [],
       likeCount: 0,
       createdAt: new Date().toISOString(),
+      category: categoriesPosting.value,
     };
     setNewPostContent("");
     try {
       const response = await axios.post(
         `${BACKEND_URL}/api/user/post`,
-        { profilePicture: profile.profilePicture, content: newPostContent },
+        {
+          profilePicture: profile.profilePicture,
+          content: processedContent,
+          content: processedContent,
+          category: categoriesPosting.value,
+        },
         {
           headers: { Authorization: `Bearer ${accessToken}` },
           withCredentials: true,
@@ -257,6 +306,7 @@ export default function MainFeed() {
 
   /* Like Service with Optimistic Update */
   const toggleLike = async (postId) => {
+    if (!accessToken) router.push("/signup");
     setPosts((prevPosts) =>
       prevPosts.map((post) => {
         if (post.id === postId) {
@@ -307,7 +357,7 @@ export default function MainFeed() {
 
   /* Bookmark Service */
   const toggleBookmark = async (postId) => {
-    if (!accessToken) return;
+    if (!accessToken) router.push("/signup");
     setBookmarkLoadingState((prev) => ({ ...prev, [postId]: true }));
     setBookmarkError(null);
     try {
@@ -335,6 +385,10 @@ export default function MainFeed() {
 
   /* Share Service using POST route */
   const sharePost = async (postId) => {
+    if (!accessToken) {
+      router.push("/signup");
+      return;
+    }
     try {
       const response = await axios.post(
         `${BACKEND_URL}/api/user/post/share`,
@@ -415,13 +469,14 @@ export default function MainFeed() {
       <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200">
         <CardContent className="p-4">
           <div className="flex items-center gap-4">
+            {/* Profile image remains unchanged */}
             {loading ? (
               <div className="bg-gray-300 dark:bg-gray-700 animate-pulse rounded-full transition-all duration-700 w-10 h-10"></div>
             ) : (
               <NextImage
                 src={
                   profile?.profilePicture ||
-                  "https://media.discordapp.net/attachments/1315342834278207540/1316064150744465488/pf3.jpg?ex=67aeb880&is=67ad6700&hm=6e6ddf2d18fafd444067157eadf5fca55fb42356917cc25053580375ee7d8940&=&format=webp&width=482&height=487"
+                  "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//uplo.jpg"
                 }
                 alt="Avatar"
                 width={40}
@@ -443,26 +498,78 @@ export default function MainFeed() {
                 onChange={(e) => setNewPostContent(e.target.value)}
                 className="resize-none bg-gray-100 dark:bg-gray-700 border-0 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 rounded-lg text-gray-900 dark:text-gray-100"
               />
-              <div className="mt-4 flex justify-between items-center">
+              <div className="mt-4 flex flex-col md:flex-row gap-3 justify-between items-start md:items-center">
+                <div className="w-full md:w-auto flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                    disabled
+                  >
+                    <Image className="h-4 w-4 mr-2" />
+                    Image
+                  </Button>
+
+                  <div className="relative w-full md:w-[160px]">
+                    <button
+                      onClick={() => setIsOpen(!isOpen)}
+                      className={`w-full h-9 px-3 flex items-center justify-between rounded-md border ${
+                        isDarkMode
+                          ? "bg-gray-800 border-gray-700 hover:border-gray-600 text-gray-300"
+                          : "bg-white border-gray-300 hover:border-gray-400 text-gray-600"
+                      } transition-colors`}
+                    >
+                      <span>{categoriesPosting.label}</span>
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform ${
+                          isOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {isOpen && (
+                      <div
+                        className={`absolute z-10 w-full mt-1 rounded-md shadow-lg ${
+                          isDarkMode
+                            ? "bg-gray-800 border border-gray-700"
+                            : "bg-white border border-gray-200"
+                        }`}
+                      >
+                        <div className="py-1">
+                          {categories.map((category) => (
+                            <button
+                              key={category.value}
+                              onClick={() => {
+                                setCategoriesPosting(category);
+                                setIsOpen(false);
+                              }}
+                              className={`w-full px-3 py-2 text-sm flex items-center gap-2 ${
+                                isDarkMode
+                                  ? "hover:bg-gray-700 text-gray-300"
+                                  : "hover:bg-gray-100 text-gray-600"
+                              }`}
+                            >
+                              {category.icon}
+                              {category.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Post button remains unchanged */}
                 <Button
-                  variant="outline"
                   size="sm"
-                  className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
-                  disabled
-                >
-                  <Image className="h-4 w-4 mr-2" />
-                  Image
-                </Button>
-                <Button
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
+                  className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
                   onClick={handlePostSubmit}
                   disabled={fetchingUser || isPosting}
                 >
                   {isPosting
                     ? "Posting..."
                     : fetchingUser
-                    ? "Loading..."
+                    ? "Post"
                     : "Post"}
                 </Button>
               </div>
@@ -501,7 +608,7 @@ export default function MainFeed() {
         const uniqueKey = post.id ? `${post.id}-${index}` : index;
         return (
           <Card
-            className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
+            className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer relative mb-4"
             key={uniqueKey}
           >
             <CardHeader
@@ -526,10 +633,20 @@ export default function MainFeed() {
                   height: "48px",
                 }}
               />
-              <div>
-                <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
-                  {post.userName}
-                </h3>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                    {post.userName}
+                  </h3>
+                  {post.role === "teacher" && (
+                    <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800">
+                      <Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                        Professor
+                      </span>
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {timeAgo(post.createdAt)}
                 </p>

@@ -163,6 +163,7 @@ const getUserProfile = async (req, res) => {
       connectionsCount: userData.connectionsCount || 0,
       posts,
       regNo: userData.regNo,
+      role: userData.role,
     };
 
     res.status(200).json(profileData);

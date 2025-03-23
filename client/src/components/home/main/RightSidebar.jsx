@@ -38,12 +38,15 @@ export default function RightSidebar() {
     const fetchRequests = async () => {
       setRequestsLoading(true);
       try {
-        const response = await axios.get(`${BACKEND_URL}/api/connections/requests`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          withCredentials: true,
-        });
+        const response = await axios.get(
+          `${BACKEND_URL}/api/connections/requests`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            withCredentials: true,
+          }
+        );
         // Store all requests; we'll render only the first 2
         setRequests(response.data.requests);
       } catch (err) {
@@ -74,7 +77,9 @@ export default function RightSidebar() {
           withCredentials: true,
         }
       );
-      setRequests((prev) => prev.filter((req) => req.requestId !== request.requestId));
+      setRequests((prev) =>
+        prev.filter((req) => req.requestId !== request.requestId)
+      );
     } catch (error) {
       console.error("Error accepting connection request:", error);
     }
@@ -93,7 +98,9 @@ export default function RightSidebar() {
           withCredentials: true,
         }
       );
-      setRequests((prev) => prev.filter((req) => req.requestId !== request.requestId));
+      setRequests((prev) =>
+        prev.filter((req) => req.requestId !== request.requestId)
+      );
     } catch (error) {
       console.error("Error rejecting connection request:", error);
     }
@@ -166,52 +173,58 @@ export default function RightSidebar() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 overflow-y-auto max-h-[45vh]">
-          {eventLoading
-            ? Array.from({ length: 2 }).map((_, index) => (
-                <Card
-                  key={index}
-                  className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-700 animate-pulse"
-                >
-                  <CardHeader className="p-0 pt-4">
-                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-full"></div>
-                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
-                  </CardContent>
-                </Card>
-              ))
-            : (showAllEvents ? events : events.slice(0, 2)).map(
-                (event, index) => (
-                  <div key={index} className="space-y-2">
-                    <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200">
-                      {event.eventTitle}
-                    </h4>
-                    <p
-                      className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2"
-                      style={{
-                        display: "-webkit-box",
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                        WebkitLineClamp: 2,
-                      }}
-                    >
-                      {event.eventDescription}
-                    </p>
-                    <Button
-                      as="a"
-                      href={event.eventLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      variant="outline"
-                      size="sm"
-                      className="w-full text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300"
-                    >
-                      Learn More
-                    </Button>
-                  </div>
-                )
-              )}
+          {eventLoading ? (
+            Array.from({ length: 2 }).map((_, index) => (
+              <Card
+                key={index}
+                className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-700 animate-pulse"
+              >
+                <CardHeader className="p-0 pt-4">
+                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-full"></div>
+                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
+                </CardContent>
+              </Card>
+            ))
+          ) : events.length === 0 ? (
+            <p className="text-left text-gray-500">
+              No upcoming events
+            </p>
+          ) : (
+            (showAllEvents ? events : events.slice(0, 2)).map(
+              (event, index) => (
+                <div key={index} className="space-y-2">
+                  <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200">
+                    {event.eventTitle}
+                  </h4>
+                  <p
+                    className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2"
+                    style={{
+                      display: "-webkit-box",
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                      WebkitLineClamp: 2,
+                    }}
+                  >
+                    {event.eventDescription}
+                  </p>
+                  <Button
+                    as="a"
+                    href={event.eventLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300"
+                  >
+                    Learn More
+                  </Button>
+                </div>
+              )
+            )
+          )}
         </CardContent>
         {!eventLoading && events.length > 2 && (
           <div className="px-4 pb-4 text-center">

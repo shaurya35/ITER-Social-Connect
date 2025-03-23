@@ -410,7 +410,7 @@ export default function SinglePost({ postId }) {
                 <NextImage
                   src={
                     profile?.profilePicture ||
-                    "https://media.discordapp.net/attachments/1315342834278207540/1316064105588719707/pf2.jpg"
+                    "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//uplo.jpg"
                   }
                   alt="Avatar"
                   width={36}

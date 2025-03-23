@@ -37,6 +37,10 @@ export default function LeftSidebar() {
   };
 
   const handleBioNavigation = (route) => {
+    if(!profile) {
+      router.push('/signup')
+      return
+    }
     router.push(`/bio`);
   }
 
@@ -71,7 +75,7 @@ export default function LeftSidebar() {
                   <NextImage
                     src={
                       profile?.profilePicture ||
-                      "https://res.cloudinary.com/dkjsi6iwm/image/upload/f_auto,q_auto/profile"
+                      "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//uplo.jpg"
                     }
                     alt="Avatar"
                     priority

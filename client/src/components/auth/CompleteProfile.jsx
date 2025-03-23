@@ -177,7 +177,7 @@ export default function CompleteProfile() {
       const formData = new FormData();
       formData.append("photo", file);
 
-      const response = await fetch(`${BOT_URL}/upload`, {
+      const response = await fetch(`${BOT_URL}/api/upload`, {
         method: "POST",
         body: formData,
       });

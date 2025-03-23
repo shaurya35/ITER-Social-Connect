@@ -50,6 +50,12 @@ export default function Navbar() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
 
+  const handleUserPresence = () => {
+    if(!user){
+      router.push('/signup')
+    }
+  }
+
   // Debounced search function
   const performSearch = debounce(async (query) => {
     if (!query.trim()) {
@@ -267,7 +273,7 @@ export default function Navbar() {
               </div>
             </Link>
             <div className="hidden lg:flex lg:flex-row lg:flex-wrap lg:space-x-0">
-              <div className="relative ml-4 mr-4" ref={searchContainerRef}>
+              <div className="relative ml-4 mr-4" ref={searchContainerRef} >
                 <Input
                   type="search"
                   placeholder="Search..."
@@ -278,12 +284,15 @@ export default function Navbar() {
                     setIsSearchOpen(true);
                   }}
                   onFocus={() => {
-                    setIsFocused(true);
-                    setIsSearchOpen(true);
+                    if(user){
+                      setIsFocused(true);
+                      setIsSearchOpen(true);
+                    }
                   }}
                   onBlur={() => {
                     setTimeout(() => setIsFocused(false), 200);
                   }}
+                  disabled={!user}
                   className={`w-40 lg:${
                     isFocused ? "w-64" : "w-48"
                   } pl-10 pr-4 py-2 rounded-full text-sm bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/50 transition-all duration-300 ease-out`}
