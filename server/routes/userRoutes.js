@@ -10,7 +10,6 @@ const {
   bookmarkPost,
   getBookmarkedPosts,
   sharePost,
-  search,
 } = require("../controllers/userControllers"); // Correct import
 
 const { isLoggedIn } = require("../middlewares/authMiddlewares");

@@ -104,21 +104,38 @@ const createUserPost = async (req, res) => {
     const userId = req.user.userId;
     const { content, category } = req.body;
 
+    const allowedCategories = [
+      "aiml",
+      "webdev",
+      "mobile",
+      "cloud",
+      "cybersecurity",
+      "datascience",
+      "devops",
+      "blockchain",
+    ];
+
     if (!content || content.trim() === "") {
       return res.status(400).json({ error: "Post content cannot be empty" });
     }
 
-    if (!category || typeof category !== "string" || category.trim() === "") {
-      return res
-        .status(400)
-        .json({ error: "Category is required and must be a string" });
+    if (
+      !category ||
+      typeof category !== "string" ||
+      !allowedCategories.includes(category.trim().toLowerCase())
+    ) {
+      return res.status(400).json({
+        error:
+          "Invalid category. Allowed categories: " +
+          allowedCategories.join(", "),
+      });
     }
 
     // Store userId and category in posts collection
     const postRef = await addDoc(collection(db, "posts"), {
       userId,
       content,
-      category, // Added category
+      category: category.trim().toLowerCase(), // Store category in lowercase
       createdAt: new Date().toISOString(),
       likes: [],
     });
@@ -260,6 +277,7 @@ const getUserPostById = async (req, res) => {
       post: {
         id: postSnapshot.id,
         ...postData,
+        category: postData.category, // Include category in the response
         isBookmarked,
         userName: userData.name,
         profilePicture: userData.profilePicture || "",
@@ -420,8 +438,6 @@ const sharePost = async (req, res) => {
     res.status(500).json({ error: "Error generating share links" });
   }
 };
-
-module.exports = { sharePost };
 
 module.exports = {
   likePost,

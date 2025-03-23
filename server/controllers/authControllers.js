@@ -674,11 +674,10 @@ const teacherSignup = async (req, res) => {
 
     if (!email || !password) {
       return res.status(400).json({
-        message: "Emailand  password are required.",
+        message: "Email and  password are required.",
       });
     }
 
-    // Validate input using Zod or another schema validator
     const validationResult = teacherSignupSchema.safeParse(req.body);
     if (!validationResult.success) {
       return res
@@ -702,7 +701,6 @@ const teacherSignup = async (req, res) => {
         .json({ message: "This email is already under admin verification." });
     }
 
-    // Check for duplicate email and registration number
     const teachersRef = collection(db, "users");
     const emailQuery = query(teachersRef, where("email", "==", email));
 
@@ -712,7 +710,6 @@ const teacherSignup = async (req, res) => {
       return res.status(400).json({ message: "Email is already taken." });
     }
 
-    // Check if an OTP request is already pending
     const otpDocRef = doc(db, "otp_verifications", email);
     const otpDocSnapshot = await getDoc(otpDocRef);
 
@@ -728,20 +725,17 @@ const teacherSignup = async (req, res) => {
       }
     }
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate a new OTP and save it
     const otp = crypto.randomInt(100000, 999999);
 
     await setDoc(otpDocRef, {
       otp,
-      otpExpiresAt: Date.now() + 5 * 60 * 1000, // OTP expires in 5 minutes
+      otpExpiresAt: Date.now() + 5 * 60 * 1000, 
       email,
       password: hashedPassword, // Save hashed password
     });
 
-    // Send OTP email
     await sendOtpEmail(email, otp);
 
     res
