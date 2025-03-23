@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthProvider";
+import { useProfileNavigation } from '@/contexts/ProfileNavigation';
 import { BACKEND_URL } from "@/configs/index";
 import axios from "axios";
 import NextImage from "next/image";
@@ -59,6 +60,7 @@ export default function SinglePost({ postId }) {
   const [commentPosting, setCommentPosting] = useState(false);
   const { accessToken } = useAuth();
   const { profile } = useProfile();
+  const redirectToProfile = useProfileNavigation();
   const router = useRouter();
 
   // Redirect to signin if no access token
@@ -94,7 +96,7 @@ export default function SinglePost({ postId }) {
     }
   };
 
-  // Fetch and sort comments for the post 
+  // Fetch and sort comments for the post
   const fetchSinglePostComments = async () => {
     setLoading(true);
     try {
@@ -106,7 +108,9 @@ export default function SinglePost({ postId }) {
         }
       );
       const commentsData = response.data.comments || [];
-      commentsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      commentsData.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
       setComments(commentsData);
     } catch (err) {
       setError(err.response?.data?.message || err.message);
@@ -153,15 +157,13 @@ export default function SinglePost({ postId }) {
       }));
     } catch (error) {
       setPost(originalPost);
-      setLikeError(
-        error.response?.data?.message || "Failed to update like"
-      );
+      setLikeError(error.response?.data?.message || "Failed to update like");
     } finally {
       setLikeLoadingState(false);
     }
   };
 
-  // Bookmark functionality 
+  // Bookmark functionality
   const toggleBookmark = async () => {
     if (!post || bookmarkLoadingState) return;
     setBookmarkLoadingState(true);
@@ -192,7 +194,7 @@ export default function SinglePost({ postId }) {
     }
   };
 
-  // Share functionality 
+  // Share functionality
   const sharePost = async () => {
     try {
       const response = await axios.post(
@@ -216,9 +218,9 @@ export default function SinglePost({ postId }) {
         );
         shareChoice
           ? window.open(whatsappLink, "_blank")
-          : navigator.clipboard.writeText(directLink).then(() =>
-              alert("Link copied!")
-            );
+          : navigator.clipboard
+              .writeText(directLink)
+              .then(() => alert("Link copied!"));
       }
     } catch (error) {
       console.error("Sharing failed:", error);
@@ -253,7 +255,7 @@ export default function SinglePost({ postId }) {
       };
 
       setComments((prevComments) => [newCommentObj, ...prevComments]);
-      setNewComment(""); 
+      setNewComment("");
     } catch (err) {
       console.error("Error posting comment:", err);
       setError(err.response?.data?.error || err.message);
@@ -291,7 +293,7 @@ export default function SinglePost({ postId }) {
   return (
     <>
       <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200">
-        <CardHeader className="flex-row items-center gap-4 p-4 lg:px-5 lg:pt-4">
+        <CardHeader className="flex-row items-center gap-4 p-4 lg:px-5 lg:pt-4 cursor-pointer">
           <NextImage
             src={
               post.profilePicture ||
@@ -300,6 +302,7 @@ export default function SinglePost({ postId }) {
             alt="Avatar"
             width={48}
             height={48}
+            onClick={() => redirectToProfile(post.userId)}
             className="rounded-full"
             priority
             style={{
@@ -309,7 +312,7 @@ export default function SinglePost({ postId }) {
               height: "48px",
             }}
           />
-          <div>
+          <div onClick={() => redirectToProfile(post.userId)}>
             <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
               {post.userName}
             </h3>
@@ -341,9 +344,7 @@ export default function SinglePost({ postId }) {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <ThumbsUp
-                  className={`h-4 w-4 ${
-                    post.isLiked ? "text-blue-600" : ""
-                  }`}
+                  className={`h-4 w-4 ${post.isLiked ? "text-blue-600" : ""}`}
                 />
               )}
               <span className="ml-2">{post.likeCount}</span>
@@ -475,7 +476,7 @@ export default function SinglePost({ postId }) {
                 key={comment.id}
                 className="bg-white dark:bg-gray-800 shadow rounded-2xl p-4"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 cursor-pointer">
                   <NextImage
                     src={
                       comment.user.profilePicture ||
@@ -484,9 +485,10 @@ export default function SinglePost({ postId }) {
                     alt="Avatar"
                     width={36}
                     height={36}
+                    onClick={() => redirectToProfile(comment.userId)}
                     className="rounded-full"
                   />
-                  <div>
+                  <div  onClick={() => redirectToProfile(comment.userId)}>
                     <p className="font-semibold text-gray-900 dark:text-gray-100">
                       {comment.user.name || "User"}
                     </p>

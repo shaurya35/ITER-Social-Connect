@@ -19,6 +19,7 @@ import {
   Bell,
   Settings,
   Search,
+  FileText,
   MessageCircle,
   Mail,
   Menu,
@@ -116,9 +117,10 @@ export default function Navbar() {
 
   const phoneMenuItems = [
     { icon: Home, label: "Home", route: "/explore" },
-    { icon: User, label: "Profile", route: "/profile" },
+    { icon: User, label: "Profile", route: "/bio" },
     { icon: Bell, label: "Notifications", route: "/notifications" },
-    { icon: Mail, label: "Messages", route: "/chat", disabled: true },
+    {icon: FileText, label: "My Posts", route: "/profile"},
+    // { icon: Mail, label: "Messages", route: "/chat", disabled: true },
     { icon: Users, label: "Connections", route: "/connections" },
     { icon: Bookmark, label: "Bookmarks", route: "/bookmarks" },
     { icon: Settings, label: "Settings", route: "/settings" },

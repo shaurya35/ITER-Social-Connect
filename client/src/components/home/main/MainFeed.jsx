@@ -14,6 +14,7 @@ import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthProvider";
 import { useProfile } from "@/contexts/ProfileContext";
+import { useProfileNavigation } from "@/contexts/ProfileNavigation";
 import { BACKEND_URL } from "@/configs/index";
 import axios from "axios";
 import PostsPreloader from "@/components/preloaders/PostsPreloader";
@@ -71,6 +72,7 @@ export default function MainFeed() {
   const [bookmarkError, setBookmarkError] = useState(null);
   const { accessToken } = useAuth();
   const { profile } = useProfile();
+  const redirectToProfile = useProfileNavigation();
   const router = useRouter();
 
   const [selectedCategory, setSelectedCategory] = useState("general");
@@ -110,19 +112,22 @@ export default function MainFeed() {
         withCredentials: true,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       });
-      
+
       const newPosts = response.data.posts || [];
       const currentUserId = profile?.userId;
-  
+
       // Process posts with category filtering
-      const processedPosts = newPosts.map(post => ({
+      const processedPosts = newPosts.map((post) => ({
         ...post,
-        isLiked: Array.isArray(post.likes) ? post.likes.includes(currentUserId) : false,
-        likeCount: post.likeCount ?? (Array.isArray(post.likes) ? post.likes.length : 0),
-        category: post.category || 'general'
+        isLiked: Array.isArray(post.likes)
+          ? post.likes.includes(currentUserId)
+          : false,
+        likeCount:
+          post.likeCount ?? (Array.isArray(post.likes) ? post.likes.length : 0),
+        category: post.category || "general",
       }));
-  
-      setPosts(prev => [...prev, ...processedPosts]);
+
+      setPosts((prev) => [...prev, ...processedPosts]);
       setHasMore(response.data.hasMore);
     } catch (err) {
       setError(err);
@@ -131,39 +136,38 @@ export default function MainFeed() {
       setLoading(false);
     }
   }, [page, accessToken, profile?.userId]);
-  
+
   // Filter posts based on selected category
-  const filteredPosts = posts.filter(post => 
-    selectedCategory === 'general' ? true : post.category === selectedCategory
+  const filteredPosts = posts.filter((post) =>
+    selectedCategory === "general" ? true : post.category === selectedCategory
   );
-  
+
   // Updated category change handler
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
     // No need to reset posts/page since we're filtering client-side
   };
-// Add near your other hooks
-const navRef = useRef(null);
+  // Add near your other hooks
+  const navRef = useRef(null);
 
-// Add this useEffect hook
-useEffect(() => {
-  const handleWheel = (e) => {
+  // Add this useEffect hook
+  useEffect(() => {
+    const handleWheel = (e) => {
+      const container = navRef.current;
+      if (container && Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+
+      if (container) {
+        container.scrollLeft += e.deltaY;
+        e.preventDefault();
+      }
+    };
+
     const container = navRef.current;
-    if (container && Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
-    
     if (container) {
-      container.scrollLeft += e.deltaY;
-      e.preventDefault();
+      container.addEventListener("wheel", handleWheel, { passive: false });
+      return () => container.removeEventListener("wheel", handleWheel);
     }
-  };
-
-  const container = navRef.current;
-  if (container) {
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }
-}, []);
-  
+  }, []);
 
   /* Update posts mapping once profile is available (or changes) */
   useEffect(() => {
@@ -375,37 +379,33 @@ useEffect(() => {
 
   return (
     <div className="flex-1 w-full max-w-2xl mx-auto space-y-4">
-    {/* Category Navigation */}
-{/* Category Navigation */}
-<div className="z-50 bg-white dark:bg-gray-800 pt-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-  <div className="relative group">
-    {/* Scroll gradient indicators */}
-    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-gray-800 to-transparent pointer-events-none z-20" />
-    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-gray-800 to-transparent pointer-events-none z-20 opacity-0 group-hover:opacity-100 transition-opacity" />
-    
-    {/* Scrollable container */}
-    <div 
-      className="flex space-x-2 overflow-x-auto pb-2 px-4 scroll-container"
-      ref={navRef}
-      style={{ scrollbarWidth: 'thin' }} // For Firefox
-    >
-      {categories.map((category) => (
-        <button
-          key={category.value}
-          onClick={() => setSelectedCategory(category.value)}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
+      <div className="z-50 bg-white dark:bg-gray-800 pt-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <div className="relative group">
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-gray-800 to-transparent pointer-events-none z-20" />
+          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-gray-800 to-transparent pointer-events-none z-20 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+          <div
+            className="flex space-x-2 overflow-x-auto pb-2 px-4 scroll-container"
+            ref={navRef}
+            style={{ scrollbarWidth: "thin" }}
+          >
+            {categories.map((category) => (
+              <button
+                key={category.value}
+                onClick={() => setSelectedCategory(category.value)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
             ${
               selectedCategory === category.value
                 ? "bg-blue-600 text-white shadow-md dark:bg-blue-500"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
             }`}
-        >
-          {category.label}
-        </button>
-      ))}
-    </div>
-  </div>
-</div>
+              >
+                {category.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
       {/* Error message */}
       {error && (
         <p className="text-red-500">Error loading posts: {error.message}</p>
@@ -518,6 +518,7 @@ useEffect(() => {
                 height={48}
                 className="rounded-full"
                 priority
+                onClick={() => redirectToProfile(post.userId)}
                 style={{
                   objectFit: "cover",
                   objectPosition: "center",
@@ -614,10 +615,11 @@ useEffect(() => {
         );
       })}
 
-        {/* No Posts Message - Add this */}
-        {filteredPosts.length === 0 && !loading && (
+      {/* No Posts Message - Add this */}
+      {filteredPosts.length === 0 && !loading && (
         <p className="text-center py-4 text-gray-500">
-          No posts found in {categories.find(c => c.value === selectedCategory)?.label} category
+          No posts found in{" "}
+          {categories.find((c) => c.value === selectedCategory)?.label} category
         </p>
       )}
 
