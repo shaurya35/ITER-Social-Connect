@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthProvider";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 import Navbar from "@/components/home/navbar/Navbar";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -37,10 +38,11 @@ export default function RootLayout({ children }) {
         <ThemeProvider>
           <AuthProvider>
             <ProfileProvider>
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-              <Navbar />
-              {children}
-            </div>
+              <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+                <Navbar />
+                {children}
+                <Analytics />
+              </div>
             </ProfileProvider>
           </AuthProvider>
         </ThemeProvider>
