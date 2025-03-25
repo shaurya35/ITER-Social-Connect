@@ -414,7 +414,7 @@ export default function BookmarkComponent() {
               />
               <div>
                 <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
-                  {post.userName}
+                  {post.name}
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {timeAgo(post.createdAt)}
@@ -427,7 +427,7 @@ export default function BookmarkComponent() {
               onClick={() => router.push(`/post/${post.id}`)}
             >
               <p className="text-gray-700 dark:text-gray-300 break-words">
-                {post.contentt}
+                {post.content}
               </p>
             </CardContent>
             <CardFooter className="border-t border-gray-200 dark:border-gray-700 p-2">
