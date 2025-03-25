@@ -384,9 +384,6 @@ const getBookmarkedPosts = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const userData = userDoc.data();
-    const { name, profilePicture } = userData; // Extract name and profilePicture
-
     const bookmarksCollectionRef = collection(userRef, "bookmarks"); // Reference to the bookmarks subcollection
     const bookmarksSnapshot = await getDocs(bookmarksCollectionRef);
 
@@ -405,9 +402,25 @@ const getBookmarkedPosts = async (req, res) => {
       const postDoc = await getDoc(doc(postsRef, postId));
 
       if (postDoc.exists()) {
+        const postData = postDoc.data();
+        const postUserId = postData.userId; // Get userId of post creator
+
+        // Fetch the post creator's data
+        const postUserRef = doc(db, "users", postUserId);
+        const postUserDoc = await getDoc(postUserRef);
+
+        let name = "Unknown"; // Default if user not found
+        let profilePicture = "";
+
+        if (postUserDoc.exists()) {
+          const postUserData = postUserDoc.data();
+          name = postUserData.name || "Unknown";
+          profilePicture = postUserData.profilePicture || "";
+        }
+
         bookmarkedPosts.push({
           id: postDoc.id,
-          ...postDoc.data(),
+          ...postData,
           name,
           profilePicture,
         });
@@ -423,6 +436,7 @@ const getBookmarkedPosts = async (req, res) => {
     res.status(500).json({ error: "Error fetching bookmarked posts" });
   }
 };
+
 
 const sharePost = async (req, res) => {
   try {
