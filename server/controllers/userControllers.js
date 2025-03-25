@@ -384,13 +384,17 @@ const getBookmarkedPosts = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    const userData = userDoc.data();
+    const { name, profilePicture } = userData; // Extract name and profilePicture
+
     const bookmarksCollectionRef = collection(userRef, "bookmarks"); // Reference to the bookmarks subcollection
     const bookmarksSnapshot = await getDocs(bookmarksCollectionRef);
 
     if (bookmarksSnapshot.empty) {
-      return res
-        .status(200)
-        .json({ message: "No bookmarks found", bookmarks: [] });
+      return res.status(200).json({
+        message: "No bookmarks found",
+        bookmarks: [],
+      });
     }
 
     const postsRef = collection(db, "posts");
@@ -401,7 +405,12 @@ const getBookmarkedPosts = async (req, res) => {
       const postDoc = await getDoc(doc(postsRef, postId));
 
       if (postDoc.exists()) {
-        bookmarkedPosts.push({ id: postDoc.id, ...postDoc.data() });
+        bookmarkedPosts.push({
+          id: postDoc.id,
+          ...postDoc.data(),
+          name,
+          profilePicture,
+        });
       }
     }
 

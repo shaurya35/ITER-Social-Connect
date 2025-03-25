@@ -427,7 +427,7 @@ export default function BookmarkComponent() {
               onClick={() => router.push(`/post/${post.id}`)}
             >
               <p className="text-gray-700 dark:text-gray-300 break-words">
-                {post.content}
+                {post.contentt}
               </p>
             </CardContent>
             <CardFooter className="border-t border-gray-200 dark:border-gray-700 p-2">

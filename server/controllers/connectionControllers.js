@@ -50,13 +50,13 @@ const sendConnectionRequest = async (req, res) => {
     const senderRef = doc(db, "users", senderId);
     const senderSnapshot = await getDoc(senderRef);
 
-    let senderName = "Someone"; 
-    let senderProfilePicture = ""; 
+    let senderName = "Someone";
+    let senderProfilePicture = "";
 
     if (senderSnapshot.exists()) {
       const senderData = senderSnapshot.data();
-      senderName = senderData.name || senderName; 
-      senderProfilePicture = senderData.profilePicture || ""; 
+      senderName = senderData.name || senderName;
+      senderProfilePicture = senderData.profilePicture || "";
     }
 
     await setDoc(doc(db, `users/${senderId}/connections/${targetUserId}`), {
@@ -76,8 +76,8 @@ const sendConnectionRequest = async (req, res) => {
       userId: targetUserId,
       message: `You have a new connection request from ${senderName}.`,
       senderId: senderId,
-      senderName: senderName, 
-      senderProfilePicture: senderProfilePicture, 
+      senderName: senderName,
+      senderProfilePicture: senderProfilePicture,
       timestamp: Date.now(),
       isRead: false,
       type: "connection_request",

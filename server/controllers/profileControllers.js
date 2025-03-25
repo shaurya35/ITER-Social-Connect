@@ -9,7 +9,6 @@ const {
 const db = require("../firebase/firebaseConfig");
 const jwt = require("jsonwebtoken");
 
-// Get User Profile
 const getProfile = async (req, res) => {
   try {
     // Extract and verify the token
@@ -121,7 +120,6 @@ const getProfileData = async (req, res) => {
   }
 };
 
-
 const getUserProfile = async (req, res) => {
   try {
     // Extract userId from query parameter
@@ -176,5 +174,5 @@ const getUserProfile = async (req, res) => {
 module.exports = {
   getProfile,
   getUserProfile,
-  getProfileData
+  getProfileData,
 };
