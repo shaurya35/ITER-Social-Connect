@@ -12,11 +12,11 @@ const {
 const search = async (req, res) => {
   try {
     const { query: searchTerm } = req.query;
+    const loggedInUserId = req.user?.userId;
+
     if (!searchTerm || searchTerm.trim() === "") {
       return res.status(400).json({ error: "Search query cannot be empty" });
     }
-
-    const loggedInUserId = req.user?.id;
 
     const normalizedQuery = searchTerm.trim().toLowerCase();
 
@@ -26,7 +26,6 @@ const search = async (req, res) => {
 
     const usersSnapshot = await getDocs(usersRef);
 
-    
     const matchingUsers = usersSnapshot.docs
       .map((doc) => ({
         id: doc.id,
@@ -34,12 +33,11 @@ const search = async (req, res) => {
         profilePicture: doc.data().profilePicture,
         about: doc.data().about,
       }))
-      .filter((user) => {
-        if (loggedInUserId && user.id === loggedInUserId) {
-          return false;
-        }
-        return user.name?.toLowerCase().includes(normalizedQuery);
-      });
+      .filter(
+        (user) =>
+          user.name?.toLowerCase().includes(normalizedQuery) &&
+          user.id !== loggedInUserId // Exclude logged-in user
+      );
 
     const hashtagsSnapshot = await getDocs(hashtagsRef);
 
@@ -84,6 +82,7 @@ const search = async (req, res) => {
     res.status(500).json({ error: "Failed to perform search" });
   }
 };
+
 
 
 module.exports = {
