@@ -94,11 +94,22 @@ const signup = async (req, res) => {
   try {
     const { email, password, regNo, discordUrl } = req.body;
 
-    if (!email || !password || !regNo || !discordUrl) {
-      return res.status(400).json({
-        message:
-          "Email, password, registration number, and Discord URL are required.",
-      });
+    if (!email) {
+      return res.status(400).json({ message: "Email is required." });
+    }
+
+    if (!password) {
+      return res.status(400).json({ message: "Password is required." });
+    }
+
+    if (!regNo) {
+      return res
+        .status(400)
+        .json({ message: "Registration number is required." });
+    }
+
+    if (!discordUrl) {
+      return res.status(400).json({ message: "Discord URL is required." });
     }
 
     // Validate input using Zod or another schema validator
@@ -187,7 +198,6 @@ const signup = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error." });
   }
 };
-
 
 const verifyOtp = async (req, res) => {
   try {
@@ -438,7 +448,6 @@ const signin = async (req, res) => {
       email: userData.email,
       userId: userDoc.id,
       role: userData.role, // Include the role in response
-      
     };
 
     // Refresh Token System
@@ -732,7 +741,7 @@ const teacherSignup = async (req, res) => {
 
     await setDoc(otpDocRef, {
       otp,
-      otpExpiresAt: Date.now() + 5 * 60 * 1000, 
+      otpExpiresAt: Date.now() + 5 * 60 * 1000,
       email,
       password: hashedPassword, // Save hashed password
     });
