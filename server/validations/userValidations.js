@@ -18,8 +18,8 @@ const userSignupSchema = z.object({
     .string()
     .url("Invalid URL format.")
     .regex(
-      /^https:\/\/media\.discordapp\.net\/.*/,
-      "Invalid Discord media URL."
+      /^https:\/\/[a-zA-Z0-9.-]+\.supabase\.co\/storage\/v1\/object\/public\/.*/,
+      "Invalid Supabase storage URL."
     ),
 });
 
