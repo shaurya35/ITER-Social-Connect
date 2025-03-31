@@ -1,11 +1,11 @@
 "use client";
 
 /**
- * Todos: 1. Add Likes
- * 2. Add Share
- * 3. Bookmark fetch already existing post for particular user
+ *
+ *
+ *
  * 4. Save the scroll state
- * 5. Without logging, the post button shows loading....
+ *
  */
 
 /** Imports */
@@ -496,7 +496,13 @@ export default function MainFeed() {
                 placeholder="What's on your mind?"
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
-                className="resize-none bg-gray-100 dark:bg-gray-700 border-0 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 rounded-lg text-gray-900 dark:text-gray-100"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handlePostSubmit();
+                  }
+                }}
+                className="resize-y bg-gray-100 min-h-[100px] dark:bg-gray-700 border-0 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 rounded-lg text-gray-900 dark:text-gray-100 whitespace-pre-wrap overflow-y-auto"
               />
               <div className="mt-4 flex flex-col md:flex-row gap-3 justify-between items-start md:items-center">
                 <div className="w-full md:w-auto flex gap-2">
@@ -566,11 +572,7 @@ export default function MainFeed() {
                   onClick={handlePostSubmit}
                   disabled={fetchingUser || isPosting}
                 >
-                  {isPosting
-                    ? "Posting..."
-                    : fetchingUser
-                    ? "Post"
-                    : "Post"}
+                  {isPosting ? "Posting..." : fetchingUser ? "Post" : "Post"}
                 </Button>
               </div>
             </div>
@@ -656,7 +658,7 @@ export default function MainFeed() {
               className="px-4 py-3 lg:px-5 lg:pb-5 w-full"
               onClick={() => router.push(`/post/${post.id}`)}
             >
-              <p className="text-gray-700 dark:text-gray-300 break-words">
+              <p className="text-gray-700 dark:text-gray-300 break-words whitespace-pre-line">
                 {post.content}
               </p>
             </CardContent>

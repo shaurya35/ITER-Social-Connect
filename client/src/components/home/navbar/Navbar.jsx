@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthProvider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -41,40 +41,69 @@ export default function Navbar() {
   const [isLoading, setIsLoading] = useState(false);
   const searchContainerRef = useRef(null);
   const mobileSearchContainerRef = useRef(null);
+  const abortControllerRef = useRef(null);
 
   // Existing states
   const [isOpen, setIsOpen] = useState(false);
   const [renderInput, setRenderInput] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const { isDarkMode, toggleDarkMode } = useTheme();
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, accessToken } = useAuth();
   const router = useRouter();
 
   const handleUserPresence = () => {
-    if(!user){
-      router.push('/signup')
+    if (!user) {
+      router.push('/signup');
     }
-  }
+  };
 
-  // Debounced search function
-  const performSearch = debounce(async (query) => {
-    if (!query.trim()) {
-      setSearchResults(null);
-      return;
-    }
+  // Optimized debounced search function
+  const performSearch = useCallback(
+    debounce(async (query) => {
+      if (!query.trim()) {
+        setSearchResults(null);
+        return;
+      }
 
-    try {
-      setIsLoading(true);
-      const response = await fetch(`${BACKEND_URL}/api/search?query=${encodeURIComponent(query)}`);
-      const data = await response.json();
-      setSearchResults(data);
-    } catch (error) {
-      console.error("Search failed:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, 300);
+      // Cancel previous request if exists
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
 
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      try {
+        setIsLoading(true);
+        const response = await fetch(
+          `${BACKEND_URL}/api/search?query=${encodeURIComponent(query)}`,
+          {
+            signal: controller.signal,
+            headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+          }
+        );
+
+        if (!response.ok) throw new Error('Search failed');
+        const data = await response.json();
+
+        if (!controller.signal.aborted) {
+          setSearchResults(data);
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error("Search failed:", error);
+          setSearchResults(null);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
+      }
+    }, 300),
+    [accessToken]
+  );
+
+  // Cleanup effects
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchContainerRef.current && 
@@ -98,6 +127,15 @@ export default function Navbar() {
     document.addEventListener("mousedown", handleMobileClickOutside);
     return () => document.removeEventListener("mousedown", handleMobileClickOutside);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      performSearch.cancel();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [performSearch]);
 
   useEffect(() => {
     if (isOpen) {
@@ -125,8 +163,7 @@ export default function Navbar() {
     { icon: Home, label: "Home", route: "/explore" },
     { icon: User, label: "Profile", route: "/bio" },
     { icon: Bell, label: "Notifications", route: "/notifications" },
-    {icon: FileText, label: "My Posts", route: "/profile"},
-    // { icon: Mail, label: "Messages", route: "/chat", disabled: true },
+    { icon: FileText, label: "My Posts", route: "/profile" },
     { icon: Users, label: "Connections", route: "/connections" },
     { icon: Bookmark, label: "Bookmarks", route: "/bookmarks" },
     { icon: Settings, label: "Settings", route: "/settings" },
@@ -273,7 +310,7 @@ export default function Navbar() {
               </div>
             </Link>
             <div className="hidden lg:flex lg:flex-row lg:flex-wrap lg:space-x-0">
-              <div className="relative ml-4 mr-4" ref={searchContainerRef} >
+              <div className="relative ml-4 mr-4" ref={searchContainerRef}>
                 <Input
                   type="search"
                   placeholder="Search..."
@@ -284,7 +321,7 @@ export default function Navbar() {
                     setIsSearchOpen(true);
                   }}
                   onFocus={() => {
-                    if(user){
+                    if (user) {
                       setIsFocused(true);
                       setIsSearchOpen(true);
                     }
