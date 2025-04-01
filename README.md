@@ -100,4 +100,3 @@ Access the app in your web browser at `https://itersocialconnect.vercel.app/expl
 - Shaurya ([LinkedIn](https://www.linkedin.com/in/shaurya--jha/))
 - Om Shankar Deshmukh ([LinkedIn](https://www.linkedin.com/in/om-shankar-deshmukh-7431b9245/))
 - Satyam Kumar ([LinkedIn](https://www.linkedin.com/in/satyamkumar1018/))
-
