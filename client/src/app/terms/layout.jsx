@@ -1,5 +1,5 @@
 export const metadata = {
-    title: "Settings / ITER Connect",
+    title: "Terms / ITER Connect",
     description: "Connect, Collaborate, and Grow",
   };
   

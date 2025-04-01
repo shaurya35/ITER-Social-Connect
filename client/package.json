@@ -28,9 +28,9 @@
     "react-select": "^5.10.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7"
-    
   },
   "devDependencies": {
+    "@types/node": "22.13.17",
     "babel-plugin-module-resolver": "^5.0.2",
     "eslint": "^9.16.0",
     "eslint-config-next": "15.0.4",
