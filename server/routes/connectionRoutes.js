@@ -4,9 +4,10 @@ const {
   sendConnectionRequest,
   getConnectionRequests,
   respondToConnectionRequest,
-  getAllConnections, // Add this new controller function
-} = require("../controllers/connectionControllers.js"); // Updated path for consistency
-const { isLoggedIn } = require("../middlewares/authMiddlewares.js"); // Updated path and fixed typo
+  getAllConnections,
+  removeConnection, 
+} = require("../controllers/connectionControllers.js");
+const { isLoggedIn } = require("../middlewares/authMiddlewares.js");
 
 router.post("/send", isLoggedIn, sendConnectionRequest);
 
@@ -14,5 +15,8 @@ router.get("/requests", isLoggedIn, getConnectionRequests);
 
 router.post("/respond", isLoggedIn, respondToConnectionRequest);
 
-router.get("/", isLoggedIn, getAllConnections); 
+router.get("/", isLoggedIn, getAllConnections);
+
+router.post("/remove", isLoggedIn, removeConnection);
+
 module.exports = router;
