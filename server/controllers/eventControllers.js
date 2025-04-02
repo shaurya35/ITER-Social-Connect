@@ -66,7 +66,6 @@ const createEvent = async (req, res) => {
       createdAt: Date.now(),
     });
 
-    // 🔥 Store Notification for All Users using batched writes
     const usersSnapshot = await getDocs(collection(db, "users"));
     const batch = writeBatch(db);
 
@@ -87,7 +86,7 @@ const createEvent = async (req, res) => {
       });
     });
 
-    await batch.commit(); // Commit all writes at once
+    await batch.commit();
 
     res.status(200).json({ message: "Event submitted successfully!" });
   } catch (error) {
@@ -115,7 +114,7 @@ const markNotificationAsRead = async (req, res) => {
 };
 
 // --- Get All Events ---
-const getEvent = async (req, res) => {
+const getEvents = async (req, res) => {
   try {
     const eventsQuery = query(collection(db, "events"));
     const eventsSnapshot = await getDocs(eventsQuery);
@@ -125,21 +124,26 @@ const getEvent = async (req, res) => {
 
     for (const docSnapshot of eventsSnapshot.docs) {
       const data = docSnapshot.data();
-      const timeRemaining = new Date(data.eventEndTime).getTime() - currentTime;
+      const timeRemainingMs = new Date(data.eventEndTime).getTime() - currentTime;
 
-      if (timeRemaining <= 0) {
+      if (timeRemainingMs <= 0) {
         // Delete expired event
         await deleteDoc(doc(db, "events", docSnapshot.id));
       } else {
-        const remainingTimeFormatted = `${Math.floor(
-          timeRemaining / (1000 * 60 * 60)
-        )} hours, ${Math.floor(
-          (timeRemaining % (1000 * 60 * 60)) / (1000 * 60)
-        )} minutes`;
+        // Convert timeRemaining to days, hours, and minutes
+        const days = Math.floor(timeRemainingMs / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeRemainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeRemainingMs % (1000 * 60 * 60)) / (1000 * 60));
+
+        let remainingTimeFormatted = "";
+        if (days > 0) remainingTimeFormatted += `${days} day${days > 1 ? "s" : ""} `;
+        if (hours > 0) remainingTimeFormatted += `${hours} hour${hours > 1 ? "s" : ""} `;
+        if (minutes > 0) remainingTimeFormatted += `${minutes} minute${minutes > 1 ? "s" : ""}`;
+
         events.push({
           id: docSnapshot.id,
           ...data,
-          timeRemaining: remainingTimeFormatted,
+          timeRemaining: remainingTimeFormatted.trim(),
         });
       }
     }
@@ -151,8 +155,9 @@ const getEvent = async (req, res) => {
   }
 };
 
+
 module.exports = {
   createEvent,
-  getEvent,
+  getEvents,
   markNotificationAsRead,
 };

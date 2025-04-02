@@ -6,6 +6,7 @@ const {
   doc,
   getDoc,
   deleteDoc,
+  setDoc,
 } = require("firebase/firestore");
 
 const getAllComments = async (req, res) => {
@@ -23,7 +24,7 @@ const getAllComments = async (req, res) => {
     const comments = await Promise.all(
       commentsSnapshot.docs.map(async (commentDoc) => {
         const commentData = commentDoc.data();
-        console.log(commentData)
+        console.log(commentData);
 
         // Check if `userId` exists in the comment data
         let user = { name: "Unknown User", profilePicture: null };
@@ -64,6 +65,17 @@ const createComment = async (req, res) => {
       return res.status(400).json({ error: "Comment cannot be Empty!" });
     }
 
+    // Fetch post details
+    const postRef = doc(db, "posts", postId);
+    const postSnap = await getDoc(postRef);
+
+    if (!postSnap.exists()) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    const postData = postSnap.data();
+    const postOwnerId = postData.userId;
+
     // Create the comment
     const commentDoc = await addDoc(
       collection(db, "posts", postId, "comments"),
@@ -83,6 +95,28 @@ const createComment = async (req, res) => {
     }
 
     const userData = userSnapshot.data();
+
+    // Limit comment preview to 50 characters
+    const previewContent =
+      content.length > 50 ? content.substring(0, 47) + "..." : content;
+
+    // Send notification to post owner
+    if (postOwnerId !== userId) {
+      // Prevent self-notification
+      const notificationRef = doc(collection(db, "notifications"));
+
+      await setDoc(notificationRef, {
+        userId: postOwnerId,
+        senderId: userId,
+        senderName: userData.name || "Unknown",
+        senderProfilePicture: userData.profilePicture || "",
+        message: `New Comment on your Post: "${previewContent}"`,
+        postId: postId,
+        timestamp: Date.now(),
+        isRead: false,
+        type: "comment",
+      });
+    }
 
     // Respond with comment ID and user details
     res.status(200).json({
