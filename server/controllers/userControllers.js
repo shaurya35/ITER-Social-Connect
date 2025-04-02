@@ -13,7 +13,8 @@ const {
   arrayUnion,
   orderBy,
   limit,
-  writeBatch,setDoc
+  writeBatch,
+  setDoc,
 } = require("firebase/firestore");
 
 const getAllUserPosts = async (req, res) => {
@@ -290,54 +291,6 @@ const getUserPostById = async (req, res) => {
   }
 };
 
-// const likePost = async (req, res) => {
-//   try {
-//     const userId = req.user.userId;
-//     const { postId } = req.body;
-
-//     if (!postId) {
-//       return res.status(400).json({ error: "Post ID is required" });
-//     }
-
-//     const postRef = doc(db, "posts", postId);
-//     const postSnapshot = await getDoc(postRef);
-
-//     if (!postSnapshot.exists()) {
-//       return res.status(404).json({ error: "Post not found" });
-//     }
-
-//     const postData = postSnapshot.data();
-//     let likes = postData.likes || [];
-
-//     const userIndex = likes.indexOf(userId);
-//     const userAlreadyLiked = userIndex !== -1;
-
-//     if (userAlreadyLiked) {
-//       // Remove user ID from likes array (unlike)
-//       likes.splice(userIndex, 1);
-//     } else {
-//       // Add user ID to likes array (like)
-//       likes.push(userId);
-//     }
-
-//     // Update the post with the new likes array and like count
-//     await updateDoc(postRef, {
-//       likes,
-//       likeCount: likes.length,
-//     });
-
-//     res.status(200).json({
-//       message: userAlreadyLiked
-//         ? "Post unliked successfully"
-//         : "Post liked successfully",
-//       totalLikes: likes.length,
-//     });
-//   } catch (error) {
-//     console.error("Like Post Error:", error);
-//     res.status(500).json({ error: "Failed to like the post" });
-//   }
-// };
-
 const likePost = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -363,6 +316,19 @@ const likePost = async (req, res) => {
 
     if (userAlreadyLiked) {
       likes.splice(userIndex, 1);
+
+      // Delete the previous notification when unliking
+      const q = query(
+        collection(db, "notifications"),
+        where("userId", "==", postOwnerId),
+        where("senderId", "==", userId),
+        where("postId", "==", postId),
+        where("type", "==", "like")
+      );
+      const notificationSnapshot = await getDocs(q);
+      notificationSnapshot.forEach(async (doc) => {
+        await deleteDoc(doc.ref);
+      });
     } else {
       likes.push(userId);
 
@@ -371,19 +337,33 @@ const likePost = async (req, res) => {
 
       if (userSnapshot.exists() && postOwnerId !== userId) {
         const userData = userSnapshot.data();
-        const notificationRef = doc(collection(db, "notifications"));
 
-        await setDoc(notificationRef, {
-          userId: postOwnerId,
-          senderId: userId,
-          senderName: userData.name || "Unknown",
-          senderProfilePicture: userData.profilePicture || "",
-          message: `${userData.name} liked your post.`,
-          postId: postId,
-          timestamp: Date.now(),
-          isRead: false,
-          type: "like",
-        });
+        // Check if a like notification already exists
+        const q = query(
+          collection(db, "notifications"),
+          where("userId", "==", postOwnerId),
+          where("senderId", "==", userId),
+          where("postId", "==", postId),
+          where("type", "==", "like")
+        );
+
+        const notificationSnapshot = await getDocs(q);
+
+        if (notificationSnapshot.empty) {
+          // Only create a new notification if it doesn't exist
+          const notificationRef = doc(collection(db, "notifications"));
+          await setDoc(notificationRef, {
+            userId: postOwnerId,
+            senderId: userId,
+            senderName: userData.name || "Unknown",
+            senderProfilePicture: userData.profilePicture || "",
+            message: `${userData.name} liked your post.`,
+            postId: postId,
+            timestamp: Date.now(),
+            isRead: false,
+            type: "like",
+          });
+        }
       }
     }
 
