@@ -12,6 +12,7 @@ const {
 } = require("../controllers/commentControllers");
 const { isLoggedIn } = require("../middlewares/authMiddlewares");
 
+
 // Route to retrieve all posts
 router.get("/:postId/", isLoggedIn, getAllComments);
 router.post("/:postId/", isLoggedIn, createComment);

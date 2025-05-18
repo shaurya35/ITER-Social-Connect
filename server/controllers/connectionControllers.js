@@ -8,6 +8,7 @@ const {
   where,
   getDocs,
   increment,
+  deleteDoc,
 } = require("firebase/firestore");
 const db = require("../firebase/firebaseConfig");
 
@@ -235,9 +236,77 @@ const getAllConnections = async (req, res) => {
   }
 };
 
+const removeConnection = async (req, res) => {
+  try {
+    const { targetEmail } = req.body;
+    const userId = req.user.userId;
+
+    if (!targetEmail) {
+      return res.status(400).json({ message: "Target email is required." });
+    }
+
+    // Find target user by email
+    const usersQuery = query(
+      collection(db, "users"),
+      where("email", "==", targetEmail)
+    );
+    const usersSnapshot = await getDocs(usersQuery);
+
+    if (usersSnapshot.empty) {
+      return res.status(404).json({ message: "Target user not found." });
+    }
+
+    const targetUser = usersSnapshot.docs[0];
+    const targetUserId = targetUser.id;
+
+    // Get connection references
+    const userConnectionRef = doc(db, `users/${userId}/connections/${targetUserId}`);
+    const targetConnectionRef = doc(db, `users/${targetUserId}/connections/${userId}`);
+
+    // Check if connections exist
+    const [userConnectionDoc, targetConnectionDoc] = await Promise.all([
+      getDoc(userConnectionRef),
+      getDoc(targetConnectionRef),
+    ]);
+
+    if (!userConnectionDoc.exists() || !targetConnectionDoc.exists()) {
+      return res.status(404).json({ message: "Connection not found." });
+    }
+
+    // Get statuses
+    const userStatus = userConnectionDoc.data().status;
+    const targetStatus = targetConnectionDoc.data().status;
+
+    // Update connection counts if needed
+    const userRef = doc(db, "users", userId);
+    const targetRef = doc(db, "users", targetUserId);
+
+    const updates = [];
+    
+    if (userStatus === "accepted") {
+      updates.push(updateDoc(userRef, { connectionsCount: increment(-1) }));
+    }
+    if (targetStatus === "accepted") {
+      updates.push(updateDoc(targetRef, { connectionsCount: increment(-1) }));
+    }
+
+    // Delete connection documents
+    updates.push(deleteDoc(userConnectionRef));
+    updates.push(deleteDoc(targetConnectionRef));
+
+    await Promise.all(updates);
+
+    res.status(200).json({ message: "Connection removed successfully." });
+  } catch (error) {
+    console.error("Remove Connection Error:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
 module.exports = {
   sendConnectionRequest,
   getConnectionRequests,
   respondToConnectionRequest,
   getAllConnections,
+  removeConnection,
 };

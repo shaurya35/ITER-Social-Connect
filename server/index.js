@@ -1,33 +1,24 @@
-// --- Express config ---
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const morgan = require("morgan");  // Import morgan
 require("dotenv").config();
 
 // --- Express parse ---
 const app = express();
 
-// // --- CORS config ---
-// const allowedOrigins = [
-//   "http://localhost:3000",
-//   "http://itersocialconnect.vercel.app",
-//   "https://itersocialconnect.vercel.app",
-// ];
-
-// app.use(
-//   cors({
-//     origin: (origin, callback) => {
-//       if (!origin || allowedOrigins.includes(origin)) {
-//         callback(null, true);
-//       } else {
-//         console.error(`Blocked by CORS: ${origin}`);
-//         callback(new Error("Not allowed by CORS"));
-//       }
-//     },
-//     methods: "GET,POST,PUT,DELETE",
-//     credentials: true,
-//   })
-// );
+// --- Logger Middleware (Logs all incoming requests) ---
+app.use(
+  morgan((tokens, req, res) => {
+    return [
+      tokens.method(req, res), // HTTP Method
+      tokens.url(req, res),    // Route
+      tokens.status(req, res), // Status Code
+      "in",
+      tokens["response-time"](req, res) + "ms", // Response Time
+    ].join(" ");
+  })
+);
 
 // --- CORS config ---
 const allowedOrigins = [
@@ -42,7 +33,7 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.error(`Blocked by CORS: ${origin}`);
@@ -60,8 +51,8 @@ app.use(cors(corsOptions));
 
 // Additional security headers
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Expose-Headers", "Set-Cookie");
   next();
 });
 
@@ -108,29 +99,18 @@ const filterRoutes = require("./routes/filterRoutes");
 
 // --- Use Routes ---
 app.use("/api/auth", authRoutes);
-// Open feed routes
 app.use("/api/feed", feedRoutes);
-// Restricted user routes
 app.use("/api/user", userRoutes);
-// Restricted admin routes
 app.use("/api/admin", adminRoutes);
-// Restricted connection routes
 app.use("/api/connections", connectionRoutes);
-// Restricted comment routes
 app.use("/api/comments", commentRoutes);
-// Profile routes
 app.use("/api/profile", profileRoutes);
-//Settings routes
 app.use("/api/settings", settingRoutes);
-//Search routes
 app.use("/api/search", searchRoutes);
-//Report routes
 app.use("/api/report", reportRoutes);
-//Event routes
-app.use("/api/events" , eventRoutes);
-//Notification routes
-app.use("/api/notifications" , notificationsRoutes);
-app.use("/api/filter" , filterRoutes);
+app.use("/api/events", eventRoutes);
+app.use("/api/notifications", notificationsRoutes);
+app.use("/api/filter", filterRoutes);
 
 // --- Start the Server ---
 app.listen(port, () => {

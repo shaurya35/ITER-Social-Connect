@@ -14,6 +14,7 @@ const {
   orderBy,
   limit,
   writeBatch,
+  setDoc,
 } = require("firebase/firestore");
 
 const getAllUserPosts = async (req, res) => {
@@ -307,17 +308,63 @@ const likePost = async (req, res) => {
     }
 
     const postData = postSnapshot.data();
-    let likes = postData.likes || [];
+    const postOwnerId = postData.userId;
 
+    let likes = postData.likes || [];
     const userIndex = likes.indexOf(userId);
     const userAlreadyLiked = userIndex !== -1;
 
     if (userAlreadyLiked) {
-      // Remove user ID from likes array (unlike)
       likes.splice(userIndex, 1);
+
+      // Delete the previous notification when unliking
+      const q = query(
+        collection(db, "notifications"),
+        where("userId", "==", postOwnerId),
+        where("senderId", "==", userId),
+        where("postId", "==", postId),
+        where("type", "==", "like")
+      );
+      const notificationSnapshot = await getDocs(q);
+      notificationSnapshot.forEach(async (doc) => {
+        await deleteDoc(doc.ref);
+      });
     } else {
-      // Add user ID to likes array (like)
       likes.push(userId);
+
+      const userRef = doc(db, "users", userId);
+      const userSnapshot = await getDoc(userRef);
+
+      if (userSnapshot.exists() && postOwnerId !== userId) {
+        const userData = userSnapshot.data();
+
+        // Check if a like notification already exists
+        const q = query(
+          collection(db, "notifications"),
+          where("userId", "==", postOwnerId),
+          where("senderId", "==", userId),
+          where("postId", "==", postId),
+          where("type", "==", "like")
+        );
+
+        const notificationSnapshot = await getDocs(q);
+
+        if (notificationSnapshot.empty) {
+          // Only create a new notification if it doesn't exist
+          const notificationRef = doc(collection(db, "notifications"));
+          await setDoc(notificationRef, {
+            userId: postOwnerId,
+            senderId: userId,
+            senderName: userData.name || "Unknown",
+            senderProfilePicture: userData.profilePicture || "",
+            message: `${userData.name} liked your post.`,
+            postId: postId,
+            timestamp: Date.now(),
+            isRead: false,
+            type: "like",
+          });
+        }
+      }
     }
 
     // Update the post with the new likes array and like count
@@ -436,7 +483,6 @@ const getBookmarkedPosts = async (req, res) => {
     res.status(500).json({ error: "Error fetching bookmarked posts" });
   }
 };
-
 
 const sharePost = async (req, res) => {
   try {
