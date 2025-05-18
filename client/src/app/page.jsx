@@ -7,6 +7,7 @@ export default function Home() {
   useEffect(() => {
     router.replace("/explore"); 
   }, [router]);
+  
 
   return <div>Redirecting...</div>;
 }
