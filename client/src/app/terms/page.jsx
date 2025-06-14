@@ -1,7 +1,7 @@
 "use client";
 
-// import { Button } from "@/components/ui/button";
-// import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 
 export default function Terms() {
   return (
@@ -17,7 +17,7 @@ export default function Terms() {
             <p className="text-sm">
               By using this platform, you agree to these Terms of Service. If
               you disagree, do not use the platform. This service is provided
-              "as is" for students, faculty, alumni, and staff of Institute of Technical Education & Research.
+              &quot;as is&quot; for students, faculty, alumni, and staff of Institute of Technical Education & Research.
             </p>
           </section>
 
@@ -60,13 +60,13 @@ export default function Terms() {
             </ul>
           </section>
 
-          {/* <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+          <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
             <div className="flex flex-col text-center items-center justify-center gap-2">
               <span className="font-semibold">Important:</span>
               This platform is currently unofficial and not officially endorsed
               by the college.
             </div>
-          </Alert> */}
+          </Alert>
 
           <section>
             <h2 className="text-md font-semibold">Contact</h2>
@@ -74,8 +74,8 @@ export default function Terms() {
               Report issues or ask questions at:
               <br />
               Email: itersocialconnect@gmail.com
-              <br />
-              Faculty Advisor: Bharat Jyoti Ranjan Sir
+              {/* <br />
+              Faculty Advisor: Bharat Jyoti Ranjan Sir */}
             </p>
           </section>
 
@@ -87,12 +87,12 @@ export default function Terms() {
         </div>
 
         <div className="mt-8">
-          {/* <Button
+          <Button
             onClick={() => window.history.back()}
             className="w-full sm:w-auto bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:hover:bg-gray-200 dark:text-gray-900"
           >
             Back to Signup
-          </Button> */}
+          </Button>
         </div>
       </div>
     </div>
