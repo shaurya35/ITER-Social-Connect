@@ -9,18 +9,6 @@ const userSignupSchema = z.object({
       (email) => !email.endsWith("@soa.ac.in"),
       "Email should not end with @soa.ac.in"
     ),
-  // password: z.string().min(6, "Password must be at least 6 characters long."),
-  // regNo: z
-  //   .string()
-  //   .regex(/^\d{10}$/, "Registration number must be a 10-digit number.")
-  //   .transform(String),
-  discordUrl: z
-    .string()
-    .url("Invalid URL format.")
-    .regex(
-      /^https:\/\/[a-zA-Z0-9.-]+\.supabase\.co\/storage\/v1\/object\/public\/.*/,
-      "Invalid Supabase storage URL."
-    ),
 });
 
 const userSigninSchema = z.object({
@@ -76,6 +64,8 @@ const completeProfileSchema = z.object({
     .min(1, "At least one interest is required.")
     .optional(),
 });
+
+
 
 const changePasswordSchema = z.object({
   currentPassword: z

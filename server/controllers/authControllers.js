@@ -51,7 +51,6 @@ const generateRefreshToken = (user) => {
   );
 };
 
-// --- Function to send email with nodemailer --- //
 const sendOtpEmail = async (email, otp) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -62,10 +61,29 @@ const sendOtpEmail = async (email, otp) => {
   });
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: `"ITER Connect" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: "Email Verification OTP",
-    text: `Your OTP is ${otp}. It is valid for 5 minutes.`,
+    subject: "Email verification code",
+
+    html: `
+      <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: auto; padding: 30px; border: 1px solid #e0e0e0; border-radius: 10px;">
+        <h2 style="color: #333; font-weight: 500;">Hi there,</h2>
+        <p style="font-size: 15px; color: #444;">
+          Please use the code below to confirm your email address and continue on <strong>ITER Connect</strong>.
+          This code will expire in <strong>5 minutes</strong>. If you don't think you should be receiving this email, you can safely ignore it.
+        </p>
+
+        <div style="text-align: center; margin: 40px 0;">
+          <span style="font-size: 42px; font-weight: bold; color: #000;">${otp}</span>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #ccc;" />
+
+        <p style="font-size: 12px; color: #999; margin-top: 20px;">
+          You received this email because you requested a confirmation code from <strong>ITER Connect</strong>.
+        </p>
+      </div>
+    `,
   };
 
   await transporter.sendMail(mailOptions);
@@ -90,9 +108,118 @@ const sendOtpForgetPassowrd = async (email, otp) => {
   await transporter.sendMail(mailOptions);
 };
 
+// const signup = async (req, res) => {
+//   try {
+//     const { email, password, regNo, discordUrl } = req.body;
+
+//     if (!email) {
+//       return res.status(400).json({ message: "Email is required." });
+//     }
+
+//     if (!password) {
+//       return res.status(400).json({ message: "Password is required." });
+//     }
+
+//     if (!regNo) {
+//       return res
+//         .status(400)
+//         .json({ message: "Registration number is required." });
+//     }
+
+//     if (!discordUrl) {
+//       return res.status(400).json({ message: "Discord URL is required." });
+//     }
+
+//     // Validate input using Zod or another schema validator
+//     const validationResult = userSignupSchema.safeParse(req.body);
+//     if (!validationResult.success) {
+//       return res
+//         .status(400)
+//         .json({ message: validationResult.error.errors[0].message });
+//     }
+
+//     const userRefInAdminReq = collection(db, "verification_requests");
+//     const emailQueryinAdminReq = query(
+//       userRefInAdminReq,
+//       where("email", "==", email)
+//     );
+
+//     const [emailSnapshotinAdminReq] = await Promise.all([
+//       getDocs(emailQueryinAdminReq),
+//     ]);
+
+//     if (!emailSnapshotinAdminReq.empty) {
+//       return res
+//         .status(400)
+//         .json({ message: "This email is already under admin verification." });
+//     }
+
+//     // Check for duplicate email and registration number
+//     const usersRef = collection(db, "users");
+//     const emailQuery = query(usersRef, where("email", "==", email));
+//     const regNoQuery = query(usersRef, where("regNo", "==", regNo));
+
+//     const [emailSnapshot, regNoSnapshot] = await Promise.all([
+//       getDocs(emailQuery),
+//       getDocs(regNoQuery),
+//     ]);
+
+//     if (!emailSnapshot.empty) {
+//       return res.status(400).json({ message: "Email is already taken." });
+//     }
+
+//     if (!regNoSnapshot.empty) {
+//       return res
+//         .status(400)
+//         .json({ message: "Registration number is already taken." });
+//     }
+
+//     // Check if an OTP request is already pending
+//     const otpDocRef = doc(db, "otp_verifications", email);
+//     const otpDocSnapshot = await getDoc(otpDocRef);
+
+//     if (otpDocSnapshot.exists()) {
+//       const { otpExpiresAt } = otpDocSnapshot.data();
+//       const remainingTime = otpExpiresAt - Date.now();
+
+//       if (remainingTime > 0) {
+//         const remainingSeconds = Math.ceil(remainingTime / 1000);
+//         return res.status(400).json({
+//           message: `An OTP request is already pending. Please wait ${remainingSeconds} seconds before requesting a new OTP or submit the OTP sent to your email.`,
+//         });
+//       }
+//     }
+
+//     // Hash the password
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     // Generate a new OTP and save it
+//     const otp = crypto.randomInt(100000, 999999);
+
+//     await setDoc(otpDocRef, {
+//       otp,
+//       otpExpiresAt: Date.now() + 5 * 60 * 1000, // OTP expires in 5 minutes
+//       email,
+//       password: hashedPassword, // Save hashed password
+//       regNo,
+//       discordUrl,
+//     });
+
+//     // Send OTP email
+//     await sendOtpEmail(email, otp);
+
+//     res
+//       .status(200)
+//       .json({ message: "OTP sent successfully. Please check your email." });
+//   } catch (error) {
+//     console.error("Signup Error:", error);
+//     res.status(500).json({ message: "Internal Server Error." });
+//   }
+// };
+
 const signup = async (req, res) => {
   try {
-    const { email, password, regNo, discordUrl } = req.body;
+    const { email, password, regNo } = req.body;
 
     if (!email) {
       return res.status(400).json({ message: "Email is required." });
@@ -106,10 +233,6 @@ const signup = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Registration number is required." });
-    }
-
-    if (!discordUrl) {
-      return res.status(400).json({ message: "Discord URL is required." });
     }
 
     // Validate input using Zod or another schema validator
@@ -184,7 +307,6 @@ const signup = async (req, res) => {
       email,
       password: hashedPassword, // Save hashed password
       regNo,
-      discordUrl,
     });
 
     // Send OTP email
@@ -199,6 +321,68 @@ const signup = async (req, res) => {
   }
 };
 
+// const verifyOtp = async (req, res) => {
+//   try {
+//     const { email, otp } = req.body;
+
+//     if (!email || !otp) {
+//       return res.status(400).json({ message: "Email and OTP are required." });
+//     }
+
+//     const otpDoc = await getDoc(doc(db, "otp_verifications", email));
+//     if (!otpDoc.exists()) {
+//       return res.status(404).json({
+//         message:
+//           "OTP request not found. Please initiate the sign-up process again.",
+//       });
+//     }
+
+//     const {
+//       otp: storedOtp,
+//       otpExpiresAt,
+//       password,
+//       regNo,
+//       discordUrl,
+//     } = otpDoc.data();
+
+//     if (Date.now() > otpExpiresAt) {
+//       return res.status(400).json({
+//         message: "OTP has expired. Please initiate the sign-up process again.",
+//       });
+//     }
+
+//     if (parseInt(otp, 10) !== storedOtp) {
+//       return res
+//         .status(400)
+//         .json({ message: "Invalid OTP. Please check and try again." });
+//     }
+
+//     // Determine if the user is a student or a teacher
+//     const isStudent = regNo !== undefined && regNo !== null;
+//     console.log("checked");
+
+//     await addDoc(collection(db, "verification_requests"), {
+//       email,
+//       password,
+//       ...(discordUrl ? { discordUrl } : {}),
+//       approved: false,
+//       profileCompleted: false,
+//       createdAt: Timestamp.now(),
+//       ...(isStudent ? { regNo } : { role: "teacher" }), // Include regNo for students, role for teachers
+//     });
+
+//     await deleteDoc(doc(db, "otp_verifications", email));
+
+//     res.status(200).json({
+//       message:
+//         "OTP verified successfully. Please wait for admin approval. You will be notified once your account is approved.",
+//     });
+//   } catch (error) {
+//     console.error("Verify OTP Error:", error);
+//     res.status(500).json({ message: "Internal Server Error." });
+//   }
+// };
+
 const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -207,7 +391,9 @@ const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "Email and OTP are required." });
     }
 
-    const otpDoc = await getDoc(doc(db, "otp_verifications", email));
+    const otpDocRef = doc(db, "otp_verifications", email);
+    const otpDoc = await getDoc(otpDocRef);
+
     if (!otpDoc.exists()) {
       return res.status(404).json({
         message:
@@ -215,13 +401,7 @@ const verifyOtp = async (req, res) => {
       });
     }
 
-    const {
-      otp: storedOtp,
-      otpExpiresAt,
-      password,
-      regNo,
-      discordUrl,
-    } = otpDoc.data();
+    const { otp: storedOtp, otpExpiresAt, password, regNo } = otpDoc.data();
 
     if (Date.now() > otpExpiresAt) {
       return res.status(400).json({
@@ -237,23 +417,21 @@ const verifyOtp = async (req, res) => {
 
     // Determine if the user is a student or a teacher
     const isStudent = regNo !== undefined && regNo !== null;
-    console.log("checked");
 
-    await addDoc(collection(db, "verification_requests"), {
+    // Add the user directly to the users collection
+    await addDoc(collection(db, "users"), {
       email,
       password,
-      ...(discordUrl ? { discordUrl } : {}),
-      approved: false,
       profileCompleted: false,
       createdAt: Timestamp.now(),
-      ...(isStudent ? { regNo } : { role: "teacher" }), // Include regNo for students, role for teachers
+      ...(isStudent ? { regNo, role: "student" } : { role: "teacher" }),
     });
 
-    await deleteDoc(doc(db, "otp_verifications", email));
+    // Delete OTP doc after successful verification
+    await deleteDoc(otpDocRef);
 
     res.status(200).json({
-      message:
-        "OTP verified successfully. Please wait for admin approval. You will be notified once your account is approved.",
+      message: "OTP verified successfully. Your account has been created.",
     });
   } catch (error) {
     console.error("Verify OTP Error:", error);
@@ -272,8 +450,8 @@ const completeProfile = async (req, res) => {
       linkedin,
       x,
       profilePicture,
+      bannerPhoto, // <-- added here
       fieldsOfInterest,
-      discordUrl,
     } = req.body;
 
     if (!email || !password) {
@@ -342,7 +520,7 @@ const completeProfile = async (req, res) => {
 
     const userDoc = querySnapshot.docs[0];
     const userData = userDoc.data();
-    const userRef = doc(db, "users", userDoc.id); // Reference for updating user profile
+    const userRef = doc(db, "users", userDoc.id);
 
     // Validate the password using bcrypt
     const passwordMatch = await bcrypt.compare(password, userData.password);
@@ -350,25 +528,19 @@ const completeProfile = async (req, res) => {
       return res.status(401).json({ message: "Incorrect password." });
     }
 
-    // Check if the user's account is approved
-    if (!userData.approved) {
-      return res.status(403).json({
-        message:
-          "Your account is not approved. Profile completion is not allowed.",
-      });
-    }
+    // Skip approval check (as requested)
 
-    // Check if the profile is already completed
+    // Check if profile is already completed
     if (userData.profileCompleted) {
       return res.status(200).json({
         message: "Profile is already completed. No updates made.",
       });
     }
 
-    // Ensure fieldsOfInterest is an array before storing
+    // Ensure fieldsOfInterest is an array
     const interests = Array.isArray(fieldsOfInterest) ? fieldsOfInterest : [];
 
-    // Update user profile in Firestore
+    // Update user profile
     await updateDoc(userRef, {
       name,
       about: about || "",
@@ -376,7 +548,7 @@ const completeProfile = async (req, res) => {
       linkedin: linkedin || "",
       x: x || "",
       profilePicture: profilePicture || "",
-      discordUrl: discordUrl || "",
+      bannerPhoto: bannerPhoto || "", // <-- added here
       fieldsOfInterest: interests,
       profileCompleted: true,
     });
@@ -386,7 +558,7 @@ const completeProfile = async (req, res) => {
       userId: userDoc.id,
     };
 
-    // Generate access and refresh tokens
+    // Generate tokens
     const accessToken = generateAccessToken({ userId: userDoc.id, email });
     const refreshToken = generateRefreshToken({ userId: userDoc.id, email });
 

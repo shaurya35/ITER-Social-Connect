@@ -10,6 +10,7 @@ const {
   bookmarkPost,
   getBookmarkedPosts,
   sharePost,
+  updateProfilePhoto,updateBannerPhoto
 } = require("../controllers/userControllers"); // Correct import
 
 const { isLoggedIn } = require("../middlewares/authMiddlewares");
@@ -24,5 +25,7 @@ router.post("/posts/like", isLoggedIn, likePost);
 router.get("/posts/bookmarks", isLoggedIn, getBookmarkedPosts);
 router.post("/post/:postId/bookmark", isLoggedIn, bookmarkPost);
 router.post("/post/share", sharePost);
+router.post("/profile-photo", updateProfilePhoto);
+router.post("/banner-photo", updateBannerPhoto);
 
 module.exports = router;
