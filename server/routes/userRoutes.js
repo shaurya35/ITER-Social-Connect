@@ -25,7 +25,7 @@ router.post("/posts/like", isLoggedIn, likePost);
 router.get("/posts/bookmarks", isLoggedIn, getBookmarkedPosts);
 router.post("/post/:postId/bookmark", isLoggedIn, bookmarkPost);
 router.post("/post/share", sharePost);
-router.post("/profile-photo", updateProfilePhoto);
-router.post("/banner-photo", updateBannerPhoto);
+router.post("/profile-photo", isLoggedIn,updateProfilePhoto);
+router.post("/banner-photo",isLoggedIn, updateBannerPhoto);
 
 module.exports = router;

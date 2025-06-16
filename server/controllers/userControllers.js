@@ -19,7 +19,6 @@ const {
 
 const jwt = require("jsonwebtoken");
 
-
 const getAllUserPosts = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -514,30 +513,23 @@ const sharePost = async (req, res) => {
 
 const updateProfilePhoto = async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Authorization header is missing or invalid" });
-    }
-
-    const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.userId;
+    const userId = req.user.userId;
 
     if (!userId) {
       return res.status(401).json({ message: "Invalid token" });
     }
 
-    // Get profilePicture from request body
     const { profilePicture } = req.body;
     if (!profilePicture) {
       return res.status(400).json({ message: "profilePicture is required." });
     }
 
-    // Update the user's profile photo
     const userRef = doc(db, "users", userId);
     await updateDoc(userRef, { profilePicture });
 
-    return res.status(200).json({ message: "Profile photo updated successfully." });
+    return res
+      .status(200)
+      .json({ message: "Profile photo updated successfully." });
   } catch (error) {
     console.error("Update Profile Photo Error:", error);
     return res.status(500).json({ message: "Failed to update profile photo." });
@@ -546,37 +538,28 @@ const updateProfilePhoto = async (req, res) => {
 
 const updateBannerPhoto = async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Authorization header is missing or invalid" });
-    }
-
-    const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.userId;
+    const userId = req.user.userId;
 
     if (!userId) {
       return res.status(401).json({ message: "Invalid token" });
     }
 
-    // Get bannerPhoto from request body
     const { bannerPhoto } = req.body;
     if (!bannerPhoto) {
       return res.status(400).json({ message: "bannerPhoto is required." });
     }
 
-    // Update the user's banner photo
     const userRef = doc(db, "users", userId);
     await updateDoc(userRef, { bannerPhoto });
 
-    return res.status(200).json({ message: "Banner photo updated successfully." });
+    return res
+      .status(200)
+      .json({ message: "Banner photo updated successfully." });
   } catch (error) {
     console.error("Update Banner Photo Error:", error);
     return res.status(500).json({ message: "Failed to update banner photo." });
   }
 };
-
-
 
 module.exports = {
   likePost,
@@ -588,5 +571,6 @@ module.exports = {
   bookmarkPost,
   getBookmarkedPosts,
   sharePost,
-  updateProfilePhoto,updateBannerPhoto
+  updateProfilePhoto,
+  updateBannerPhoto,
 };

@@ -3,6 +3,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");  // Import morgan
 require("dotenv").config();
+const rateLimiter = require("./middlewares/rateLimiter")
 
 // --- Express parse ---
 const app = express();
@@ -98,7 +99,7 @@ const notificationsRoutes = require("./routes/notificationsRoutes");
 const filterRoutes = require("./routes/filterRoutes");
 
 // --- Use Routes ---
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", rateLimiter,authRoutes);
 app.use("/api/feed", feedRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/admin", adminRoutes);

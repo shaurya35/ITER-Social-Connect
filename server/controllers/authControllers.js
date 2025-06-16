@@ -235,7 +235,6 @@ const signup = async (req, res) => {
         .json({ message: "Registration number is required." });
     }
 
-    // Validate input using Zod or another schema validator
     const validationResult = userSignupSchema.safeParse(req.body);
     if (!validationResult.success) {
       return res
@@ -259,7 +258,6 @@ const signup = async (req, res) => {
         .json({ message: "This email is already under admin verification." });
     }
 
-    // Check for duplicate email and registration number
     const usersRef = collection(db, "users");
     const emailQuery = query(usersRef, where("email", "==", email));
     const regNoQuery = query(usersRef, where("regNo", "==", regNo));
@@ -279,7 +277,6 @@ const signup = async (req, res) => {
         .json({ message: "Registration number is already taken." });
     }
 
-    // Check if an OTP request is already pending
     const otpDocRef = doc(db, "otp_verifications", email);
     const otpDocSnapshot = await getDoc(otpDocRef);
 
@@ -295,7 +292,6 @@ const signup = async (req, res) => {
       }
     }
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Generate a new OTP and save it
