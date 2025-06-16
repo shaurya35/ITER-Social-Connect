@@ -17,7 +17,7 @@ export default function Terms() {
             <p className="text-sm">
               By using this platform, you agree to these Terms of Service. If
               you disagree, do not use the platform. This service is provided
-              "as is" for students, faculty, alumni, and staff of Institute of Technical Education & Research.
+              &quot;as is&quot; for students, faculty, alumni, and staff of Institute of Technical Education & Research.
             </p>
           </section>
 
@@ -74,8 +74,8 @@ export default function Terms() {
               Report issues or ask questions at:
               <br />
               Email: itersocialconnect@gmail.com
-              <br />
-              Faculty Advisor: Bharat Jyoti Ranjan Sir
+              {/* <br />
+              Faculty Advisor: Bharat Jyoti Ranjan Sir */}
             </p>
           </section>
 

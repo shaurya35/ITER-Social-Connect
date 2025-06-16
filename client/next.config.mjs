@@ -1,25 +1,24 @@
 /** @type {import('next').NextConfig} */
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+// Get the current directory name
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const nextConfig = {
   async headers() {
     return [
       {
-        // Routes this applies to
         source: "/api/(.*)",
-        // Headers
         headers: [
-          // Allow for specific domains to have access or * for all
           {
             key: "Access-Control-Allow-Origin",
             value: "*",
-            // DOES NOT WORK
-            // value: process.env.ALLOWED_ORIGIN,
           },
-          // Allows for specific methods accepted
           {
             key: "Access-Control-Allow-Methods",
             value: "GET, POST, PUT, DELETE, OPTIONS",
           },
-          // Allows for specific headers accepted (These are a few standard ones)
           {
             key: "Access-Control-Allow-Headers",
             value: "Content-Type, Authorization",
@@ -29,7 +28,15 @@ const nextConfig = {
     ];
   },
   images: {
-    domains: ["media.discordapp.net","res.cloudinary.com","cdlsaecoineiohkdextf.supabase.co" ],
+    domains: ["media.discordapp.net", "res.cloudinary.com", "cdlsaecoineiohkdextf.supabase.co"],
+  },
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname, 'src'),
+    };
+    
+    return config;
   },
 };
 
