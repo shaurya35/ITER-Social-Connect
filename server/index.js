@@ -97,6 +97,7 @@ const reportRoutes = require("./routes/reportRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const notificationsRoutes = require("./routes/notificationsRoutes");
 const filterRoutes = require("./routes/filterRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
 // --- Use Routes ---
 app.use("/api/auth", rateLimiter,authRoutes);
@@ -112,6 +113,7 @@ app.use("/api/report", reportRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/filter", filterRoutes);
+app.use("/api/chat", chatRoutes);
 
 // --- Start the Server ---
 app.listen(port, () => {

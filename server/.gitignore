@@ -2,3 +2,5 @@
 .env
 .env.local
 admin.js
+
+firebase/serviceAccount.json
