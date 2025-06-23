@@ -7,13 +7,24 @@ import LeftPanel from "@/components/panels/LeftPanel";
 import RightTopPanel from "@/components/panels/RightTopPanel";
 import PanelsPreloader from "../preloaders/PanelsPreloader";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, Github, Linkedin, Twitter, Hash, Briefcase, BookOpen } from "lucide-react";
+import {
+  Users,
+  Github,
+  Linkedin,
+  Twitter,
+  Hash,
+  Briefcase,
+  BookOpen,
+} from "lucide-react";
+import { MessageButton } from "@/components/ui/MessageButton";
+import { MessageIconButton } from "@/components/ui/MessageIconButton";
 
 export default function CommunityProfile({ profileId }) {
-  const { accessToken } = useAuth();
+  const { user, accessToken } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const isOwnProfile = user?.id === profileId;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -42,7 +53,7 @@ export default function CommunityProfile({ profileId }) {
 
   const renderSocialLink = (href, IconComponent, label) => {
     if (!href) return null;
-    
+
     return (
       <a
         href={href}
@@ -51,7 +62,9 @@ export default function CommunityProfile({ profileId }) {
         className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
       >
         <IconComponent className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-        <span className="text-sm text-gray-600 dark:text-gray-300">{label}</span>
+        <span className="text-sm text-gray-600 dark:text-gray-300">
+          {label}
+        </span>
       </a>
     );
   };
@@ -62,15 +75,22 @@ export default function CommunityProfile({ profileId }) {
         <div className="flex flex-col md:flex-row gap-6">
           {/* Profile Image Section */}
           <div className="space-y-4">
-            <div className="relative h-32 w-32 rounded-full border-2 border-gray-200 dark:border-gray-600">
-              <Image
-                src={profile?.profilePicture || "/placeholder.svg"}
-                alt={profile?.name || "User profile"}
-                fill
-                className="rounded-full object-cover"
-              />
+            <div className="relative">
+              <div className="relative h-32 w-32 rounded-full border-2 border-gray-200 dark:border-gray-600">
+                <Image
+                  src={profile?.profilePicture || "/placeholder.svg"}
+                  alt={profile?.name || "User profile"}
+                  fill
+                  className="rounded-full object-cover"
+                />
+              </div>
+
+              {/* Message Icon Button - Positioned over profile image */}
+              {/* <div className="absolute -bottom-2 -right-2">
+                <MessageIconButton userId={profileId} userName={profile?.name || "User"} />
+              </div> */}
             </div>
-            
+
             <div className="flex items-center gap-2 text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-md">
               <Users className="h-4 w-4" />
               <span>{profile?.connectionsCount || 0} Connections</span>
@@ -79,27 +99,60 @@ export default function CommunityProfile({ profileId }) {
 
           {/* Profile Details */}
           <div className="flex-1 space-y-4">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {profile?.name}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300">{profile?.email}</p>
+            {/* Header with Name and Message Button */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  {profile?.name}
+                </h1>
+                <p className="text-gray-600 dark:text-gray-300">
+                  {profile?.email}
+                </p>
+              </div>
+
+              {/* Primary Message Button - Desktop */}
+              {!isOwnProfile && (
+                <div className="hidden sm:block">
+                  <MessageButton
+                    userId={profileId}
+                    userName={profile?.name || "User"}
+                  />
+                </div>
+              )}
             </div>
+            {/* Mobile Message Button */}
+            {!isOwnProfile && (
+              <div className="sm:hidden">
+                <MessageButton
+                  userId={profileId}
+                  userName={profile?.name || "User"}
+                  className="w-full"
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center gap-2">
                 <Hash className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Registration No.</p>
-                  <p className="text-gray-700 dark:text-gray-200">{profile?.regNo}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Registration No.
+                  </p>
+                  <p className="text-gray-700 dark:text-gray-200">
+                    {profile?.regNo}
+                  </p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Briefcase className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Role</p>
-                  <p className="text-gray-700 dark:text-gray-200 capitalize">{profile?.role}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Role
+                  </p>
+                  <p className="text-gray-700 dark:text-gray-200 capitalize">
+                    {profile?.role}
+                  </p>
                 </div>
               </div>
             </div>
@@ -110,7 +163,9 @@ export default function CommunityProfile({ profileId }) {
                   <BookOpen className="h-5 w-5" />
                   <h3 className="font-medium">About</h3>
                 </div>
-                <p className="text-gray-600 dark:text-gray-300 text-sm">{profile.about}</p>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">
+                  {profile.about}
+                </p>
               </div>
             )}
 
@@ -133,18 +188,14 @@ export default function CommunityProfile({ profileId }) {
       active: true,
       showChevron: false,
       key: "overview",
-    }
+    },
   ];
 
   let content;
   if (loading) {
     content = <PanelsPreloader />;
   } else if (error) {
-    content = (
-      <p className="text-center text-red-500 py-8">
-        {error}
-      </p>
-    );
+    content = <p className="text-center text-red-500 py-8">{error}</p>;
   } else {
     content = renderBioCard();
   }
@@ -166,9 +217,7 @@ export default function CommunityProfile({ profileId }) {
             disabled={true}
           />
 
-          <div className="space-y-4">
-            {content}
-          </div>
+          <div className="space-y-4">{content}</div>
         </div>
       </div>
     </div>

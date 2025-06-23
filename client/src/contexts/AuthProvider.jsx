@@ -1,21 +1,25 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { fetchAuthStateSSR, getTokenExpiration, resetAuthState } from "../lib/auth";
+import {
+  fetchAuthStateSSR,
+  getTokenExpiration,
+  resetAuthState,
+} from "@/lib/auth";
 import { BACKEND_URL } from "@/configs";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Schedules token refresh
+  // ⏳ Schedule token refresh just before expiration
   const scheduleTokenRefresh = (token) => {
     const expiration = getTokenExpiration(token);
     const now = Date.now();
-    const delay = expiration - now - 5000; 
+    const delay = expiration - now - 5000; // Refresh 5 seconds before expiry
 
     if (delay > 0) {
       setTimeout(async () => {
@@ -24,72 +28,95 @@ export const AuthProvider = ({ children }) => {
           if (data) {
             setAccessToken(data.accessToken);
             setUser(data.user);
+            storeUserLocally(data.user);
             scheduleTokenRefresh(data.accessToken);
           } else {
-            const { user, accessToken } = resetAuthState();
-            setUser(user);
-            setAccessToken(accessToken);
+            console.warn("⚠️ Token refresh failed, resetting auth");
+            clearAuth();
           }
-        } catch {
-          const { user, accessToken } = resetAuthState();
-          setUser(user);
-          setAccessToken(accessToken);
+        } catch (err) {
+          console.error("❌ Token refresh error:", err);
+          clearAuth();
         }
       }, delay);
     }
   };
 
-  // Initializes authentication state
+  const storeUserLocally = (userData) => {
+    const normalizedUser = {
+      id: userData.id || userData.userId,
+      name: userData.name || userData.fullName || "Unknown User",
+      email: userData.email || "",
+      avatar: userData.avatar || userData.profilePicture || null,
+      isOnline: userData.isOnline !== undefined ? userData.isOnline : true,
+      userType: userData.userType || userData.role || "student",
+    };
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
+    setUser(normalizedUser);
+  };
+
+  const clearAuth = () => {
+    localStorage.removeItem("user");
+    const { user, accessToken } = resetAuthState();
+    setUser(user);
+    setAccessToken(accessToken);
+  };
+
+  // 🧪 Initialize on first render
   const initializeAuth = async () => {
     try {
       const data = await fetchAuthStateSSR();
       if (data) {
         setAccessToken(data.accessToken);
-        setUser(data.user);
+        storeUserLocally(data.user);
         scheduleTokenRefresh(data.accessToken);
       } else {
-        const { user, accessToken } = resetAuthState();
-        setUser(user);
-        setAccessToken(accessToken);
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+        }
       }
-    } catch {
-      const { user, accessToken } = resetAuthState();
-      setUser(user);
-      setAccessToken(accessToken);
+    } catch (err) {
+      console.error("❌ Error during auth init:", err);
+      clearAuth();
     } finally {
       setLoading(false);
     }
   };
 
-  // Handles login
+  useEffect(() => {
+    initializeAuth();
+  }, []);
+
   const login = (userData, token) => {
-    setUser(userData);
     setAccessToken(token);
+    storeUserLocally(userData);
     scheduleTokenRefresh(token);
   };
 
-  // Handles logout
   const logout = async () => {
     try {
       await fetch(`${BACKEND_URL}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
       });
-      const { user, accessToken } = resetAuthState();
-      setUser(user);
-      setAccessToken(accessToken);
-    } catch (error) {
-      console.error("Failed to logout:", error);
+    } catch (err) {
+      console.error("❌ Failed to logout from backend:", err);
     }
+    clearAuth();
   };
 
-  // Fetches authentication state on initial render
-  useEffect(() => {
-    initializeAuth();
-  }, []);
+  const value = {
+    user,
+    accessToken,
+    login,
+    logout,
+    loading,
+  };
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, login, logout, loading }}>
+    <AuthContext.Provider value={value}>
       {!loading && children}
     </AuthContext.Provider>
   );

@@ -28,7 +28,7 @@
     ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx"
-  ],
+, "src/components/chat/ChatLayout.jsx", "src/components/chat/ChatSidebar.jsx", "src/components/chat/ChatWindow.jsx", "src/app/chat/page.jsx", "src/components/ui/badge.jsx"  ],
   "exclude": [
     "node_modules"
   ]

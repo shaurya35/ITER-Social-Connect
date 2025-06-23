@@ -1,58 +1,64 @@
-const axios = require("axios");
-const { GoogleAuth } = require("google-auth-library");
-const path = require("path");
+// firebase/firebaseChat.js
+const db = require("../firebase/firebaseConfig.js");
+const {
+  collection,
+  doc,
+  addDoc,
+  setDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  Timestamp,
+} = require("firebase/firestore");
 
-const BASE_URL = `https://firestore.googleapis.com/v1/projects/social-connect-iter/databases/(default)/documents`;
+const sendMessage = async (chatId, { text, senderId, receiverId }) => {
+  const messagesRef = collection(db, `messages/${chatId}/chats`);
+  const timestamp = Timestamp.now();
 
-async function getBearerToken() {
-  const auth = new GoogleAuth({
-    keyFile: path.join(__dirname, "serviceAccount.json"),
-    scopes: "https://www.googleapis.com/auth/datastore",
+  const messageData = {
+    text,
+    senderId,
+    receiverId,
+    timestamp,
+  };
+
+  await addDoc(messagesRef, messageData);
+
+  // Store/update summary in conversations collection
+  const conversationRef = doc(db, "conversations", chatId);
+  await setDoc(conversationRef, {
+    chatId,
+    userIds: [senderId, receiverId],
+    lastMessage: text,
+    timestamp,
+    senderId,
+    receiverId,
   });
 
-  const client = await auth.getClient();
-  const tokenResponse = await client.getAccessToken();
-  return tokenResponse.token;
-}
+  return messageData;
+};
 
-async function sendMessage(chatId, { text, senderId }) {
-  const token = await getBearerToken();
-  const url = `${BASE_URL}/chats/${chatId}/messages`;
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
+const getMessages = async (chatId) => {
+  const messagesRef = collection(db, `messages/${chatId}/chats`);
+  const q = query(messagesRef, orderBy("timestamp"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => doc.data());
+};
 
-  const data = {
-    fields: {
-      text: { stringValue: text },
-      senderId: { stringValue: senderId },
-      timestamp: { timestampValue: new Date().toISOString() },
-    },
-  };
+const getConversations = async (userId) => {
+  const convRef = collection(db, "conversations");
+  const q = query(
+    convRef,
+    where("userIds", "array-contains", userId),
+    orderBy("timestamp", "desc")
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => doc.data());
+};
 
-  const res = await axios.post(url, data, { headers });
-  return res.data;
-}
-
-async function getMessages(chatId) {
-  const token = await getBearerToken();
-  const url = `${BASE_URL}/chats/${chatId}/messages`;
-  const headers = {
-    Authorization: `Bearer ${token}`,
-  };
-
-  const res = await axios.get(url, { headers });
-  const docs = res.data.documents || [];
-
-  return docs.map((doc) => {
-    const f = doc.fields;
-    return {
-      text: f.text.stringValue,
-      senderId: f.senderId.stringValue,
-      timestamp: f.timestamp.timestampValue,
-    };
-  });
-}
-
-module.exports = { sendMessage, getMessages };
+module.exports = {
+  sendMessage,
+  getMessages,
+  getConversations,
+};

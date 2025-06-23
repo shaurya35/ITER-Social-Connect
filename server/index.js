@@ -22,11 +22,18 @@ app.use(
 );
 
 // --- CORS config ---
+// const allowedOrigins = [
+//   "http://localhost:3000",
+//   "http://itersocialconnect.vercel.app",
+//   "https://itersocialconnect.vercel.app",
+// ];
+
 const allowedOrigins = [
   "http://localhost:3000",
   "http://itersocialconnect.vercel.app",
   "https://itersocialconnect.vercel.app",
 ];
+
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -100,7 +107,7 @@ const filterRoutes = require("./routes/filterRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 
 // --- Use Routes ---
-app.use("/api/auth", rateLimiter,authRoutes);
+app.use("/api/auth",authRoutes);
 app.use("/api/feed", feedRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/admin", adminRoutes);

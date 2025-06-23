@@ -20,6 +20,7 @@ export const getTokenExpiration = (token) => {
  * Fetches the authentication state (accessToken and user) via SSR.
  * @returns {Promise<{accessToken: string, user: object}|null>} - Auth state or null if not authenticated.
  */
+
 export const fetchAuthStateSSR = async () => {
   try {
     const response = await fetch(`${BACKEND_URL}/api/auth/refresh`, {
