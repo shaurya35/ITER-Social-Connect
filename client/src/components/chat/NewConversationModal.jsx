@@ -154,7 +154,8 @@ export function NewConversationModal({
             </div>
           ) : searchQuery && !loading ? (
             <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-              <p>No users found for "{searchQuery}"</p>
+              <p>{`No users found for "${searchQuery}"`}</p>
+
               <p className="text-sm mt-1">Try a different search term</p>
             </div>
           ) : (
