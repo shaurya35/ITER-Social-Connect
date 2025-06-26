@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthProvider";
-import { useProfileNavigation } from '@/contexts/ProfileNavigation';
+import { useProfileNavigation } from "@/contexts/ProfileNavigation";
 import { BACKEND_URL } from "@/configs/index";
 import axios from "axios";
 import NextImage from "next/image";
@@ -407,16 +407,19 @@ export default function SinglePost({ postId }) {
           <div className="space-y-4 mt-4">
             <div className="bg-white dark:bg-gray-800 shadow rounded-2xl p-4">
               <div className="flex items-center gap-4">
-                <NextImage
-                  src={
-                    profile?.profilePicture ||
-                    "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//uplo.jpg"
-                  }
-                  alt="Avatar"
-                  width={36}
-                  height={36}
-                  className="rounded-full"
-                />
+                <div className="flex-shrink-0 w-9 h-9 rounded-full overflow-hidden">
+                  <NextImage
+                    src={
+                      profile?.profilePicture ||
+                      "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//uplo.jpg"
+                    }
+                    alt="Avatar"
+                    width={36}
+                    height={36}
+                    className="object-cover object-center w-full h-full rounded-full"
+                  />
+                </div>
+
                 <div>
                   <p className="font-semibold text-gray-900 dark:text-gray-100">
                     {profile?.name || "User"}
@@ -488,7 +491,7 @@ export default function SinglePost({ postId }) {
                     onClick={() => redirectToProfile(comment.userId)}
                     className="rounded-full"
                   />
-                  <div  onClick={() => redirectToProfile(comment.userId)}>
+                  <div onClick={() => redirectToProfile(comment.userId)}>
                     <p className="font-semibold text-gray-900 dark:text-gray-100">
                       {comment.user.name || "User"}
                     </p>

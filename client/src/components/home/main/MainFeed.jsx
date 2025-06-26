@@ -640,14 +640,21 @@ export default function MainFeed() {
                   <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
                     {post.userName}
                   </h3>
-                  {post.role === "teacher" && (
+                  {post.role === "teacher" ? (
                     <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800">
                       <Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
                         Professor
                       </span>
                     </span>
-                  )}
+                  ) : post.role === "alumni" ? (
+                    <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800">
+                      <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                        Alumni
+                      </span>
+                    </span>
+                  ) : null}
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {timeAgo(post.createdAt)}

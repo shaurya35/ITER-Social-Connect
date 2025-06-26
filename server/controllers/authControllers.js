@@ -219,7 +219,7 @@ const sendOtpForgetPassowrd = async (email, otp) => {
 
 const signup = async (req, res) => {
   try {
-    const { email, password, regNo } = req.body;
+    const { email, password, role } = req.body;
 
     if (!email) {
       return res.status(400).json({ message: "Email is required." });
@@ -229,10 +229,8 @@ const signup = async (req, res) => {
       return res.status(400).json({ message: "Password is required." });
     }
 
-    if (!regNo) {
-      return res
-        .status(400)
-        .json({ message: "Registration number is required." });
+    if (!role) {
+      return res.status(400).json({ message: "Role is required." });
     }
 
     const validationResult = userSignupSchema.safeParse(req.body);
@@ -260,22 +258,22 @@ const signup = async (req, res) => {
 
     const usersRef = collection(db, "users");
     const emailQuery = query(usersRef, where("email", "==", email));
-    const regNoQuery = query(usersRef, where("regNo", "==", regNo));
+    // const regNoQuery = query(usersRef, where("regNo", "==", regNo));
 
-    const [emailSnapshot, regNoSnapshot] = await Promise.all([
+    const [emailSnapshot] = await Promise.all([
       getDocs(emailQuery),
-      getDocs(regNoQuery),
+      // getDocs(regNoQuery),
     ]);
 
     if (!emailSnapshot.empty) {
       return res.status(400).json({ message: "Email is already taken." });
     }
 
-    if (!regNoSnapshot.empty) {
-      return res
-        .status(400)
-        .json({ message: "Registration number is already taken." });
-    }
+    // if (!regNoSnapshot.empty) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "Registration number is already taken." });
+    // }
 
     const otpDocRef = doc(db, "otp_verifications", email);
     const otpDocSnapshot = await getDoc(otpDocRef);
@@ -302,7 +300,8 @@ const signup = async (req, res) => {
       otpExpiresAt: Date.now() + 5 * 60 * 1000, // OTP expires in 5 minutes
       email,
       password: hashedPassword, // Save hashed password
-      regNo,
+      role
+      // regNo,
     });
 
     // Send OTP email
@@ -397,7 +396,7 @@ const verifyOtp = async (req, res) => {
       });
     }
 
-    const { otp: storedOtp, otpExpiresAt, password, regNo } = otpDoc.data();
+    const { otp: storedOtp, otpExpiresAt, password, role } = otpDoc.data();
 
     if (Date.now() > otpExpiresAt) {
       return res.status(400).json({
@@ -411,16 +410,14 @@ const verifyOtp = async (req, res) => {
         .json({ message: "Invalid OTP. Please check and try again." });
     }
 
-    // Determine if the user is a student or a teacher
-    const isStudent = regNo !== undefined && regNo !== null;
-
     // Add the user directly to the users collection
     await addDoc(collection(db, "users"), {
       email,
       password,
       profileCompleted: false,
       createdAt: Timestamp.now(),
-      ...(isStudent ? { regNo, role: "student" } : { role: "teacher" }),
+      // ...(isStudent ? { regNo, role: "student" } : { role: "teacher" }),
+      role
     });
 
     // Delete OTP doc after successful verification
@@ -446,14 +443,15 @@ const completeProfile = async (req, res) => {
       linkedin,
       x,
       profilePicture,
-      bannerPhoto, // <-- added here
+      bannerPhoto,
       fieldsOfInterest,
     } = req.body;
 
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required." });
+    // Require email, password, name, about
+    if (!email || !password || !name || !about) {
+      return res.status(400).json({
+        message: "Email, password, name, and about are required.",
+      });
     }
 
     const predefinedFields = [
@@ -524,8 +522,6 @@ const completeProfile = async (req, res) => {
       return res.status(401).json({ message: "Incorrect password." });
     }
 
-    // Skip approval check (as requested)
-
     // Check if profile is already completed
     if (userData.profileCompleted) {
       return res.status(200).json({
@@ -539,12 +535,12 @@ const completeProfile = async (req, res) => {
     // Update user profile
     await updateDoc(userRef, {
       name,
-      about: about || "",
+      about,
       github: github || "",
       linkedin: linkedin || "",
       x: x || "",
       profilePicture: profilePicture || "",
-      bannerPhoto: bannerPhoto || "", // <-- added here
+      bannerPhoto: bannerPhoto || "",
       fieldsOfInterest: interests,
       profileCompleted: true,
     });
