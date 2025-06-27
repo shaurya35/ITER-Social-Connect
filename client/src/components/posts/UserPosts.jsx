@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import PostsPreloader from "@/components/preloaders/PostsPreloader";
 import { Button } from "@/components/ui/button";
 // import { Textarea } from "@/components/ui/textarea";
-import { Image, MessageCircleMore, Forward, ThumbsUp, Bookmark, BookmarkCheck, Loader2 } from "lucide-react";
+import { Image, MessageCircleMore, Forward, ThumbsUp, Bookmark, BookmarkCheck, Loader2, MoreVertical, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthProvider";
 import { useProfile } from "@/contexts/ProfileContext";
 import { BACKEND_URL } from "@/configs/index";
@@ -60,6 +60,8 @@ export default function UserPosts() {
   const [likeError, setLikeError] = useState(null);
   const [bookmarkLoadingState, setBookmarkLoadingState] = useState({});
   const [bookmarkError, setBookmarkError] = useState(null);
+  const [deletingPostId, setDeletingPostId] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
   const { accessToken } = useAuth();
   const { profile } = useProfile();
   const router = useRouter();
@@ -76,6 +78,41 @@ export default function UserPosts() {
       setFetchingUser(false);
     }
   }, [profile]);
+
+  const deletePost = async (postId) => {
+    
+    setDeletingPostId(postId);
+    try {
+      await axios.delete(`${BACKEND_URL}/api/user/post/${postId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        withCredentials: true,
+      });
+      
+      setPosts(prev => prev.filter(post => post.id !== postId));
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      alert("Failed to delete post. Please try again.");
+    } finally {
+      setDeletingPostId(null);
+    }
+  };
+
+const toggleMenu = (postId, e) => {
+  e.stopPropagation();
+  setOpenMenuId(openMenuId === postId ? null : postId);
+};
+
+useEffect(() => {
+  const handleClickOutside = (e) => {
+    if (!e.target.closest('.dropdown-container')) {
+      setOpenMenuId(null);
+    }
+  };
+  
+  document.addEventListener('click', handleClickOutside);
+  return () => document.removeEventListener('click', handleClickOutside);
+}, []);
+
 
   /* Fetch The User Feed (No Auth) */
   const fetchPosts = useCallback(async () => {
@@ -433,33 +470,79 @@ export default function UserPosts() {
             ref={index === posts.length - 1 ? lastPostRef : null}
             
           >
-            <CardHeader className="flex-row items-center gap-4 p-4 lg:px-5 lg:pt-4" onClick={() => router.push(`/post/${post.id}`)}>
-              <NextImage
-                src={
-                  post.profilePicture ||
-                  "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"
-                }
-                alt="Avatar"
-                width={48}
-                height={48}
-                className="rounded-full"
-                priority
-                style={{
-                  objectFit: "cover",
-                  objectPosition: "center",
-                  width: "48px",
-                  height: "48px",
-                }}
-              />
-              <div>
-                <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
-                  {post.userName}
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {timeAgo(post.createdAt)}
-                </p>
-              </div>
-            </CardHeader>
+            <CardHeader className="flex justify-between items-start flex-row p-4 lg:px-5 lg:pt-4">
+  <div 
+    className="flex items-center gap-4 flex-1 cursor-pointer"
+    onClick={() => router.push(`/post/${post.id}`)}
+  >
+    <NextImage
+      src={
+        post.profilePicture ||
+        "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"
+      }
+      alt="Avatar"
+      width={48}
+      height={48}
+      className="rounded-full"
+      priority
+      style={{
+        objectFit: "cover",
+        objectPosition: "center",
+        width: "48px",
+        height: "48px",
+      }}
+    />
+    <div>
+      <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+        {post.userName}
+      </h3>
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        {timeAgo(post.createdAt)}
+      </p>
+    </div>
+  </div>
+
+  {/* Delete post dropdown */}
+   {/* Delete post dropdown */}
+   {profile?.userId === post.userId && (
+    <div className="relative dropdown-container">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+        onClick={(e) => toggleMenu(post.id, e)}
+        disabled={deletingPostId === post.id}
+      >
+        {deletingPostId === post.id ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <MoreVertical className="h-4 w-4" />
+        )}
+      </Button>
+      
+      {/* Dropdown menu - shown only when openMenuId matches */}
+      {openMenuId === post.id && (
+        <div 
+          className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
+        >
+          <div className="py-1">
+            <button
+              className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={(e) => {
+                e.stopPropagation();
+                deletePost(post.id);
+                setOpenMenuId(null);
+              }}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Post
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )}
+</CardHeader>
 
             <CardContent className="px-4 py-2 lg:px-5 lg:pb-5 w-full" onClick={() => router.push(`/post/${post.id}`)}>
               <p className="text-gray-700 dark:text-gray-300 break-words">
