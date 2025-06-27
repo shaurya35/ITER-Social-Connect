@@ -152,7 +152,7 @@ export default function Navbar() {
   const menuItems = [
     { icon: Home, label: "Home", route: "/explore" },
     { icon: Bell, label: "Notifications", route: "/notifications" },
-    { icon: Mail, label: "Messages", route: "/chat" },
+    { icon: Mail, label: "Messages", route: "/chat", disabled: true },
     { icon: Settings, label: "Settings", route: "/settings" },
     { icon: Users, label: "Connections", route: "/connections" },
     { icon: Bookmark, label: "Bookmarks", route: "/bookmarks" },

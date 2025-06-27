@@ -323,7 +323,7 @@ export default function SinglePost({ postId }) {
         </CardHeader>
 
         <CardContent className="px-4 py-2 lg:px-5 lg:pb-5 w-full">
-          <p className="text-gray-700 dark:text-gray-300 break-words">
+          <p className="text-gray-700 dark:text-gray-300 break-words whitespace-pre-line">
             {post.content}
           </p>
         </CardContent>

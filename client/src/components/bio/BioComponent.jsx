@@ -13,10 +13,14 @@ import {
   Hash,
   Briefcase,
   BookOpen,
+  Mail,
+  Globe,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function BioComponent() {
   const { profile, loading } = useProfile();
+  const router = useRouter();
 
   const buttons = [
     {
@@ -48,79 +52,122 @@ export default function BioComponent() {
   };
 
   const renderBioCard = () => (
-    <Card className="bg-white dark:bg-gray-800">
-      <CardContent className="p-6">
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Profile Image Section */}
-          <div className="space-y-4">
-            <div className="relative h-32 w-32 rounded-full border-2 border-gray-200 dark:border-gray-600">
-              <Image
-                src={profile?.profilePicture || "/placeholder.svg"}
-                alt={profile?.name || "User profile"}
-                fill
-                className="rounded-full object-cover"
-              />
-            </div>
+    <Card className="bg-white dark:bg-gray-800 overflow-hidden">
+      {/* Banner Section */}
+      <div className="relative h-48 bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-700 dark:to-indigo-800">
+        {profile?.bannerPhoto ? (
+          <Image
+            src={profile.bannerPhoto}
+            alt="Profile banner"
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <Image
+            src="/placeholder.svg"
+            alt="Profile banner"
+            fill
+            className="object-cover"
+          />  
+        )}
+      </div>
 
-            <div className="flex items-center gap-2 text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-md">
-              <Users className="h-4 w-4" />
-              <span>{profile?.connectionsCount || 0} Connections</span>
-            </div>
+      <CardContent className="p-6 relative">
+        {/* Profile Image - Overlapping Banner */}
+        <div className="absolute -top-16 left-6">
+          <div className="relative h-32 w-32 rounded-full border-4 border-white dark:border-gray-800 bg-white dark:bg-gray-800">
+            <Image
+              src={profile?.profilePicture || "/placeholder.svg"}
+              alt={profile?.name || "User profile"}
+              fill
+              className="rounded-full object-cover"
+            />
           </div>
+        </div>
 
-          {/* Profile Details */}
-          <div className="flex-1 space-y-4">
+        <div className="pt-20">
+          {/* Profile Header */}
+          <div className="flex flex-col md:flex-row justify-between gap-4">
             <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {profile?.name}
               </h1>
               <p className="text-gray-600 dark:text-gray-300">
-                {profile?.email}
+                {profile?.headline || "Member at ITER Social Connect"}
               </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
-                <Hash className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Registration No.
-                  </p>
-                  <p className="text-gray-700 dark:text-gray-200">
-                    {profile?.regNo}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Briefcase className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Role
-                  </p>
-                  <p className="text-gray-700 dark:text-gray-200 capitalize">
-                    {profile?.role}
-                  </p>
-                </div>
+              
+              <div className="mt-2 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <Globe className="h-4 w-4" />
+                <span>{profile?.location || "Bhubaneswar, India"}</span>
               </div>
             </div>
 
-            {profile?.about && (
+            <div className="flex items-center gap-2 text-sm bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 px-3 py-1 rounded-md">
+              <Users className="h-4 w-4 text-blue-600 dark:text-white" />
+              <span className="text-blue-600 dark:text-white font-medium">
+                {profile?.connectionsCount || 0} Connections
+              </span>
+            </div>
+          </div>
+
+          {/* Details Grid */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Column */}
+            <div className="space-y-6">
+              {profile?.about && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100 font-medium">
+                    <BookOpen className="h-5 w-5" />
+                    <h3>About</h3>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm pl-7">
+                    {profile.about}
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                  <BookOpen className="h-5 w-5" />
-                  <h3 className="font-medium">About</h3>
+                <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100 font-medium">
+                  <Mail className="h-5 w-5" />
+                  <h3>Contact</h3>
                 </div>
-                <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  {profile.about}
+                <div className="pl-7 space-y-2">
+                  <p className="text-gray-600 dark:text-gray-300 text-sm">
+                    {profile?.email}
+                  </p>
+                  {profile?.phone && (
+                    <p className="text-gray-600 dark:text-gray-300 text-sm">
+                      {profile.phone}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100 font-medium">
+                  <Briefcase className="h-5 w-5" />
+                  <h3>Role</h3>
+                </div>
+                <p className="text-gray-600 dark:text-gray-300 text-sm pl-7 capitalize">
+                  {profile?.role}
                 </p>
               </div>
-            )}
 
-            <div className="flex flex-wrap gap-2">
-              {renderSocialLink(profile?.github, Github, "GitHub")}
-              {renderSocialLink(profile?.linkedin, Linkedin, "LinkedIn")}
-              {renderSocialLink(profile?.x, Twitter, "Twitter")}
+              {/* Social Links Section */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100 font-medium">
+                  <Globe className="h-5 w-5" />
+                  <h3>Social Profiles</h3>
+                </div>
+                <div className="pl-7 flex flex-wrap gap-2">
+                  {renderSocialLink(profile?.github, Github, "GitHub")}
+                  {renderSocialLink(profile?.linkedin, Linkedin, "LinkedIn")}
+                  {renderSocialLink(profile?.x, Twitter, "Twitter")}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -154,17 +201,9 @@ export default function BioComponent() {
           <RightTopPanel
             placeholder="Search bio..."
             buttonLabel="Edit Profile"
-            onButtonClick={() => ({})}
-            disabled={true}
-          />
-          {/* {profile?.id !== viewedUser?.id && (
-            <RightTopPanel
-              placeholder="Search bio..."
-              buttonLabel="Message"
-              onButtonClick={() => sendMessageToUser(viewedUser.id)}
-            />
-          )} */}
-
+            onButtonClick={() => router.push('/settings')}
+          />  
+          
           <div className="space-y-4">{content}</div>
         </div>
       </div>

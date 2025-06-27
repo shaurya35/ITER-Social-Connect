@@ -43,6 +43,7 @@ import {
   Link2,
   ImageIcon,
   ChevronDown,
+  ExternalLink,
   Check,
 } from "lucide-react";
 import {
@@ -70,6 +71,45 @@ export const timeAgo = (dateString) => {
   if (months < 12) return `${months} months ago`;
   const years = Math.floor(months / 12);
   return `${years} years ago`;
+};
+
+const formatLinks = (text) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (urlRegex.test(part)) {
+      try {
+        const url = new URL(part);
+        let host = url.hostname.replace("www.", "");
+        const domainParts = host.split(".");
+        const domainName =
+          domainParts.length > 1
+            ? domainParts[domainParts.length - 2]
+            : domainParts[0];
+
+        // Capitalize first letter
+        const displayName =
+          domainName.charAt(0).toUpperCase() + domainName.slice(1);
+
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline inline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {displayName}
+          </a>
+        );
+      } catch (e) {
+        return part;
+      }
+    }
+    return part;
+  });
 };
 
 const categories = [
@@ -174,35 +214,35 @@ export default function MainFeed() {
   // }, [page, accessToken, profile?.userId]);
 
   /* Fetch The User Feed */
-const fetchPosts = useCallback(async () => {
-  if (isFetchingRef.current || !hasMore) return;
-  isFetchingRef.current = true;
-  setLoading(true);
-  
-  try {
-    const response = await axios.get(`${BACKEND_URL}/api/feed`, {
-      params: { page, limit: 10 },
-      withCredentials: true,
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-    });
+  const fetchPosts = useCallback(async () => {
+    if (isFetchingRef.current || !hasMore) return;
+    isFetchingRef.current = true;
+    setLoading(true);
 
-    const newPosts = response.data.posts || [];
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/feed`, {
+        params: { page, limit: 10 },
+        withCredentials: true,
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      });
 
-    // SIMPLE processing - backend provides isLiked
-    const processedPosts = newPosts.map((post) => ({
-      ...post,
-      category: post.category || "general",
-    }));
+      const newPosts = response.data.posts || [];
 
-    setPosts((prev) => [...prev, ...processedPosts]);
-    setHasMore(response.data.hasMore);
-  } catch (err) {
-    setError(err);
-  } finally {
-    isFetchingRef.current = false;
-    setLoading(false);
-  }
-}, [page, accessToken]);
+      // SIMPLE processing - backend provides isLiked
+      const processedPosts = newPosts.map((post) => ({
+        ...post,
+        category: post.category || "general",
+      }));
+
+      setPosts((prev) => [...prev, ...processedPosts]);
+      setHasMore(response.data.hasMore);
+    } catch (err) {
+      setError(err);
+    } finally {
+      isFetchingRef.current = false;
+      setLoading(false);
+    }
+  }, [page, accessToken]);
 
   // Filter posts based on selected category
   const filteredPosts = posts.filter((post) =>
@@ -387,42 +427,50 @@ const fetchPosts = useCallback(async () => {
   // };
 
   const toggleLike = async (postId) => {
-    setLikeLoadingState(prev => ({ ...prev, [postId]: true }));
-    
+    setLikeLoadingState((prev) => ({ ...prev, [postId]: true }));
+
     try {
       // SIMPLE optimistic update
-      setPosts(prev => prev.map(post => {
-        if (post.id !== postId) return post;
-        
-        const newIsLiked = !post.isLiked;
-        const newLikeCount = newIsLiked ? post.likeCount + 1 : post.likeCount - 1;
-        
-        return {
-          ...post,
-          isLiked: newIsLiked,
-          likeCount: newLikeCount
-        };
-      }));
-      
+      setPosts((prev) =>
+        prev.map((post) => {
+          if (post.id !== postId) return post;
+
+          const newIsLiked = !post.isLiked;
+          const newLikeCount = newIsLiked
+            ? post.likeCount + 1
+            : post.likeCount - 1;
+
+          return {
+            ...post,
+            isLiked: newIsLiked,
+            likeCount: newLikeCount,
+          };
+        })
+      );
+
       // API call
       await axios.post(
         `${BACKEND_URL}/api/user/posts/like`,
         { postId },
         {
           withCredentials: true,
-          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+          headers: accessToken
+            ? { Authorization: `Bearer ${accessToken}` }
+            : {},
         }
       );
     } catch (err) {
       // SIMPLE revert on error
-      setPosts(prev => prev.map(post => {
-        if (post.id !== postId) return post;
-        return { ...post };
-      }));
-      
+      setPosts((prev) =>
+        prev.map((post) => {
+          if (post.id !== postId) return post;
+          return { ...post };
+        })
+      );
+
       console.error("Like Error:", err);
     } finally {
-      setLikeLoadingState(prev => ({ ...prev, [postId]: false }));
+      setLikeLoadingState((prev) => ({ ...prev, [postId]: false }));
     }
   };
 
@@ -736,9 +784,9 @@ const fetchPosts = useCallback(async () => {
               className="px-4 py-3 lg:px-5 lg:pb-5 w-full"
               onClick={() => router.push(`/post/${post.id}`)}
             >
-              <p className="text-gray-700 dark:text-gray-300 break-words whitespace-pre-line">
-                {post.content}
-              </p>
+              <div className="text-gray-700 dark:text-gray-300 whitespace-pre-line break-words">
+                {formatLinks(post.content)}
+              </div>
             </CardContent>
             <CardFooter className="border-t border-gray-200 dark:border-gray-700 p-2">
               <div className="flex justify-between w-full">
