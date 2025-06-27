@@ -26,23 +26,6 @@ const userSignupSchema = z
       ),
     role: z.enum(["student", "teacher", "alumni"]),
   })
-  .superRefine((data, ctx) => {
-    if (data.role) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["email"],
-        ...(data.role === "teacher"
-          ? {
-              message: "Teacher email must end with '@soa.ac.in'",
-              params: { role: data.role },
-            }
-          : {
-              message: "Email should not end with '@soa.ac.in'",
-              params: { role: data.role },
-            }),
-      });
-    }
-  });
 
 const userSigninSchema = z.object({
   email: z.string().email("Invalid email format."),

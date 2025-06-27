@@ -333,10 +333,18 @@ const signup = async (req, res) => {
       return res.status(400).json({ message: "Role is required." });
     }
 
+    // Add role-based email validation
     if (role === "teacher") {
       if (!email.endsWith("@soa.ac.in")) {
         return res.status(400).json({
           message: "Teacher email must end with '@soa.ac.in'",
+        });
+      }
+    } else {
+      if (email.endsWith("@soa.ac.in")) {
+        return res.status(400).json({
+          message:
+            "Email must not be an institutional email for the selected role",
         });
       }
     }

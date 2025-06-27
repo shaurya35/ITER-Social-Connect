@@ -480,17 +480,22 @@ export default function SinglePost({ postId }) {
                 className="bg-white dark:bg-gray-800 shadow rounded-2xl p-4"
               >
                 <div className="flex items-center gap-4 cursor-pointer">
-                  <NextImage
-                    src={
-                      comment.user.profilePicture ||
-                      "https://media.discordapp.net/attachments/1315342834278207540/1316064105588719707/pf2.jpg"
-                    }
-                    alt="Avatar"
-                    width={36}
-                    height={36}
+                  {/* Fixed avatar container */}
+                  <div
+                    className="relative rounded-full overflow-hidden w-9 h-9 flex-shrink-0"
                     onClick={() => redirectToProfile(comment.userId)}
-                    className="rounded-full"
-                  />
+                  >
+                    <NextImage
+                      src={
+                        comment.user.profilePicture ||
+                        "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//uplo.jpg"
+                      }
+                      alt="Avatar"
+                      fill
+                      sizes="36px"
+                      className="object-cover"
+                    />
+                  </div>
                   <div onClick={() => redirectToProfile(comment.userId)}>
                     <p className="font-semibold text-gray-900 dark:text-gray-100">
                       {comment.user.name || "User"}
