@@ -178,6 +178,7 @@ const fetchPosts = useCallback(async () => {
   if (isFetchingRef.current || !hasMore) return;
   isFetchingRef.current = true;
   setLoading(true);
+  
   try {
     const response = await axios.get(`${BACKEND_URL}/api/feed`, {
       params: { page, limit: 10 },
@@ -186,22 +187,12 @@ const fetchPosts = useCallback(async () => {
     });
 
     const newPosts = response.data.posts || [];
-    const currentUserId = profile?.userId;
 
-    // FIXED: Process posts with consistent like status
-    const processedPosts = newPosts.map((post) => {
-      // Always treat likes as array for consistent checks
-      const likesArray = Array.isArray(post.likes) ? post.likes : [];
-      
-      return {
-        ...post,
-        // CORRECTED: Always use normalized array for like status
-        isLiked: likesArray.includes(currentUserId),
-        // Keep existing like count logic
-        likeCount: post.likeCount ?? likesArray.length,
-        category: post.category || "general",
-      };
-    });
+    // SIMPLE processing - backend provides isLiked
+    const processedPosts = newPosts.map((post) => ({
+      ...post,
+      category: post.category || "general",
+    }));
 
     setPosts((prev) => [...prev, ...processedPosts]);
     setHasMore(response.data.hasMore);
@@ -211,7 +202,7 @@ const fetchPosts = useCallback(async () => {
     isFetchingRef.current = false;
     setLoading(false);
   }
-}, [page, accessToken, profile?.userId]);
+}, [page, accessToken]);
 
   // Filter posts based on selected category
   const filteredPosts = posts.filter((post) =>
@@ -345,53 +336,93 @@ const fetchPosts = useCallback(async () => {
   };
 
   /* Like Service with Optimistic Update */
+  // const toggleLike = async (postId) => {
+  //   if (!accessToken) router.push("/signup");
+  //   setPosts((prevPosts) =>
+  //     prevPosts.map((post) => {
+  //       if (post.id === postId) {
+  //         const newCount = post.isLiked
+  //           ? post.likeCount - 1
+  //           : post.likeCount + 1;
+  //         return { ...post, isLiked: !post.isLiked, likeCount: newCount };
+  //       }
+  //       return post;
+  //     })
+  //   );
+  //   try {
+  //     const response = await axios.post(
+  //       `${BACKEND_URL}/api/user/posts/like`,
+  //       { postId },
+  //       {
+  //         headers: { Authorization: `Bearer ${accessToken}` },
+  //         withCredentials: true,
+  //       }
+  //     );
+  //     const serverCount = response.data.totalLikes;
+  //     setPosts((prevPosts) =>
+  //       prevPosts.map((post) =>
+  //         post.id === postId ? { ...post, likeCount: serverCount } : post
+  //       )
+  //     );
+  //   } catch (error) {
+  //     setPosts((prevPosts) =>
+  //       prevPosts.map((post) =>
+  //         post.id === postId
+  //           ? {
+  //               ...post,
+  //               isLiked: !post.isLiked,
+  //               likeCount: post.isLiked
+  //                 ? post.likeCount - 1
+  //                 : post.likeCount + 1,
+  //             }
+  //           : post
+  //       )
+  //     );
+  //     setLikeError(
+  //       error.response?.data?.message || "Failed to like/unlike the post"
+  //     );
+  //   } finally {
+  //     setLikeLoadingState((prev) => ({ ...prev, [postId]: false }));
+  //   }
+  // };
+
   const toggleLike = async (postId) => {
-    if (!accessToken) router.push("/signup");
-    setPosts((prevPosts) =>
-      prevPosts.map((post) => {
-        if (post.id === postId) {
-          const newCount = post.isLiked
-            ? post.likeCount - 1
-            : post.likeCount + 1;
-          return { ...post, isLiked: !post.isLiked, likeCount: newCount };
-        }
-        return post;
-      })
-    );
+    setLikeLoadingState(prev => ({ ...prev, [postId]: true }));
+    
     try {
-      const response = await axios.post(
+      // SIMPLE optimistic update
+      setPosts(prev => prev.map(post => {
+        if (post.id !== postId) return post;
+        
+        const newIsLiked = !post.isLiked;
+        const newLikeCount = newIsLiked ? post.likeCount + 1 : post.likeCount - 1;
+        
+        return {
+          ...post,
+          isLiked: newIsLiked,
+          likeCount: newLikeCount
+        };
+      }));
+      
+      // API call
+      await axios.post(
         `${BACKEND_URL}/api/user/posts/like`,
         { postId },
         {
-          headers: { Authorization: `Bearer ${accessToken}` },
           withCredentials: true,
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
         }
       );
-      const serverCount = response.data.totalLikes;
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
-          post.id === postId ? { ...post, likeCount: serverCount } : post
-        )
-      );
-    } catch (error) {
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
-          post.id === postId
-            ? {
-                ...post,
-                isLiked: !post.isLiked,
-                likeCount: post.isLiked
-                  ? post.likeCount - 1
-                  : post.likeCount + 1,
-              }
-            : post
-        )
-      );
-      setLikeError(
-        error.response?.data?.message || "Failed to like/unlike the post"
-      );
+    } catch (err) {
+      // SIMPLE revert on error
+      setPosts(prev => prev.map(post => {
+        if (post.id !== postId) return post;
+        return { ...post };
+      }));
+      
+      console.error("Like Error:", err);
     } finally {
-      setLikeLoadingState((prev) => ({ ...prev, [postId]: false }));
+      setLikeLoadingState(prev => ({ ...prev, [postId]: false }));
     }
   };
 
@@ -500,6 +531,10 @@ const fetchPosts = useCallback(async () => {
           </div>
         </div>
       </div>
+      {/* Error message */}
+      {error && (
+        <p className="text-red-500">Error loading posts: {error.message}</p>
+      )}
 
       {/* Post creation */}
       <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200">
