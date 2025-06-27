@@ -137,41 +137,81 @@ export default function MainFeed() {
     }
   }, [profile]);
 
+  // /* Fetch The User Feed */
+  // const fetchPosts = useCallback(async () => {
+  //   if (isFetchingRef.current || !hasMore) return;
+  //   isFetchingRef.current = true;
+  //   setLoading(true);
+  //   try {
+  //     const response = await axios.get(`${BACKEND_URL}/api/feed`, {
+  //       params: { page, limit: 10 },
+  //       withCredentials: true,
+  //       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+  //     });
+
+  //     const newPosts = response.data.posts || [];
+  //     const currentUserId = profile?.userId;
+
+  //     // Process posts with category filtering
+  //     const processedPosts = newPosts.map((post) => ({
+  //       ...post,
+  //       isLiked: Array.isArray(post.likes)
+  //         ? post.likes.includes(currentUserId)
+  //         : false,
+  //       likeCount:
+  //         post.likeCount ?? (Array.isArray(post.likes) ? post.likes.length : 0),
+  //       category: post.category || "general",
+  //     }));
+
+  //     setPosts((prev) => [...prev, ...processedPosts]);
+  //     setHasMore(response.data.hasMore);
+  //   } catch (err) {
+  //     setError(err);
+  //   } finally {
+  //     isFetchingRef.current = false;
+  //     setLoading(false);
+  //   }
+  // }, [page, accessToken, profile?.userId]);
+
   /* Fetch The User Feed */
-  const fetchPosts = useCallback(async () => {
-    if (isFetchingRef.current || !hasMore) return;
-    isFetchingRef.current = true;
-    setLoading(true);
-    try {
-      const response = await axios.get(`${BACKEND_URL}/api/feed`, {
-        params: { page, limit: 10 },
-        withCredentials: true,
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-      });
+const fetchPosts = useCallback(async () => {
+  if (isFetchingRef.current || !hasMore) return;
+  isFetchingRef.current = true;
+  setLoading(true);
+  try {
+    const response = await axios.get(`${BACKEND_URL}/api/feed`, {
+      params: { page, limit: 10 },
+      withCredentials: true,
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    });
 
-      const newPosts = response.data.posts || [];
-      const currentUserId = profile?.userId;
+    const newPosts = response.data.posts || [];
+    const currentUserId = profile?.userId;
 
-      // Process posts with category filtering
-      const processedPosts = newPosts.map((post) => ({
+    // FIXED: Process posts with consistent like status
+    const processedPosts = newPosts.map((post) => {
+      // Always treat likes as array for consistent checks
+      const likesArray = Array.isArray(post.likes) ? post.likes : [];
+      
+      return {
         ...post,
-        isLiked: Array.isArray(post.likes)
-          ? post.likes.includes(currentUserId)
-          : false,
-        likeCount:
-          post.likeCount ?? (Array.isArray(post.likes) ? post.likes.length : 0),
+        // CORRECTED: Always use normalized array for like status
+        isLiked: likesArray.includes(currentUserId),
+        // Keep existing like count logic
+        likeCount: post.likeCount ?? likesArray.length,
         category: post.category || "general",
-      }));
+      };
+    });
 
-      setPosts((prev) => [...prev, ...processedPosts]);
-      setHasMore(response.data.hasMore);
-    } catch (err) {
-      setError(err);
-    } finally {
-      isFetchingRef.current = false;
-      setLoading(false);
-    }
-  }, [page, accessToken, profile?.userId]);
+    setPosts((prev) => [...prev, ...processedPosts]);
+    setHasMore(response.data.hasMore);
+  } catch (err) {
+    setError(err);
+  } finally {
+    isFetchingRef.current = false;
+    setLoading(false);
+  }
+}, [page, accessToken, profile?.userId]);
 
   // Filter posts based on selected category
   const filteredPosts = posts.filter((post) =>
@@ -460,10 +500,6 @@ export default function MainFeed() {
           </div>
         </div>
       </div>
-      {/* Error message */}
-      {error && (
-        <p className="text-red-500">Error loading posts: {error.message}</p>
-      )}
 
       {/* Post creation */}
       <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200">

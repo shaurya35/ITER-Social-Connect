@@ -217,6 +217,106 @@ const sendOtpForgetPassowrd = async (email, otp) => {
 //   }
 // };
 
+// const signup = async (req, res) => {
+//   try {
+//     const { email, password, role } = req.body;
+
+//     if (!email) {
+//       return res.status(400).json({ message: "Email is required." });
+//     }
+
+//     if (!password) {
+//       return res.status(400).json({ message: "Password is required." });
+//     }
+
+//     if (!role) {
+//       return res.status(400).json({ message: "Role is required." });
+//     }
+
+//     const validationResult = userSignupSchema.safeParse(req.body);
+//     if (!validationResult.success) {
+//       return res
+//         .status(400)
+//         .json({ message: validationResult.error.errors[0].message });
+//     }
+
+//     const userRefInAdminReq = collection(db, "verification_requests");
+//     const emailQueryinAdminReq = query(
+//       userRefInAdminReq,
+//       where("email", "==", email)
+//     );
+
+//     const [emailSnapshotinAdminReq] = await Promise.all([
+//       getDocs(emailQueryinAdminReq),
+//     ]);
+
+//     if (!emailSnapshotinAdminReq.empty) {
+//       return res
+//         .status(400)
+//         .json({ message: "This email is already under admin verification." });
+//     }
+
+//     const usersRef = collection(db, "users");
+//     const emailQuery = query(usersRef, where("email", "==", email));
+//     // const regNoQuery = query(usersRef, where("regNo", "==", regNo));
+
+//     const [emailSnapshot] = await Promise.all([
+//       getDocs(emailQuery),
+//       // getDocs(regNoQuery),
+//     ]);
+
+//     if (!emailSnapshot.empty) {
+//       return res.status(400).json({ message: "Email is already taken." });
+//     }
+
+//     // if (!regNoSnapshot.empty) {
+//     //   return res
+//     //     .status(400)
+//     //     .json({ message: "Registration number is already taken." });
+//     // }
+
+//     const otpDocRef = doc(db, "otp_verifications", email);
+//     const otpDocSnapshot = await getDoc(otpDocRef);
+
+//     if (otpDocSnapshot.exists()) {
+//       const { otpExpiresAt } = otpDocSnapshot.data();
+//       const remainingTime = otpExpiresAt - Date.now();
+
+//       if (remainingTime > 0) {
+//         const remainingSeconds = Math.ceil(remainingTime / 1000);
+//         return res.status(400).json({
+//           message: `An OTP request is already pending. Please wait ${remainingSeconds} seconds before requesting a new OTP or submit the OTP sent to your email.`,
+//         });
+//       }
+//     }
+
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     // Generate a new OTP and save it
+//     const otp = crypto.randomInt(100000, 999999);
+
+//     await setDoc(otpDocRef, {
+//       otp,
+//       otpExpiresAt: Date.now() + 5 * 60 * 1000, // OTP expires in 5 minutes
+//       email,
+//       password: hashedPassword, // Save hashed password
+//       role
+//       // regNo,
+//     });
+
+//     // Send OTP email
+//     await sendOtpEmail(email, otp);
+
+//     res
+//       .status(200)
+//       .json({ message: "OTP sent successfully. Please check your email." });
+//   } catch (error) {
+//     console.error("Signup Error:", error);
+//     res.status(500).json({ message: "Internal Server Error." });
+//   }
+// };
+
+// new
 const signup = async (req, res) => {
   try {
     const { email, password, role } = req.body;
@@ -233,6 +333,15 @@ const signup = async (req, res) => {
       return res.status(400).json({ message: "Role is required." });
     }
 
+    if (role === "teacher") {
+      if (!email.endsWith("@soa.ac.in")) {
+        return res.status(400).json({
+          message: "Teacher email must end with '@soa.ac.in'",
+        });
+      }
+    }
+
+    // Existing Zod validation (from separate file)
     const validationResult = userSignupSchema.safeParse(req.body);
     if (!validationResult.success) {
       return res
@@ -258,22 +367,12 @@ const signup = async (req, res) => {
 
     const usersRef = collection(db, "users");
     const emailQuery = query(usersRef, where("email", "==", email));
-    // const regNoQuery = query(usersRef, where("regNo", "==", regNo));
 
-    const [emailSnapshot] = await Promise.all([
-      getDocs(emailQuery),
-      // getDocs(regNoQuery),
-    ]);
+    const [emailSnapshot] = await Promise.all([getDocs(emailQuery)]);
 
     if (!emailSnapshot.empty) {
       return res.status(400).json({ message: "Email is already taken." });
     }
-
-    // if (!regNoSnapshot.empty) {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "Registration number is already taken." });
-    // }
 
     const otpDocRef = doc(db, "otp_verifications", email);
     const otpDocSnapshot = await getDoc(otpDocRef);
@@ -300,8 +399,7 @@ const signup = async (req, res) => {
       otpExpiresAt: Date.now() + 5 * 60 * 1000, // OTP expires in 5 minutes
       email,
       password: hashedPassword, // Save hashed password
-      role
-      // regNo,
+      role,
     });
 
     // Send OTP email
@@ -417,7 +515,7 @@ const verifyOtp = async (req, res) => {
       profileCompleted: false,
       createdAt: Timestamp.now(),
       // ...(isStudent ? { regNo, role: "student" } : { role: "teacher" }),
-      role
+      role,
     });
 
     // Delete OTP doc after successful verification
