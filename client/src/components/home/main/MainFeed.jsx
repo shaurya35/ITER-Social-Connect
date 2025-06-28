@@ -581,9 +581,9 @@ export default function MainFeed() {
         </div>
       </div>
       {/* Error message */}
-      {error && (
+      {/* {error && (
         <p className="text-red-500">Error loading posts: {error.message}</p>
-      )}
+      )} */}
 
       {/* Post creation */}
       <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200">

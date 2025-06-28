@@ -190,10 +190,10 @@ export default function CommunityProfile({ profileId }) {
           </div>
         </div>
 
-        {/* Connect button positioned at top-right */}
-        {/* <div className="absolute top-6 right-6">
+        {/* Connect button positioned at top-right */} 
+         <div className="absolute top-6 right-6">
           {renderConnectButton()}
-        </div> */}
+        </div> 
 
         <div className="pt-20">
           {/* Profile Header */}

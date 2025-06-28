@@ -47,6 +47,47 @@ export const timeAgo = (dateString) => {
   return `${years} years ago`;
 };
 
+const formatLinks = (text) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (urlRegex.test(part)) {
+      try {
+        const url = new URL(part);
+        let host = url.hostname.replace("www.", "");
+        const domainParts = host.split(".");
+        const domainName =
+          domainParts.length > 1
+            ? domainParts[domainParts.length - 2]
+            : domainParts[0];
+
+        // Capitalize first letter
+        const displayName =
+          domainName.charAt(0).toUpperCase() + domainName.slice(1);
+
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline inline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {displayName}
+          </a>
+        );
+      } catch (e) {
+        return part;
+      }
+    }
+    return part;
+  });
+};
+
+
+
 export default function SinglePost({ postId }) {
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
@@ -485,16 +526,18 @@ export default function SinglePost({ postId }) {
                     className="relative rounded-full overflow-hidden w-9 h-9 flex-shrink-0"
                     onClick={() => redirectToProfile(comment.userId)}
                   >
-                    <NextImage
-                      src={
-                        comment.user.profilePicture ||
-                        "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"
-                      }
-                      alt="Avatar"
-                      fill
-                      sizes="36px"
-                      className="object-cover"
-                    />
+                    <div className="relative rounded-full overflow-hidden w-10 h-10 flex-shrink-0">
+                      <NextImage
+                        src={
+                          comment.user.profilePicture ||
+                          "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"
+                        }
+                        alt="Avatar"
+                        fill
+                        sizes="36px"
+                        className="object-cover"
+                      />
+                    </div>
                   </div>
                   <div onClick={() => redirectToProfile(comment.userId)}>
                     <p className="font-semibold text-gray-900 dark:text-gray-100">
@@ -505,8 +548,9 @@ export default function SinglePost({ postId }) {
                     </p>
                   </div>
                 </div>
-                <p className="mt-2 text-gray-700 dark:text-gray-300">
-                  {comment.content}
+                <p className="mt-2 text-gray-700 dark:text-gray-300 whitespace-pre-line break-words">
+                  {/* {comment.content} */}
+                  {formatLinks(comment.content)}
                 </p>
               </div>
             ))}
