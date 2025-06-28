@@ -25,8 +25,7 @@ const { Timestamp } = require("firebase/firestore");
 
 //function to generate a random 6 digits otp
 const generateOtp = () =>
-  // Math.floor(100000 + Math.random() * 900000).toString();
-  100100
+  Math.floor(100000 + Math.random() * 900000).toString();
 
 //function to generate a secure random token
 const generateResetToken = () => {
