@@ -6,25 +6,25 @@ const userSignupSchema = z
     email: z
       .string()
       .email("Invalid email format.")
-      .refine(
-        (email) => {
-          const role = this.role;
-          if (role === "teacher") {
-            return email.endsWith("@soa.ac.in");
-          }
-          return !email.endsWith("@soa.ac.in");
-        },
-        (email) => {
-          const role = this.role;
-          return {
-            message:
-              role === "teacher"
-                ? "Teacher email must end with '@soa.ac.in'"
-                : "Email should not end with '@soa.ac.in'",
-          };
-        }
-      ),
-    role: z.enum(["student", "teacher", "alumni"]),
+      // .refine(
+      //   (email) => {
+      //     const role = this.role;
+      //     if (role === "teacher") {
+      //       return email.endsWith("@soa.ac.in");
+      //     }
+      //     return !email.endsWith("@soa.ac.in");
+      //   },
+      //   (email) => {
+      //     const role = this.role;
+      //     return {
+      //       message:
+      //         role === "teacher"
+      //           ? "Teacher email must end with '@soa.ac.in'"
+      //           : "Email should not end with '@soa.ac.in'",
+      //     };
+      //   }
+      // ),
+    // role: z.enum(["student", "teacher", "alumni"]),
   })
 
 const userSigninSchema = z.object({

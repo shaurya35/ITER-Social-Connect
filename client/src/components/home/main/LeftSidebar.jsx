@@ -75,7 +75,7 @@ export default function LeftSidebar() {
                   <NextImage
                     src={
                       profile?.profilePicture ||
-                      "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//uplo.jpg"
+                      "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"
                     }
                     alt="Avatar"
                     priority

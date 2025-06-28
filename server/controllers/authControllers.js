@@ -25,7 +25,8 @@ const { Timestamp } = require("firebase/firestore");
 
 //function to generate a random 6 digits otp
 const generateOtp = () =>
-  Math.floor(100000 + Math.random() * 900000).toString();
+  // Math.floor(100000 + Math.random() * 900000).toString();
+  100100
 
 //function to generate a secure random token
 const generateResetToken = () => {
@@ -340,14 +341,7 @@ const signup = async (req, res) => {
           message: "Teacher email must end with '@soa.ac.in'",
         });
       }
-    } else {
-      if (email.endsWith("@soa.ac.in")) {
-        return res.status(400).json({
-          message:
-            "Email must not be an institutional email for the selected role",
-        });
-      }
-    }
+    } 
 
     // Existing Zod validation (from separate file)
     const validationResult = userSignupSchema.safeParse(req.body);

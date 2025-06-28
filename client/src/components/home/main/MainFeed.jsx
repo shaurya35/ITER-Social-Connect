@@ -427,6 +427,7 @@ export default function MainFeed() {
   // };
 
   const toggleLike = async (postId) => {
+    if (!profile) router.push("/signup");
     setLikeLoadingState((prev) => ({ ...prev, [postId]: true }));
 
     try {
@@ -595,7 +596,7 @@ export default function MainFeed() {
               <NextImage
                 src={
                   profile?.profilePicture ||
-                  "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//uplo.jpg"
+                  "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"
                 }
                 alt="Avatar"
                 width={40}

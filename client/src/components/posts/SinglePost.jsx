@@ -411,7 +411,7 @@ export default function SinglePost({ postId }) {
                   <NextImage
                     src={
                       profile?.profilePicture ||
-                      "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//uplo.jpg"
+                      "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"
                     }
                     alt="Avatar"
                     width={36}
@@ -488,7 +488,7 @@ export default function SinglePost({ postId }) {
                     <NextImage
                       src={
                         comment.user.profilePicture ||
-                        "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//uplo.jpg"
+                        "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"
                       }
                       alt="Avatar"
                       fill
