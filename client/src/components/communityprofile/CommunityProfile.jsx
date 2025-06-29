@@ -17,10 +17,10 @@ import {
   Mail,
   Globe,
   Send,
-  Loader2
+  Loader2,
+  UserX
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { BACKEND_URL } from "@/configs/index";
 
@@ -29,7 +29,7 @@ export default function CommunityProfile({ profileId }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [connectionStatus, setConnectionStatus] = useState("none"); // "none", "pending", "connected"
+  const [connectionStatus, setConnectionStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   
@@ -46,7 +46,6 @@ export default function CommunityProfile({ profileId }) {
         }
       );
       setProfile(response.data);
-      setConnectionStatus(response.data.connectionStatus || "none");
     } catch (error) {
       setError(error.response?.data?.message || "Failed to load profile");
     } finally {
@@ -54,14 +53,34 @@ export default function CommunityProfile({ profileId }) {
     }
   };
 
+  const fetchConnectionStatus = async () => {
+    if (!user || !profileId) return;
+    
+    try {
+      const response = await axios.get(
+        `${BACKEND_URL}/api/connections/status/${profileId}`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          withCredentials: true,
+        }
+      );
+      setConnectionStatus(response.data.status);
+    } catch (error) {
+      console.error("Error fetching connection status:", error);
+      setConnectionStatus("none");
+    }
+  };
+
   useEffect(() => {
     if (accessToken && profileId) {
       fetchProfile();
+      fetchConnectionStatus();
     }
   }, [accessToken, profileId]);
 
   const handleConnect = async () => {
-    if (!profile || !profile.email || connectionStatus !== "none") return;
+    if (!profile || !profile.email || 
+        !(connectionStatus === "none" || connectionStatus === "rejected")) return;
     
     setIsLoading(true);
     try {
@@ -74,21 +93,44 @@ export default function CommunityProfile({ profileId }) {
         }
       );
       
-      // Update connection status locally
       setConnectionStatus("pending");
-      
-      // Refetch profile to get updated connection status from server
-      await fetchProfile();
     } catch (error) {
       console.error("Error sending connection request:", error);
       
       if (error.response?.status === 400 && 
           error.response?.data?.message === "Connection request already sent!") {
-        // If already sent, update status to pending
         setConnectionStatus("pending");
       } else {
         setError("Failed to send connection request");
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRemoveConnection = async () => {
+    if (!profile || !profile.email || connectionStatus !== "connected") return;
+    
+    setIsLoading(true);
+    try {
+      await axios.post(
+        `${BACKEND_URL}/api/connections/remove`,
+        { targetEmail: profile.email },
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          withCredentials: true,
+        }
+      );
+      
+      // Update both status and connection count
+      setConnectionStatus("none");
+      setProfile(prev => ({
+        ...prev,
+        connectionsCount: prev.connectionsCount > 0 ? prev.connectionsCount - 1 : 0
+      }));
+    } catch (error) {
+      console.error("Error removing connection:", error);
+      setError("Failed to remove connection");
     } finally {
       setIsLoading(false);
     }
@@ -117,6 +159,7 @@ export default function CommunityProfile({ profileId }) {
 
     switch(connectionStatus) {
       case "none":
+      case "rejected":
         return (
           <Button
             onClick={handleConnect}
@@ -137,22 +180,33 @@ export default function CommunityProfile({ profileId }) {
             disabled
             className="bg-gray-600 dark:bg-gray-500 text-white flex items-center gap-2"
           >
-            <Send className="h-4 w-4" />
+            <Loader2 className="h-4 w-4 animate-spin" />
             <span>Request Sent</span>
           </Button>
         );
       case "connected":
         return (
           <Button
-            disabled
-            className="bg-green-600 dark:bg-green-500 text-white flex items-center gap-2"
+            onClick={handleRemoveConnection}
+            disabled={isLoading}
+            variant="destructive"
+            className="flex items-center gap-2"
           >
-            <Send className="h-4 w-4" />
-            <span>Connected</span>
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <UserX className="h-4 w-4" />
+            )}
+            <span>Remove Connection</span>
           </Button>
         );
       default:
-        return null;
+        return (
+          <Button disabled className="bg-gray-600 dark:bg-gray-500 text-white flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Loading status...</span>
+          </Button>
+        );
     }
   };
 
@@ -190,8 +244,7 @@ export default function CommunityProfile({ profileId }) {
           </div>
         </div>
 
-        {/* Connect button positioned at top-right */} 
-         <div className="absolute top-6 right-6">
+        <div className="absolute top-6 right-6">
           {renderConnectButton()}
         </div> 
 
@@ -262,7 +315,7 @@ export default function CommunityProfile({ profileId }) {
                   <h3>Role</h3>
                 </div>
                 <p className="text-gray-600 dark:text-gray-300 text-sm pl-7 capitalize">
-                  {profile?.role}
+                  {profile?.role || "community member"}
                 </p>
               </div>
 
@@ -297,7 +350,7 @@ export default function CommunityProfile({ profileId }) {
   ];
 
   let content;
-  if (loading) {
+  if (loading || connectionStatus === null) {
     content = <PanelsPreloader />;
   } else if (error) {
     content = (

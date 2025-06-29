@@ -1,3 +1,4 @@
+// connectionControllers.js
 const {
   collection,
   doc,
@@ -36,14 +37,14 @@ const sendConnectionRequest = async (req, res) => {
     const targetUser = usersSnapshot.docs[0];
     const targetUserId = targetUser.id;
 
-    // ✅ Prevent self-connections
+    // Prevent self-connections
     if (targetUserId === senderId) {
       return res
         .status(400)
         .json({ message: "You cannot send a connection request to yourself." });
     }
 
-    // ✅ Check if connection already exists
+    // Check if connection already exists
     const senderConnectionRef = doc(
       db,
       `users/${senderId}/connections/${targetUserId}`
@@ -77,7 +78,7 @@ const sendConnectionRequest = async (req, res) => {
       senderProfilePicture = senderData.profilePicture || "";
     }
 
-    // ✅ Create connection docs (pending, both sides)
+    // Create connection docs (pending, both sides)
     await setDoc(doc(db, `users/${senderId}/connections/${targetUserId}`), {
       userId: targetUserId,
       status: "pending",
@@ -92,7 +93,7 @@ const sendConnectionRequest = async (req, res) => {
       createdAt: Date.now(),
     });
 
-    // ✅ Send notification
+    // Send notification
     const notificationRef = doc(collection(db, "notifications"));
     await setDoc(notificationRef, {
       userId: targetUserId,
@@ -120,7 +121,7 @@ const getConnectionRequests = async (req, res) => {
     const requestsQuery = query(
       collection(db, `users/${userId}/connections`),
       where("status", "==", "pending"),
-      where("direction", "==", "received") // ✅ Only get incoming requests
+      where("direction", "==", "received")
     );
 
     const requestsSnapshot = await getDocs(requestsQuery);
@@ -138,7 +139,7 @@ const getConnectionRequests = async (req, res) => {
           name: senderData.name,
           email: senderData.email,
           about: senderData.about,
-          profilePicture: senderData.profilePicture, // Add profile picture
+          profilePicture: senderData.profilePicture,
         });
       }
     }
@@ -174,7 +175,7 @@ const respondToConnectionRequest = async (req, res) => {
     const targetUser = usersSnapshot.docs[0];
     const targetUserId = targetUser.id;
 
-    // Fetch current user's connection document (the one that should have direction: 'received')
+    // Fetch current user's connection document
     const senderConnectionRef = doc(
       db,
       `users/${userId}/connections/${targetUserId}`
@@ -237,7 +238,7 @@ const getAllConnections = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    // Query to fetch all accepted connections for the logged-in user
+    // Query to fetch all accepted connections
     const connectionsQuery = query(
       collection(db, `users/${userId}/connections`),
       where("status", "==", "accepted")
@@ -258,7 +259,7 @@ const getAllConnections = async (req, res) => {
           name: userData.name,
           email: userData.email,
           about: userData.about,
-          profilePicture: userData.profilePicture, // Add profile picture
+          profilePicture: userData.profilePicture,
         });
       }
     }
@@ -270,6 +271,7 @@ const getAllConnections = async (req, res) => {
   }
 };
 
+// --- Remove Connection ---
 const removeConnection = async (req, res) => {
   try {
     const { targetEmail } = req.body;
@@ -343,6 +345,7 @@ const removeConnection = async (req, res) => {
   }
 };
 
+// --- Get Connection Status ---
 const getConnectionStatus = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -362,8 +365,14 @@ const getConnectionStatus = async (req, res) => {
       return res.status(200).json({ status: "none" });
     }
 
-    const { status } = connectionDoc.data();
-    return res.status(200).json({ status }); // "pending" or "accepted"
+    let { status } = connectionDoc.data();
+    
+    // Map 'accepted' status to 'connected' for frontend consistency
+    if (status === "accepted") {
+      status = "connected";
+    }
+
+    return res.status(200).json({ status });
   } catch (error) {
     console.error("Get Connection Status Error:", error);
     res.status(500).json({ message: "Internal server error." });

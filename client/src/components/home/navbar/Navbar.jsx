@@ -21,6 +21,7 @@ import {
   Search,
   FileText,
   MessageCircle,
+  BadgeInfo,
   Mail,
   Menu,
   Moon,
@@ -154,19 +155,21 @@ export default function Navbar() {
     { icon: Bell, label: "Notifications", route: "/notifications" },
     { icon: Mail, label: "Messages", route: "/chat", disabled: true },
     { icon: Settings, label: "Settings", route: "/settings" },
+    { icon: BadgeInfo, label: "About Us", route: "/team"},
     { icon: Users, label: "Connections", route: "/connections" },
     { icon: Bookmark, label: "Bookmarks", route: "/bookmarks" },
     { icon: User, label: "Profile", route: "/profile" },
   ];
 
   const phoneMenuItems = [
-    { icon: Home, label: "Home", route: "/explore" },
+    // { icon: Home, label: "Home", route: "/explore" },
     { icon: User, label: "Profile", route: "/bio" },
     { icon: Bell, label: "Notifications", route: "/notifications" },
     { icon: FileText, label: "My Posts", route: "/profile" },
     { icon: Users, label: "Connections", route: "/connections" },
     { icon: Bookmark, label: "Bookmarks", route: "/bookmarks" },
     { icon: Settings, label: "Settings", route: "/settings" },
+    { icon: BadgeInfo, label: "About Us", route: "/team"},
   ];
 
   const SearchResultsDropdown = ({ results, isLoading, onClose }) => (
@@ -348,7 +351,7 @@ export default function Navbar() {
 
           <div className="flex items-center">
             <div className="hidden lg:flex lg:flex-row lg:flex-wrap lg:space-x-0">
-              {menuItems.slice(0, 4).map((item, index) => (
+              {menuItems.slice(0, 5).map((item, index) => (
                 <Button
                   key={index}
                   variant="ghost"

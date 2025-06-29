@@ -28,7 +28,7 @@ const nextConfig = {
     ];
   },
   images: {
-    domains: ["media.discordapp.net", "res.cloudinary.com", "cdlsaecoineiohkdextf.supabase.co"],
+    domains: ["media.discordapp.net", "res.cloudinary.com", "cdlsaecoineiohkdextf.supabase.co", "media.licdn.com"],
   },
   webpack: (config) => {
     config.resolve.alias = {
