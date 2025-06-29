@@ -16,6 +16,98 @@ const isValidUrl = (url, platform) => {
   return regexes[platform]?.test(url);
 };
 
+// const updateProfile = async (req, res) => {
+//   try {
+//     const userId = req.user.userId;
+
+//     if (!userId) {
+//       return res.status(401).json({ message: "Invalid token" });
+//     }
+
+//     // Validate the request body
+//     const validatedData = updateProfileSchema.safeParse(req.body);
+
+//     if (!validatedData.success) {
+//       return res.status(400).json({
+//         message: "Validation error",
+//         errors: validatedData.error.errors,
+//       });
+//     }
+
+//     const {
+//       name,
+//       about,
+//       github,
+//       linkedin,
+//       x,
+//       profilePicture,
+//     } = validatedData.data;
+
+//     if (
+//       !name &&
+//       !about &&
+//       !github &&
+//       !linkedin &&
+//       !x &&
+//       !profilePicture
+//     ) {
+//       return res
+//         .status(400)
+//         .json({ message: "At least one field must be provided to update" });
+//     }
+
+//     // Validate URLs for `github`,`linkedin` and `x`
+//     if (linkedin && !isValidUrl(linkedin, "linkedin")) {
+//       return res.status(400).json({ message: "Invalid LinkedIn URL" });
+//     }
+//     if (github && !isValidUrl(github, "github")) {
+//       return res.status(400).json({ message: "Invalid GitHub URL" });
+//     }
+//     if (x && !isValidUrl(x, "x")) {
+//       return res.status(400).json({ message: "Invalid X URL" });
+//     }
+
+//     // Query Firestore to check if the user exists
+//     const userRef = doc(db, "users", userId);
+//     const userDoc = await getDoc(userRef);
+
+//     if (!userDoc.exists()) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     // Prepare update data
+//     const updateData = {
+//       ...(name && { name }),
+//       ...(about && { about }),
+//       ...(github && { github }),
+//       ...(linkedin && { linkedin }),
+//       ...(x && { x }),
+//       ...(profilePicture && { profilePicture }),
+//     };
+
+//     // Update the user's profile
+//     await updateDoc(userRef, updateData);
+
+//     // Fetch updated user data
+//     const updatedUserDoc = await getDoc(userRef);
+//     const updatedUserData = updatedUserDoc.data();
+
+//     res.status(200).json({
+//       message: "Profile updated successfully",
+//       user: updatedUserData,
+//     });
+//   } catch (error) {
+//     if (error.name === "JsonWebTokenError") {
+//       return res.status(401).json({ message: "Invalid token" });
+//     }
+//     if (error.name === "TokenExpiredError") {
+//       return res.status(401).json({ message: "Token has expired" });
+//     }
+//     console.error("Update Profile Error:", error);
+//     res.status(500).json({ message: "Failed to update profile" });
+//   }
+// };
+
 const updateProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -28,46 +120,26 @@ const updateProfile = async (req, res) => {
     const validatedData = updateProfileSchema.safeParse(req.body);
 
     if (!validatedData.success) {
+      const errorMessages = validatedData.error.errors.map(
+        (err) => err.message
+      );
+
       return res.status(400).json({
-        message: "Validation error",
-        errors: validatedData.error.errors,
+        message: "Validation failed. Please correct the following errors:",
+        errors: errorMessages,
       });
     }
 
-    const {
-      name,
-      about,
-      github,
-      linkedin,
-      x,
-      profilePicture,
-    } = validatedData.data;
+    const { name, about, github, linkedin, x, profilePicture } =
+      validatedData.data;
 
-    if (
-      !name &&
-      !about &&
-      !github &&
-      !linkedin &&
-      !x &&
-      !profilePicture
-    ) {
-      return res
-        .status(400)
-        .json({ message: "At least one field must be provided to update" });
+    if (!name && !about && !github && !linkedin && !x && !profilePicture) {
+      return res.status(400).json({
+        message: "At least one field must be provided to update",
+      });
     }
 
-    // Validate URLs for `github`,`linkedin` and `x`
-    if (linkedin && !isValidUrl(linkedin, "linkedin")) {
-      return res.status(400).json({ message: "Invalid LinkedIn URL" });
-    }
-    if (github && !isValidUrl(github, "github")) {
-      return res.status(400).json({ message: "Invalid GitHub URL" });
-    }
-    if (x && !isValidUrl(x, "x")) {
-      return res.status(400).json({ message: "Invalid X URL" });
-    }
-
-    // Query Firestore to check if the user exists
+    // Check if user exists
     const userRef = doc(db, "users", userId);
     const userDoc = await getDoc(userRef);
 
@@ -75,7 +147,6 @@ const updateProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Prepare update data
     const updateData = {
       ...(name && { name }),
       ...(about && { about }),
@@ -85,10 +156,8 @@ const updateProfile = async (req, res) => {
       ...(profilePicture && { profilePicture }),
     };
 
-    // Update the user's profile
     await updateDoc(userRef, updateData);
 
-    // Fetch updated user data
     const updatedUserDoc = await getDoc(userRef);
     const updatedUserData = updatedUserDoc.data();
 
@@ -158,8 +227,6 @@ const changePassword = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
 
 module.exports = {
   updateProfile,
