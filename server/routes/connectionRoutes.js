@@ -5,7 +5,7 @@ const {
   getConnectionRequests,
   respondToConnectionRequest,
   getAllConnections,
-  removeConnection, 
+  removeConnection, getConnectionStatus
 } = require("../controllers/connectionControllers.js");
 const { isLoggedIn } = require("../middlewares/authMiddlewares.js");
 
@@ -18,5 +18,8 @@ router.post("/respond", isLoggedIn, respondToConnectionRequest);
 router.get("/", isLoggedIn, getAllConnections);
 
 router.post("/remove", isLoggedIn, removeConnection);
+
+router.get("/status/:targetUserId", isLoggedIn, getConnectionStatus);
+
 
 module.exports = router;

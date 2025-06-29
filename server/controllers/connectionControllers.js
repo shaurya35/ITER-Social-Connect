@@ -36,6 +36,14 @@ const sendConnectionRequest = async (req, res) => {
     const targetUser = usersSnapshot.docs[0];
     const targetUserId = targetUser.id;
 
+    // ✅ Prevent self-connections
+    if (targetUserId === senderId) {
+      return res
+        .status(400)
+        .json({ message: "You cannot send a connection request to yourself." });
+    }
+
+    // ✅ Check if connection already exists
     const senderConnectionRef = doc(
       db,
       `users/${senderId}/connections/${targetUserId}`
@@ -43,11 +51,20 @@ const sendConnectionRequest = async (req, res) => {
     const senderConnectionDoc = await getDoc(senderConnectionRef);
 
     if (senderConnectionDoc.exists()) {
-      return res
-        .status(400)
-        .json({ message: "Connection request already sent!" });
+      const status = senderConnectionDoc.data().status;
+
+      if (status === "accepted") {
+        return res.status(400).json({ message: "You are already connected!" });
+      }
+
+      if (status === "pending") {
+        return res
+          .status(400)
+          .json({ message: "Connection request already pending!" });
+      }
     }
 
+    // Get sender details
     const senderRef = doc(db, "users", senderId);
     const senderSnapshot = await getDoc(senderRef);
 
@@ -60,18 +77,22 @@ const sendConnectionRequest = async (req, res) => {
       senderProfilePicture = senderData.profilePicture || "";
     }
 
+    // ✅ Create connection docs (pending, both sides)
     await setDoc(doc(db, `users/${senderId}/connections/${targetUserId}`), {
       userId: targetUserId,
       status: "pending",
+      direction: "sent",
       createdAt: Date.now(),
     });
 
     await setDoc(doc(db, `users/${targetUserId}/connections/${senderId}`), {
       userId: senderId,
       status: "pending",
+      direction: "received",
       createdAt: Date.now(),
     });
 
+    // ✅ Send notification
     const notificationRef = doc(collection(db, "notifications"));
     await setDoc(notificationRef, {
       userId: targetUserId,
@@ -98,7 +119,8 @@ const getConnectionRequests = async (req, res) => {
 
     const requestsQuery = query(
       collection(db, `users/${userId}/connections`),
-      where("status", "==", "pending")
+      where("status", "==", "pending"),
+      where("direction", "==", "received") // ✅ Only get incoming requests
     );
 
     const requestsSnapshot = await getDocs(requestsQuery);
@@ -152,7 +174,7 @@ const respondToConnectionRequest = async (req, res) => {
     const targetUser = usersSnapshot.docs[0];
     const targetUserId = targetUser.id;
 
-    // Update the connection status in both users' subcollections
+    // Fetch current user's connection document (the one that should have direction: 'received')
     const senderConnectionRef = doc(
       db,
       `users/${userId}/connections/${targetUserId}`
@@ -162,8 +184,21 @@ const respondToConnectionRequest = async (req, res) => {
       `users/${targetUserId}/connections/${userId}`
     );
 
+    const connSnapshot = await getDoc(senderConnectionRef);
+    if (!connSnapshot.exists()) {
+      return res.status(404).json({ message: "Connection request not found." });
+    }
+
+    const connData = connSnapshot.data();
+    if (connData.status !== "pending" || connData.direction !== "received") {
+      return res
+        .status(403)
+        .json({ message: "No received request to respond to." });
+    }
+
     const status = action === "true" ? "accepted" : "rejected";
 
+    // Update status in both users' documents
     await updateDoc(senderConnectionRef, {
       status,
       updatedAt: Date.now(),
@@ -174,23 +209,22 @@ const respondToConnectionRequest = async (req, res) => {
       updatedAt: Date.now(),
     });
 
-    // If the request is accepted, update the connections count
+    // If accepted, update connections count
     if (action === "true") {
       const senderDocRef = doc(db, "users", userId);
       const receiverDocRef = doc(db, "users", targetUserId);
 
-      // Increment the connections count for both users
       await updateDoc(senderDocRef, { connectionsCount: increment(1) });
       await updateDoc(receiverDocRef, { connectionsCount: increment(1) });
     }
 
-    // Fetch the target user's profile picture
+    // Fetch target user's profile picture
     const targetUserDoc = await getDoc(doc(db, "users", targetUserId));
     const targetUserData = targetUserDoc.data();
 
     res.status(200).json({
       message: `Connection request ${status} successfully.`,
-      profilePicture: targetUserData.profilePicture, // Include profile picture
+      profilePicture: targetUserData.profilePicture,
     });
   } catch (error) {
     console.error("Respond to Connection Request Error:", error);
@@ -260,8 +294,14 @@ const removeConnection = async (req, res) => {
     const targetUserId = targetUser.id;
 
     // Get connection references
-    const userConnectionRef = doc(db, `users/${userId}/connections/${targetUserId}`);
-    const targetConnectionRef = doc(db, `users/${targetUserId}/connections/${userId}`);
+    const userConnectionRef = doc(
+      db,
+      `users/${userId}/connections/${targetUserId}`
+    );
+    const targetConnectionRef = doc(
+      db,
+      `users/${targetUserId}/connections/${userId}`
+    );
 
     // Check if connections exist
     const [userConnectionDoc, targetConnectionDoc] = await Promise.all([
@@ -282,7 +322,7 @@ const removeConnection = async (req, res) => {
     const targetRef = doc(db, "users", targetUserId);
 
     const updates = [];
-    
+
     if (userStatus === "accepted") {
       updates.push(updateDoc(userRef, { connectionsCount: increment(-1) }));
     }
@@ -303,10 +343,38 @@ const removeConnection = async (req, res) => {
   }
 };
 
+const getConnectionStatus = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { targetUserId } = req.params;
+
+    if (userId === targetUserId) {
+      return res.status(200).json({ status: "self" });
+    }
+
+    const connectionRef = doc(
+      db,
+      `users/${userId}/connections/${targetUserId}`
+    );
+    const connectionDoc = await getDoc(connectionRef);
+
+    if (!connectionDoc.exists()) {
+      return res.status(200).json({ status: "none" });
+    }
+
+    const { status } = connectionDoc.data();
+    return res.status(200).json({ status }); // "pending" or "accepted"
+  } catch (error) {
+    console.error("Get Connection Status Error:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
 module.exports = {
   sendConnectionRequest,
   getConnectionRequests,
   respondToConnectionRequest,
   getAllConnections,
   removeConnection,
+  getConnectionStatus,
 };
