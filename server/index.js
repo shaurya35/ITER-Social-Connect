@@ -34,8 +34,12 @@ const allowedOrigins = [
   "https://itersocialconnect.vercel.app",
   "http://iterconnect.vercel.app",
   "https://iterconnect.vercel.app",
+  "http://www.iterconnect.vercel.app",
+  "https://www.iterconnect.vercel.app",
   "http://iterconnect.live",
-  "https://iterconnect.live"
+  "https://iterconnect.live",
+  "http://www.iterconnect.live", 
+  "https://www.iterconnect.live" 
 ];
 
 
