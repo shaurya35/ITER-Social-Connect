@@ -223,7 +223,7 @@ export default function CommunityProfile({ profileId }) {
           />
         ) : (
           <Image
-            src="/placeholder.svg"
+            src="/banner.png"
             alt="Profile banner"
             fill
             className="object-cover"
