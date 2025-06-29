@@ -23,6 +23,7 @@ import axios from "axios";
 import PostsPreloader from "@/components/preloaders/PostsPreloader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useMediaQuery } from "react-responsive";
 import {
   Image,
   MessageCircleMore,
@@ -158,6 +159,7 @@ export default function MainFeed() {
   const { isDarkMode } = useTheme();
   const redirectToProfile = useProfileNavigation();
   const router = useRouter();
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("general");
@@ -176,6 +178,13 @@ export default function MainFeed() {
       setFetchingUser(false);
     }
   }, [profile]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !isMobile) {
+      e.preventDefault();
+      handlePostSubmit();
+    }
+  };
 
   // /* Fetch The User Feed */
   // const fetchPosts = useCallback(async () => {
@@ -616,12 +625,13 @@ export default function MainFeed() {
                 placeholder="What's on your mind?"
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handlePostSubmit();
-                  }
-                }}
+                // onKeyDown={(e) => {
+                //   if (e.key === "Enter" && !e.shiftKey) {
+                //     e.preventDefault();
+                //     handlePostSubmit();
+                //   }
+                // }}
+                onKeyDown={(e) => handleKeyDown(e)}
                 className="resize-y bg-gray-100 min-h-[100px] dark:bg-gray-700 border-0 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 rounded-lg text-gray-900 dark:text-gray-100 whitespace-pre-wrap overflow-y-auto"
               />
               <div className="mt-4 flex flex-col md:flex-row gap-3 justify-between items-start md:items-center">

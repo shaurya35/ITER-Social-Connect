@@ -30,6 +30,21 @@ export default function SettingsComponent() {
     }
   }, [accessToken, router]);
 
+  useEffect(() => {
+    if (profile) {
+      setProfileForm({
+        name: profile.name || "",
+        about: profile.about || "",
+        email: profile.email || "",
+        github: profile.github || "",
+        linkedin: profile.linkedin || "",
+        x: profile.x || "",
+        profilePicture: profile.profilePicture || "",
+      });
+    }
+  }, [profile]);
+
+
   const buttons = [
     {
       label: "Settings",
@@ -63,11 +78,11 @@ export default function SettingsComponent() {
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
-  // Handle update profile input changes
-  const handleProfileChange = (e) => {
-    const { name, value } = e.target;
-    setProfileForm((prev) => ({ ...prev, [name]: value }));
-  };
+ // Handle update profile input changes
+ const handleProfileChange = (e) => {
+  const { name, value } = e.target;
+  setProfileForm((prev) => ({ ...prev, [name]: value }));
+};
 
   // Handle change password input changes
   const handlePasswordChange = (e) => {
@@ -81,20 +96,54 @@ export default function SettingsComponent() {
     setUpdatingProfile(true);
     setProfileMessage("");
     setProfileError("");
+
     try {
+      // Create payload with only non-empty fields that have changed
+      const payload = {};
+      
+      Object.keys(profileForm).forEach(key => {
+        if (profileForm[key] !== "" && profileForm[key] !== profile[key]) {
+          payload[key] = profileForm[key];
+        }
+      });
+
+      // Only send request if there are changes
+      if (Object.keys(payload).length === 0) {
+        setProfileMessage("No changes to update");
+        return;
+      }
+
       const response = await axios.post(
         `${BACKEND_URL}/api/settings/updateProfile`,
-        profileForm,
+        payload,  // Send only changed fields
         {
           headers: { Authorization: `Bearer ${accessToken}` },
           withCredentials: true,
         }
       );
+      
       setProfileMessage(response.data.message || "Profile updated successfully!");
+      
+      // Update form with new values to prevent re-submitting unchanged data
+      setProfileForm(prev => ({
+        ...prev,
+        ...response.data.user  // Update with new values from server
+      }));
+      
     } catch (error) {
-      setProfileError(
-        error.response?.data?.message || "Failed to update profile"
-      );
+      // Handle validation errors with array format
+      if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        const errorMessage = [
+          error.response.data.message,
+          ...error.response.data.errors
+        ].join('\n');
+        
+        setProfileError(errorMessage);
+      } else {
+        setProfileError(
+          error.response?.data?.message || "Failed to update profile"
+        );
+      }
     } finally {
       setUpdatingProfile(false);
     }
@@ -207,7 +256,7 @@ export default function SettingsComponent() {
                         className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
                       />
                     </div>
-                    <div>
+                    {/* <div>
                       <Label
                         htmlFor="email"
                         className="text-gray-700 dark:text-gray-300"
@@ -223,7 +272,7 @@ export default function SettingsComponent() {
                         placeholder={profile?.email || "you@example.com"}
                         className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
                       />
-                    </div>
+                    </div> */}
                     <div>
                       <Label
                         htmlFor="github"
@@ -299,7 +348,7 @@ export default function SettingsComponent() {
                       </Alert>
                     )}
                     {profileMessage && (
-                      <Alert variant="default">
+                      <Alert className=" bg-inherit dark:bg-inherit text-green-800 dark:border-blue-900/60 dark:text-green-200">
                         <AlertTitle>Success</AlertTitle>
                         <AlertDescription>{profileMessage}</AlertDescription>
                       </Alert>
@@ -445,7 +494,7 @@ export default function SettingsComponent() {
                       </Alert>
                     )}
                     {passwordMessage && (
-                      <Alert variant="default">
+                      <Alert className="bg-blue-800/10  text-green-800 dark:bg-blue-500/10">
                         <AlertTitle>Success</AlertTitle>
                         <AlertDescription>{passwordMessage}</AlertDescription>
                       </Alert>

@@ -238,11 +238,19 @@ export function SignupForm() {
         throw new Error("Unexpected response status");
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message ||
-        (err.response?.data?.errors && Array.isArray(err.response.data.errors) 
-          ? err.response.data.errors.join(", ") 
-          : "Failed to complete profile. Please try again.");
+    if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+      const errorMessage = [
+        err.response.data.message,
+        ...err.response.data.errors
+      ].join('\n');
+      
       setError(errorMessage);
+    } else {
+      setError(
+        err.response?.data?.message || 
+        "Failed to complete profile. Please try again."
+      );
+    }
     } finally {
       setIsLoading(false);
     }
