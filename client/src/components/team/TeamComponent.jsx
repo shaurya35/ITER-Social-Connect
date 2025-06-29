@@ -20,7 +20,7 @@ const teamMembers = [
   },
   {
     name: "Om Shankar Deshmukh",
-    position: "Social Media Manager & Backend Developer",
+    position: "Backend Developer",
     imageUrl: "https://media.licdn.com/dms/image/v2/D4D03AQHIINcRdr0-7A/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1677215858114?e=1756944000&v=beta&t=aGqMG48OjCHYvArGpZGP4yB2cGP3GGTxwUyYsFrsQ7Y",
     github: "https://github.com/OmShankarDeshmukh01",
     linkedin: "https://www.linkedin.com/in/om-shankar-deshmukh-7431b9245/",
@@ -34,23 +34,26 @@ const teamMembers = [
     github: "https://github.com/shaurya35/"
   },
   {
-    name: "Morgan Williams",
-    position: "DevOps Engineer",
+    name: "Swayam Sahoo",
+    position: "Outreach Team",
     imageUrl: "/placeholder.svg",
-    github: "https://github.com/morganw",
+    github: "https://github.com/PseudoSwayam",
+    linkedin: "https://www.linkedin.com/in/swayamsahoo11/"
   },
   {
-    name: "Casey Kim",
-    position: "Product Manager",
+    name: "Stuti Mishra",
+    position: "Outreach Team",
     imageUrl: "/placeholder.svg",
-    linkedin: "https://linkedin.com/in/caseykim",
+    github: "https://github.com/STUTI-MISHRA-8",
+    linkedin: "https://www.linkedin.com/in/stuti86",
   },
   {
-    name: "Riley Patel",
-    position: "Frontend Developer",
+    name: "Anubhav Jaiswal",
+    position: "Strategic Partner",
     imageUrl: "/placeholder.svg",
-    github: "https://github.com/rpatel",
-    twitter: "https://twitter.com/rileypatel",
+    github: "http://github.com/anubhav-auth",
+    linkedin: "http://linkedin.com/in/anubhav-auth/",
+    twitter: "https://x.com/anubhavauth",
   },
 ];
 
@@ -96,7 +99,7 @@ export default function TeamComponent() {
             placeholder="Search team members..."
             buttonLabel="Contact Team"
             buttonIcon={User}
-            onButtonClick={() => alert("Contact team@company.com")}
+            onButtonClick={() => alert("Contact itersocialconnect@gmail.com")}
           />
 
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
