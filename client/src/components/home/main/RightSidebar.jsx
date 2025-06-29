@@ -126,7 +126,8 @@ export default function RightSidebar() {
                   alt={req.name || "User profile image"}
                   width={40}
                   height={40}
-                  className="rounded-full flex-shrink-0"
+                  // className="rounded-full flex-shrink-0"
+                  className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate">
@@ -189,9 +190,7 @@ export default function RightSidebar() {
               </Card>
             ))
           ) : events.length === 0 ? (
-            <p className="text-left text-gray-500">
-              No upcoming events
-            </p>
+            <p className="text-left text-gray-500">No upcoming events</p>
           ) : (
             (showAllEvents ? events : events.slice(0, 2)).map(
               (event, index) => (
