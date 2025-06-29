@@ -55,7 +55,7 @@ export default function LeftSidebar() {
                 <div className="absolute inset-0 bg-gray-300 dark:bg-gray-700 animate-pulse transition-all duration-700"></div>
               ) : (
                 <NextImage
-                  src="/placeholder.svg"
+                  src="/banner.png"
                   alt="Cover"
                   priority
                   fill

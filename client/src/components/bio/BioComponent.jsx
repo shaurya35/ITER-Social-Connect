@@ -64,7 +64,7 @@ export default function BioComponent() {
           />
         ) : (
           <Image
-            src="/placeholder.svg"
+            src="/banner.png"
             alt="Profile banner"
             fill
             className="object-cover"

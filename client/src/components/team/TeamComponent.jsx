@@ -22,8 +22,8 @@ const teamMembers = [
     name: "Om Shankar Deshmukh",
     position: "Social Media Manager & Backend Developer",
     imageUrl: "https://media.licdn.com/dms/image/v2/D4D03AQHIINcRdr0-7A/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1677215858114?e=1756944000&v=beta&t=aGqMG48OjCHYvArGpZGP4yB2cGP3GGTxwUyYsFrsQ7Y",
-    github: "https://github.com/taylorc",
-    linkedin: "https://linkedin.com/in/taylorchen",
+    github: "https://github.com/OmShankarDeshmukh01",
+    linkedin: "https://www.linkedin.com/in/om-shankar-deshmukh-7431b9245/",
   },
   {
     name: "Shaurya Jha",
