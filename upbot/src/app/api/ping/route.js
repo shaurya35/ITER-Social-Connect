@@ -17,6 +17,7 @@ export async function GET() {
       targetUrl,
     };
 
+    // Add to history
     addPingRecord(result);
     console.log(`Pinged ${targetUrl} at ${result.timestamp}`);
 

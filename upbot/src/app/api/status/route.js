@@ -1,13 +1,12 @@
 import { getPingHistory } from '@/lib/pingHistory';
 
 export async function GET() {
+  const history = getPingHistory();
   return new Response(JSON.stringify({
-    history: getPingHistory(),
+    history,
     targetUrl: process.env.TARGET_URL
   }), {
     status: 200,
-    headers: {
-      'Content-Type': 'application/json'
-    }
+    headers: { 'Content-Type': 'application/json' }
   });
 }
