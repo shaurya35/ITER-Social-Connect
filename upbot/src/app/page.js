@@ -12,8 +12,8 @@ export default function Home() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [latencyTrend, setLatencyTrend] = useState([]);
   const [showNotification, setShowNotification] = useState(false);
-  const socketRef = useRef(null);
-  const audioRef = useRef(null);
+  const [isClientPinging, setIsClientPinging] = useState(false);
+  const pingIntervalRef = useRef(null);
 
   const fetchData = async () => {
     try {
@@ -27,13 +27,7 @@ export default function Home() {
       if (data.history.length > 0) {
         const successCount = data.history.filter(p => p.success).length;
         const newUptime = Math.round((successCount / data.history.length) * 100);
-        
-        // Show notification if status changes
-        if (newUptime !== uptime) {
-          setUptime(newUptime);
-          setShowNotification(true);
-          setTimeout(() => setShowNotification(false), 3000);
-        }
+        setUptime(newUptime);
         
         setCurrentStatus(data.history[0].success ? 'online' : 'offline');
         
@@ -50,21 +44,57 @@ export default function Home() {
     }
   };
 
+  // Client-side pinging function
+  const performPing = async () => {
+    try {
+      const response = await fetch('/api/ping');
+      const data = await response.json();
+      
+      if (data.success) {
+        setCurrentStatus('online');
+      } else {
+        setCurrentStatus('offline');
+      }
+      
+      // Refresh data after ping
+      fetchData();
+    } catch (error) {
+      console.error('Ping failed:', error);
+    }
+  };
+
+  // Start/stop client-side pinging
+  const toggleClientPinging = () => {
+    if (isClientPinging) {
+      clearInterval(pingIntervalRef.current);
+      setIsClientPinging(false);
+    } else {
+      performPing(); // Initial ping
+      pingIntervalRef.current = setInterval(performPing, 60000); // 60 seconds
+      setIsClientPinging(true);
+    }
+  };
+
   useEffect(() => {
     fetchData();
     
-    // Initial ping to start the cron job
-    fetch('/api/ping');
-    
     // Set up auto-refresh
-    const interval = setInterval(() => {
+    const refreshInterval = setInterval(() => {
       if (autoRefresh) {
         fetchData();
       }
     }, 15000);
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(refreshInterval);
+      if (pingIntervalRef.current) {
+        clearInterval(pingIntervalRef.current);
+      }
+    };
   }, [autoRefresh]);
+
+  // Calculate max latency for chart scaling
+  const maxLatency = latencyTrend.length > 0 ? Math.max(...latencyTrend) * 1.2 : 100;
 
   // Animation variants
   const container = {
@@ -130,9 +160,6 @@ export default function Home() {
       )
     }
   ];
-
-  // Calculate max latency for chart scaling
-  const maxLatency = latencyTrend.length > 0 ? Math.max(...latencyTrend) * 1.2 : 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white overflow-hidden">
@@ -223,6 +250,23 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
+            {/* Ping Control Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={toggleClientPinging}
+              className={`px-4 py-2 rounded-xl font-medium flex items-center space-x-2 ${
+                isClientPinging 
+                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' 
+                  : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+              }`}
+            >
+              <div className={`w-3 h-3 rounded-full mr-2 ${
+                isClientPinging ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'
+              }`}></div>
+              <span>{isClientPinging ? 'Stop Pinging' : 'Start Pinging'}</span>
+            </motion.button>
+            
             <div className="flex items-center">
               <span className="text-cyan-200/80 mr-2">Auto refresh</span>
               <div 
