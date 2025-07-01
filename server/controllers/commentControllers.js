@@ -110,11 +110,12 @@ const createComment = async (req, res) => {
         senderId: userId,
         senderName: userData.name || "Unknown",
         senderProfilePicture: userData.profilePicture || "",
-        message: `New Comment on your Post: "${previewContent}"`,
+        message: `${userData.name} commented: "${previewContent}" — View Post`,
         postId: postId,
         timestamp: Date.now(),
         isRead: false,
         type: "comment",
+        postId: postId,
       });
     }
 

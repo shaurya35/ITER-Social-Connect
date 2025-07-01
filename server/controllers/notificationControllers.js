@@ -34,7 +34,9 @@ const getNotifications = async (req, res) => {
         senderProfilePicture: data.senderProfilePicture || "", // Sender's Profile Picture
         timestamp: data.timestamp || null, // Raw timestamp
         date: new Date(data.timestamp), // Convert timestamp to Date object
-        read: data.isRead || false, // Mark read/unread
+        read: data.isRead || false, // Mark read/unread,
+        link: data.link || "",
+        postId: data.postId || ""
       };
     });
 

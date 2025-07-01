@@ -16,6 +16,7 @@ const {
   writeBatch,
   setDoc,
 } = require("firebase/firestore");
+require("dotenv").config();
 
 const jwt = require("jsonwebtoken");
 
@@ -408,14 +409,14 @@ const likePost = async (req, res) => {
 
     // Get current likes array
     let likes = Array.isArray(postData.likes) ? [...postData.likes] : [];
-    
+
     // SIMPLE toggle logic
     const userAlreadyLiked = likes.includes(userId);
-    
+
     if (userAlreadyLiked) {
       // Unlike: remove user ID
-      likes = likes.filter(id => id !== userId);
-      
+      likes = likes.filter((id) => id !== userId);
+
       // Delete notification
       const q = query(
         collection(db, "notifications"),
@@ -431,7 +432,7 @@ const likePost = async (req, res) => {
     } else {
       // Like: add user ID
       likes.push(userId);
-      
+
       // Create notification
       const userRef = doc(db, "users", userId);
       const userSnapshot = await getDoc(userRef);
@@ -446,7 +447,6 @@ const likePost = async (req, res) => {
           where("type", "==", "like")
         );
         const notificationSnapshot = await getDocs(q);
-
         if (notificationSnapshot.empty) {
           const notificationRef = doc(collection(db, "notifications"));
           await setDoc(notificationRef, {
@@ -454,7 +454,8 @@ const likePost = async (req, res) => {
             senderId: userId,
             senderName: userData.name || "Unknown",
             senderProfilePicture: userData.profilePicture || "",
-            message: `${userData.name} liked your post.`,
+            // message: `${userData.name} liked your post.`,
+            message: `${userData.name} liked your post. View Post`,
             postId: postId,
             timestamp: Date.now(),
             isRead: false,
