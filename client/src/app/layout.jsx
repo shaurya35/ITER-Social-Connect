@@ -4,7 +4,8 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthProvider";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 import Navbar from "@/components/home/navbar/Navbar";
-import { Analytics } from "@vercel/analytics/react";
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import "./globals.css";
 
 const geistSans = localFont({
@@ -42,6 +43,7 @@ export default function RootLayout({ children }) {
                 <Navbar />
                 {children}
                 <Analytics />
+                <SpeedInsights />
               </div>
             </ProfileProvider>
           </AuthProvider>
