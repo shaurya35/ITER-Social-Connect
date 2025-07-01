@@ -11,7 +11,7 @@ import RightTopPanel from "@/components/panels/RightTopPanel";
 // Team member data
 const teamMembers = [
   {
-    name: "Satyam Kumar Jha",
+    name: "Satyam Kumar",
     position: "Backend Developer",
     imageUrl:
       "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//satyam.jpg",
@@ -36,21 +36,21 @@ const teamMembers = [
   {
     name: "Swayam Sahoo",
     position: "Outreach Team",
-    imageUrl: "/placeholder.svg",
+    imageUrl: "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//portfolio2.jpeg",
     github: "https://github.com/PseudoSwayam",
     linkedin: "https://www.linkedin.com/in/swayamsahoo11/"
   },
   {
     name: "Stuti Mishra",
     position: "Outreach Team",
-    imageUrl: "/placeholder.svg",
+    imageUrl: "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//photo3.jpg",
     github: "https://github.com/STUTI-MISHRA-8",
     linkedin: "https://www.linkedin.com/in/stuti86",
   },
   {
     name: "Anubhav Jaiswal",
     position: "Strategic Partner",
-    imageUrl: "/placeholder.svg",
+    imageUrl: "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//img2.jpg",
     github: "http://github.com/anubhav-auth",
     linkedin: "http://linkedin.com/in/anubhav-auth/",
     twitter: "https://x.com/anubhavauth",

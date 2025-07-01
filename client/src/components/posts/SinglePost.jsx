@@ -86,8 +86,6 @@ const formatLinks = (text) => {
   });
 };
 
-
-
 export default function SinglePost({ postId }) {
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
@@ -165,6 +163,9 @@ export default function SinglePost({ postId }) {
     if (!postId || !profile) return;
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
     fetchSinglePost();
     fetchSinglePostComments();
   }, [postId, profile]);

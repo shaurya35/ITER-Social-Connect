@@ -6,6 +6,7 @@ const {
   query,
   where,
   getDocs,
+  startAfter, // ADD THIS
   doc,
   getDoc,
   updateDoc,
@@ -16,18 +17,15 @@ const {
   writeBatch,
   setDoc,
 } = require("firebase/firestore");
+require("dotenv").config();
 
 const jwt = require("jsonwebtoken");
 
 const getAllUserPosts = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { page = 1, limit: limitParam = 10 } = req.query;
+    const { limit: limitParam = 10, lastDocId } = req.query;
     const limitValue = parseInt(limitParam, 10);
-
-    if (isNaN(page) || isNaN(limitValue) || page < 1 || limitValue < 1) {
-      return res.status(400).json({ error: "Invalid page or limit parameter" });
-    }
 
     const userRef = doc(db, "users", userId);
     const userSnapshot = await getDoc(userRef);
@@ -37,38 +35,22 @@ const getAllUserPosts = async (req, res) => {
     }
 
     const userData = userSnapshot.data();
-
     const postsCollection = collection(db, "posts");
+
+    // Base query with required ordering
     let postsQuery = query(
       postsCollection,
       where("userId", "==", userId),
       orderBy("createdAt", "desc"),
+      orderBy("__name__"), // Required for pagination stability
       limit(limitValue)
     );
 
-    if (page > 1) {
-      const previousPostsSnapshot = await getDocs(
-        query(
-          postsCollection,
-          where("userId", "==", userId),
-          orderBy("createdAt", "desc")
-        )
-      );
-      const previousPosts = previousPostsSnapshot.docs;
-      const startIndex = (page - 1) * limitValue;
-
-      if (startIndex >= previousPosts.length) {
-        return res.status(200).json({ posts: [], hasMore: false });
-      }
-
-      const startDoc = previousPosts[startIndex];
-      postsQuery = query(
-        postsCollection,
-        where("userId", "==", userId),
-        orderBy("createdAt", "desc"),
-        startAfter(startDoc),
-        limit(limitValue)
-      );
+    // Add cursor for pagination
+    if (lastDocId) {
+      const lastDocRef = doc(db, "posts", lastDocId);
+      const lastDocSnap = await getDoc(lastDocRef);
+      postsQuery = query(postsQuery, startAfter(lastDocSnap));
     }
 
     const [postsSnapshot, bookmarksSnapshot] = await Promise.all([
@@ -80,24 +62,42 @@ const getAllUserPosts = async (req, res) => {
       bookmarksSnapshot.docs.map((doc) => doc.data().postId)
     );
 
-    let posts = postsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      category: doc.data().category || "Uncategorized", // Ensure category is included
-      userName: userData.name,
-      profilePicture: userData.profilePicture || "",
-      isBookmarked: bookmarkedPosts.has(doc.id),
-    }));
+    const posts = [];
+    let lastVisible = null;
+
+    postsSnapshot.forEach((doc) => {
+      posts.push({
+        id: doc.id,
+        ...doc.data(),
+        category: doc.data().category || "Uncategorized",
+        userName: userData.name,
+        profilePicture: userData.profilePicture || "",
+        isBookmarked: bookmarkedPosts.has(doc.id),
+      });
+      lastVisible = doc;
+    });
 
     const hasMore = posts.length === limitValue;
+    const nextLastDocId = hasMore ? lastVisible.id : null;
 
     res.status(200).json({
       message: "Posts retrieved successfully",
       posts,
       hasMore,
+      lastDocId: nextLastDocId
     });
   } catch (error) {
     console.error("Error fetching user posts:", error);
+    
+    // Special handling for index errors
+    if (error.code === 'failed-precondition') {
+      const indexUrl = error.message.match(/https:\/\/[^ ]+/)?.[0] || '';
+      return res.status(400).json({ 
+        error: "Index missing",
+        solution: indexUrl
+      });
+    }
+    
     res.status(500).json({ error: "Failed to fetch user posts" });
   }
 };
@@ -408,14 +408,14 @@ const likePost = async (req, res) => {
 
     // Get current likes array
     let likes = Array.isArray(postData.likes) ? [...postData.likes] : [];
-    
+
     // SIMPLE toggle logic
     const userAlreadyLiked = likes.includes(userId);
-    
+
     if (userAlreadyLiked) {
       // Unlike: remove user ID
-      likes = likes.filter(id => id !== userId);
-      
+      likes = likes.filter((id) => id !== userId);
+
       // Delete notification
       const q = query(
         collection(db, "notifications"),
@@ -431,7 +431,7 @@ const likePost = async (req, res) => {
     } else {
       // Like: add user ID
       likes.push(userId);
-      
+
       // Create notification
       const userRef = doc(db, "users", userId);
       const userSnapshot = await getDoc(userRef);
@@ -446,7 +446,6 @@ const likePost = async (req, res) => {
           where("type", "==", "like")
         );
         const notificationSnapshot = await getDocs(q);
-
         if (notificationSnapshot.empty) {
           const notificationRef = doc(collection(db, "notifications"));
           await setDoc(notificationRef, {
@@ -454,7 +453,8 @@ const likePost = async (req, res) => {
             senderId: userId,
             senderName: userData.name || "Unknown",
             senderProfilePicture: userData.profilePicture || "",
-            message: `${userData.name} liked your post.`,
+            // message: `${userData.name} liked your post.`,
+            message: `${userData.name} liked your post. View Post`,
             postId: postId,
             timestamp: Date.now(),
             isRead: false,

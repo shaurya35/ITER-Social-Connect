@@ -3,44 +3,84 @@ const {
   getDocs,
   query,
   where,
-  Timestamp,
   orderBy,
+  limit,
+  startAfter,
+  doc,
+  getDoc,
 } = require("firebase/firestore");
 const db = require("../firebase/firebaseConfig");
 
 const getNotifications = async (req, res) => {
   try {
-    const userId = req.user.userId; // Get user ID from request query
+    const userId = req.user.userId;
+    const { lastDocId, limit: limitParam = 20 } = req.query;
+    const limitValue = parseInt(limitParam, 10);
+
     if (!userId) {
       return res.status(400).json({ message: "User ID is required." });
     }
 
-    const notificationsQuery = query(
-      collection(db, "notifications"),
+    const notificationsCollection = collection(db, "notifications");
+    let notificationsQuery = query(
+      notificationsCollection,
       where("userId", "==", userId),
-      orderBy("timestamp", "desc") // Order by timestamp in descending order
+      orderBy("timestamp", "desc"),
+      orderBy("__name__"),
+      limit(limitValue)
     );
 
-    const notificationsSnapshot = await getDocs(notificationsQuery);
+    if (lastDocId) {
+      const lastDocRef = doc(db, "notifications", lastDocId);
+      const lastDocSnap = await getDoc(lastDocRef);
+      
+      if (lastDocSnap.exists()) {
+        notificationsQuery = query(notificationsQuery, startAfter(lastDocSnap));
+      }
+    }
 
-    const notifications = notificationsSnapshot.docs.map((docSnapshot) => {
+    const notificationsSnapshot = await getDocs(notificationsQuery);
+    
+    let lastVisible = null;
+    const notifications = [];
+
+    notificationsSnapshot.forEach((docSnapshot) => {
       const data = docSnapshot.data();
-      return {
+      notifications.push({
         id: docSnapshot.id,
         type: data.type,
         message: data.message,
-        senderId: data.senderId || null, // Sender's ID
-        senderName: data.senderName || "Unknown", // Sender's Name
-        senderProfilePicture: data.senderProfilePicture || "", // Sender's Profile Picture
-        timestamp: data.timestamp || null, // Raw timestamp
-        date: new Date(data.timestamp), // Convert timestamp to Date object
-        read: data.isRead || false, // Mark read/unread
-      };
+        senderId: data.senderId || null,
+        senderName: data.senderName || "Unknown",
+        senderProfilePicture: data.senderProfilePicture || "",
+        timestamp: data.timestamp || null,
+        date: data.timestamp ? new Date(data.timestamp) : new Date(),
+        read: data.isRead || false,
+        link: data.link || "",
+        postId: data.postId || "",
+      });
+      lastVisible = docSnapshot;
     });
 
-    res.status(200).json({ notifications });
+    const hasMore = notifications.length === limitValue;
+    const nextLastDocId = hasMore && lastVisible ? lastVisible.id : null;
+
+    res.status(200).json({ 
+      notifications,
+      hasMore,
+      lastDocId: nextLastDocId
+    });
   } catch (error) {
     console.error("Get Notifications Error:", error);
+    
+    if (error.code === 'failed-precondition') {
+      const indexUrl = error.message.match(/https:\/\/[^ ]+/)?.[0] || '';
+      return res.status(400).json({ 
+        error: "Index missing",
+        solution: indexUrl
+      });
+    }
+    
     res.status(500).json({ message: "Internal server error." });
   }
 };
