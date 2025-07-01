@@ -52,6 +52,7 @@ export default function UserPosts() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [lastDocId, setLastDocId] = useState(null);
   const [page, setPage] = useState(1);
   // const [newPostContent, setNewPostContent] = useState("");
   // const [isPosting, setIsPosting] = useState(false);
@@ -117,52 +118,40 @@ useEffect(() => {
   /* Fetch The User Feed (No Auth) */
   const fetchPosts = useCallback(async () => {
     if (!hasMore) return;
-
+  
     setLoading(true);
     try {
-      // await new Promise(resolve => setTimeout(resolve, 10000));
       const response = await axios.get(`${BACKEND_URL}/api/user/posts`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        withCredentials: true,
-        params: { page, limit: 10 },
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { 
+          limit: 10,
+          lastDocId: lastDocId
+        }
       });
-      let newPosts = response.data.posts || [];
+  
+      const newPosts = response.data.posts || [];
       const currentUserId = profile?.userId;
-      if (currentUserId) {
-        newPosts = newPosts.map((post) => ({
-          ...post,
-          isLiked: Array.isArray(post.likes)
-            ? post.likes.includes(currentUserId)
-            : false,
-          likeCount:
-            post.likeCount !== undefined
-              ? post.likeCount
-              : Array.isArray(post.likes)
-              ? post.likes.length
-              : 0,
-        }));
-      } else {
-        newPosts = newPosts.map((post) => ({
-          ...post,
-          isLiked: false,
-          likeCount:
-            post.likeCount !== undefined
-              ? post.likeCount
-              : Array.isArray(post.likes)
-              ? post.likes.length
-              : 0,
-        }));
-      }
-      setPosts((prevPosts) => [...prevPosts, ...newPosts]);
-      setHasMore(newPosts.length === 10);
+      
+      // Process posts with like status...
+      const processedPosts = newPosts.map(post => ({
+        ...post,
+        isLiked: currentUserId ? (post.likes || []).includes(currentUserId) : false,
+        likeCount: Array.isArray(post.likes) ? post.likes.length : post.likeCount || 0
+      }));
+  
+      setPosts(prev => [...prev, ...processedPosts]);
+      setHasMore(response.data.hasMore);
+      setLastDocId(response.data.lastDocId);
     } catch (err) {
-      setError(err);
+      if (err.response?.data?.error === "Index missing") {
+        window.open(err.response.data.solution, "_blank");
+      } else {
+        setError(err);
+      }
     } finally {
       setLoading(false);
     }
-  }, [page, hasMore, accessToken, profile]);
+  }, [accessToken, profile, lastDocId, hasMore]);
 
     /* Update posts mapping once profile is available (or changes) */
     useEffect(() => {
@@ -185,7 +174,7 @@ useEffect(() => {
   /* Function to Fetch posts */
   useEffect(() => {
     fetchPosts();
-  }, [page]);
+  }, []);
 
   /* Infinite Post Functionality */
   const lastPostRef = useCallback(

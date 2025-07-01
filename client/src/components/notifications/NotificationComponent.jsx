@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthProvider";
 import { useRouter } from "next/navigation";
 import { BACKEND_URL } from "@/configs/index";
@@ -30,7 +30,7 @@ const notificationTypeMeta = {
     icon: "🤝",
     label: "New Connection",
     style: "bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-    },
+  },
   comment: {
     icon: "💬",
     label: "comment",
@@ -50,10 +50,14 @@ const notificationTypeMeta = {
 
 export default function NotificationComponent() {
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [lastDocId, setLastDocId] = useState(null);
   const { accessToken } = useAuth();
   const router = useRouter();
+  const observer = useRef();
   const POST_URL = (process.env.NEXT_PUBLIC_POST_URL || "https://iterconnect.live/").replace(/\/?$/, "/");
 
   useEffect(() => {
@@ -61,26 +65,71 @@ export default function NotificationComponent() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [accessToken, router]);
 
-  useEffect(() => {
-    const getAllNotifications = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get(`${BACKEND_URL}/api/notifications`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          withCredentials: true,
-        });
-        setNotifications(response.data.notifications);
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (accessToken) getAllNotifications();
+  // Fetch initial notifications
+  const fetchNotifications = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/notifications`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        withCredentials: true,
+        params: { limit: 10 },
+      });
+      setNotifications(response.data.notifications);
+      setHasMore(response.data.hasMore);
+      setLastDocId(response.data.lastDocId);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
   }, [accessToken]);
+
+  // Load more notifications
+  const loadMore = useCallback(async () => {
+    if (!hasMore || loadingMore || !lastDocId) return;
+
+    setLoadingMore(true);
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/notifications`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        withCredentials: true,
+        params: { 
+          limit: 10,
+          lastDocId
+        },
+      });
+      setNotifications(prev => [...prev, ...response.data.notifications]);
+      setHasMore(response.data.hasMore);
+      setLastDocId(response.data.lastDocId);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [accessToken, hasMore, lastDocId, loadingMore]);
+
+  // Initial load
+  useEffect(() => {
+    if (accessToken) fetchNotifications();
+  }, [accessToken, fetchNotifications]);
+
+  // Infinite scroll setup
+  const lastNotificationRef = useCallback(node => {
+    if (loading || loadingMore) return;
+    if (observer.current) observer.current.disconnect();
+
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        loadMore();
+      }
+    });
+
+    if (node) observer.current.observe(node);
+  }, [loading, loadingMore, hasMore, loadMore]);
 
   const buttons = [
     {
@@ -91,7 +140,7 @@ export default function NotificationComponent() {
     },
   ];
 
-  const renderNotificationCard = (notification) => {
+  const renderNotificationCard = (notification, index) => {
     const timeAgo = getTimeAgo(new Date(notification.date));
     const typeMeta = notificationTypeMeta[notification.type] || notificationTypeMeta.default;
 
@@ -105,9 +154,12 @@ export default function NotificationComponent() {
       );
     }
 
+    const isLast = index === notifications.length - 1;
+
     return (
       <Card
         key={notification.id}
+        ref={isLast ? lastNotificationRef : null}
         className="bg-white dark:bg-gray-800 hover:shadow-md transition-shadow duration-200"
       >
         <CardContent className="p-4 flex gap-4 items-start">
@@ -180,14 +232,26 @@ export default function NotificationComponent() {
                 Failed to load notifications: {error}
               </p>
             ) : notifications.length > 0 ? (
-              notifications.map((notification) =>
-                renderNotificationCard(notification)
+              notifications.map((notification, index) =>
+                renderNotificationCard(notification, index)
               )
             ) : (
               <div className="text-center py-10 text-gray-500">
                 <Bell className="mx-auto h-10 w-10 opacity-50 mb-2" />
-                <p>No notifications yet. You're all caught up!</p>
+                <p>No notifications yet. You&apos;re all caught up!</p>
               </div>
+            )}
+
+            {loadingMore && (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-600 dark:border-gray-300"></div>
+              </div>
+            )}
+
+            {!loading && !hasMore && notifications.length > 0 && (
+              <p className="text-center text-gray-500 py-4">
+                No more notifications to load.
+              </p>
             )}
           </div>
         </div>
