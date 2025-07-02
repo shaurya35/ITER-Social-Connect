@@ -615,7 +615,7 @@ export default function MainFeed() {
           : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
       }`}
             >
-              Teacher Posts
+              Teacher 
             </button>
 
             {/* Alumni Posts Button */}
@@ -628,7 +628,7 @@ export default function MainFeed() {
           : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
       }`}
             >
-              Alumni Posts
+              Alumni 
             </button>
 
             {/* Remaining Categories (excluding "general") */}
