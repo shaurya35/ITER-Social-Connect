@@ -12,7 +12,7 @@ export function Logo() {
       </div>
       <div className="flex flex-col">
         <span className="text-2xl font-extrabold">
-          <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-transparent bg-clip-text">ITER</span>
+          <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-transparent bg-clip-text">Campus</span>
           <span className="text-gray-800 dark:text-gray-200">Connect</span>
         </span>
         <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Connecting Minds</span>
