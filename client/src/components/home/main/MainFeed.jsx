@@ -254,9 +254,29 @@ export default function MainFeed() {
   }, [page, accessToken]);
 
   // Filter posts based on selected category
-  const filteredPosts = posts.filter((post) =>
-    selectedCategory === "general" ? true : post.category === selectedCategory
-  );
+  const filteredPosts = posts.filter((post) => {
+    if (selectedCategory === "alumni") {
+      return post.role === "alumni";
+    } else if (selectedCategory === "teacher") {
+      return post.role === "teacher";
+    } else if (
+      [
+        "general",
+        "aiml",
+        "webdev",
+        "mobile",
+        "cloud",
+        "cybersecurity",
+        "datascience",
+        "devops",
+        "blockchain",
+      ].includes(selectedCategory)
+    ) {
+      return post.category === selectedCategory;
+    }
+
+    return true;
+  });
 
   // Updated category change handler
   const handleCategoryChange = (category) => {
@@ -572,20 +592,62 @@ export default function MainFeed() {
             ref={navRef}
             style={{ scrollbarWidth: "thin" }}
           >
-            {categories.map((category) => (
-              <button
-                key={category.value}
-                onClick={() => setSelectedCategory(category.value)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
-            ${
-              selectedCategory === category.value
-                ? "bg-blue-600 text-white shadow-md dark:bg-blue-500"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-            }`}
-              >
-                {category.label}
-              </button>
-            ))}
+            {/* General Button */}
+            <button
+              onClick={() => setSelectedCategory("general")}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
+      ${
+        selectedCategory === "general"
+          ? "bg-blue-600 text-white shadow-md dark:bg-blue-500"
+          : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+      }`}
+            >
+              General
+            </button>
+
+            {/* Teacher Posts Button */}
+            <button
+              onClick={() => setSelectedCategory("teacher")}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
+      ${
+        selectedCategory === "teacher"
+          ? "bg-blue-600 text-white shadow-md dark:bg-blue-500"
+          : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+      }`}
+            >
+              Teacher 
+            </button>
+
+            {/* Alumni Posts Button */}
+            <button
+              onClick={() => setSelectedCategory("alumni")}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
+      ${
+        selectedCategory === "alumni"
+          ? "bg-blue-600 text-white shadow-md dark:bg-blue-500"
+          : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+      }`}
+            >
+              Alumni 
+            </button>
+
+            {/* Remaining Categories (excluding "general") */}
+            {categories
+              .filter((category) => category.value !== "general")
+              .map((category) => (
+                <button
+                  key={category.value}
+                  onClick={() => setSelectedCategory(category.value)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
+          ${
+            selectedCategory === category.value
+              ? "bg-blue-600 text-white shadow-md dark:bg-blue-500"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+          }`}
+                >
+                  {category.label}
+                </button>
+              ))}
           </div>
         </div>
       </div>
