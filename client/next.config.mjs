@@ -1,11 +1,34 @@
 /** @type {import('next').NextConfig} */
 import { fileURLToPath } from 'url';
 import path from 'path';
+import withPWA from 'next-pwa';  // Added
 
 // Get the current directory name
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// PWA Configuration
+const pwaConfig = withPWA({
+  dest: 'public',
+  disable: process.env.NODE_ENV === 'development',
+  register: true,
+  skipWaiting: true,
+  runtimeCaching: [
+    {
+      urlPattern: /^https?.*/,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'offlineCache',
+        expiration: {
+          maxEntries: 200,
+          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+        },
+      },
+    },
+  ],
+});
+
 const nextConfig = {
+  ...pwaConfig,  // Include PWA configuration
   async headers() {
     return [
       {

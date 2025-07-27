@@ -28,6 +28,8 @@ const poppins = Poppins({
 export const metadata = {
   title: "Home / ITER Connect",
   description: "Connect, Collaborate, and Grow",
+  manifest: '/manifest.json', 
+  themeColor: '#000000', 
 };
 
 export default function RootLayout({ children }) {
