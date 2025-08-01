@@ -1,10 +1,12 @@
 import LeftSidebar from "@/components/home/main/LeftSidebar";
 import MainFeed from "@/components/home/main/MainFeed";
 import RightSidebar from "@/components/home/main/RightSidebar";
+import AutoNotificationRequest from "@/components/AutoNotificationRequest";
 
 export default function Home() {
   return (
     <>
+      <AutoNotificationRequest />
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
         <main className="container mx-auto flex justify-center items-start ">
           <div className="flex flex-row justify-center gap-5 max-w-6xl w-full ">
