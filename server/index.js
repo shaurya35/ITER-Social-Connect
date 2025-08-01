@@ -116,6 +116,7 @@ const eventRoutes = require("./routes/eventRoutes");
 const notificationsRoutes = require("./routes/notificationsRoutes");
 const filterRoutes = require("./routes/filterRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const fcmRoutes = require("./routes/fcmRoutes");
 
 // --- Use Routes ---
 app.use("/api/auth",authRoutes);
@@ -132,6 +133,7 @@ app.use("/api/events", eventRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/filter", filterRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api", fcmRoutes);
 
 // --- Start the Server ---
 app.listen(port, () => {

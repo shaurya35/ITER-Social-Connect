@@ -10,6 +10,7 @@ import axios from "axios";
 import LeftPanel from "@/components/panels/LeftPanel";
 import RightTopPanel from "@/components/panels/RightTopPanel";
 import PanelsPreloader from "../preloaders/PanelsPreloader";
+import { FCMService } from "@/services/fcmService";
 
 // Time ago formatter
 function getTimeAgo(date) {
@@ -55,6 +56,7 @@ export default function NotificationComponent() {
   const [error, setError] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [lastDocId, setLastDocId] = useState(null);
+  const [fcmInitialized, setFcmInitialized] = useState(false);
   const { accessToken } = useAuth();
   const router = useRouter();
   const observer = useRef();
@@ -64,6 +66,22 @@ export default function NotificationComponent() {
     if (!accessToken) router.push("/signin");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [accessToken, router]);
+
+  // Initialize FCM when component mounts
+  useEffect(() => {
+    const initFCM = async () => {
+      if (accessToken && !fcmInitialized) {
+        const success = await FCMService.initializeFCM(accessToken);
+        setFcmInitialized(success);
+        
+        if (!success) {
+          console.warn("FCM initialization failed");
+        }
+      }
+    };
+
+    initFCM();
+  }, [accessToken, fcmInitialized]);
 
   // Fetch initial notifications
   const fetchNotifications = useCallback(async () => {
@@ -205,54 +223,65 @@ export default function NotificationComponent() {
   };
 
   return (
-    <div className="max-w-full mx-auto h-full">
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left Sidebar */}
-        <LeftPanel
-          heading="Notifications"
-          subheading="Stay updated with recent alerts!"
-          buttons={buttons}
-        />
-
-        {/* Main Content */}
-        <div className="flex-1">
-          <RightTopPanel
-            placeholder="Search notifications..."
-            buttonLabel="Mark All Read"
-            buttonIcon={Bell}
-            onButtonClick={() => {}}
-            disabled={true}
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+      {/* FCM Status Indicator (optional, for debugging) */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className={`px-2 py-1 rounded text-xs ${fcmInitialized ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+            FCM: {fcmInitialized ? 'ON' : 'OFF'}
+          </div>
+        </div>
+      )}
+      
+      <div className="max-w-full mx-auto h-full">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left Sidebar */}
+          <LeftPanel
+            heading="Notifications"
+            subheading="Stay updated with recent alerts!"
+            buttons={buttons}
           />
 
-          <div className="grid gap-4">
-            {loading ? (
-              <PanelsPreloader />
-            ) : error ? (
-              <p className="text-red-500">
-                Failed to load notifications: {error}
-              </p>
-            ) : notifications.length > 0 ? (
-              notifications.map((notification, index) =>
-                renderNotificationCard(notification, index)
-              )
-            ) : (
-              <div className="text-center py-10 text-gray-500">
-                <Bell className="mx-auto h-10 w-10 opacity-50 mb-2" />
-                <p>No notifications yet. You&apos;re all caught up!</p>
-              </div>
-            )}
+          {/* Main Content */}
+          <div className="flex-1">
+            <RightTopPanel
+              placeholder="Search notifications..."
+              buttonLabel="Mark All Read"
+              buttonIcon={Bell}
+              onButtonClick={() => {}}
+              disabled={true}
+            />
 
-            {loadingMore && (
-              <div className="flex justify-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-600 dark:border-gray-300"></div>
-              </div>
-            )}
+            <div className="grid gap-4">
+              {loading ? (
+                <PanelsPreloader />
+              ) : error ? (
+                <p className="text-red-500">
+                  Failed to load notifications: {error}
+                </p>
+              ) : notifications.length > 0 ? (
+                notifications.map((notification, index) =>
+                  renderNotificationCard(notification, index)
+                )
+              ) : (
+                <div className="text-center py-10 text-gray-500">
+                  <Bell className="mx-auto h-10 w-10 opacity-50 mb-2" />
+                  <p>No notifications yet. You&apos;re all caught up!</p>
+                </div>
+              )}
 
-            {!loading && !hasMore && notifications.length > 0 && (
-              <p className="text-center text-gray-500 py-4">
-                No more notifications to load.
-              </p>
-            )}
+              {loadingMore && (
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-600 dark:border-gray-300"></div>
+                </div>
+              )}
+
+              {!loading && !hasMore && notifications.length > 0 && (
+                <p className="text-center text-gray-500 py-4">
+                  No more notifications to load.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
