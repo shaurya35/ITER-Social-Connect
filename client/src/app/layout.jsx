@@ -1,3 +1,4 @@
+// src/app/layout.tsx
 import localFont from "next/font/local";
 import { Poppins } from "next/font/google";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -29,6 +30,7 @@ const poppins = Poppins({
 export const metadata = {
   title: "Home / ITER Connect",
   description: "Connect, Collaborate, and Grow",
+  manifest: '/manifest.json', // Add this line
 };
 
 export default function RootLayout({ children }) {
