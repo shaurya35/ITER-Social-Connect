@@ -4,40 +4,59 @@ import { useAuth } from '@/contexts/AuthProvider'
 import { FCMService } from '@/services/fcmService'
 
 export default function AutoNotificationRequest() {
-  const { accessToken } = useAuth();
-  const [requested, setRequested] = useState(false);
+  const { accessToken } = useAuth()
+  const [requested, setRequested] = useState(false)
+
+  // Add this to see if component mounts
+  console.log("🚀 AutoNotificationRequest component rendered")
+  console.log("🚀 AccessToken:", !!accessToken)
 
   useEffect(() => {
+    console.log("🔧 AutoNotificationRequest useEffect triggered")
+    console.log("🔧 AccessToken available:", !!accessToken)
+    console.log("🔧 Window available:", typeof window !== 'undefined')
+    console.log("🔧 Notification API available:", typeof Notification !== 'undefined')
+
     const requestPermission = async () => {
-      // Only request if user is logged in and we haven't requested before
+      console.log("🔔 requestPermission function called")
+      console.log("🔔 Conditions check:")
+      console.log("  - accessToken:", !!accessToken)
+      console.log("  - requested:", requested)
+      console.log("  - window:", typeof window !== 'undefined')
+      
       if (accessToken && !requested && typeof window !== 'undefined') {
-        setRequested(true);
-        
+        setRequested(true)
+        console.log("🔔 Attempting to request notification permission...")
+
         try {
-          console.log("🔔 Requesting notification permission...");
-          
-          // Request permission automatically
-          const permission = await Notification.requestPermission();
-          console.log("Permission result:", permission);
-          
-          if (permission === "granted") {
-            console.log("✅ Permission granted, initializing FCM...");
-            await FCMService.initializeFCM(accessToken);
-            console.log("✅ FCM initialized successfully");
+          // Check current permission status
+          console.log("Current permission:", Notification.permission)
+
+          if (Notification.permission === 'default') {
+            console.log("🔔 Requesting permission...")
+            const permission = await Notification.requestPermission()
+            console.log("✅ Permission result:", permission)
+
+            if (permission === "granted") {
+              console.log("🎉 Permission granted! Initializing FCM...")
+              await FCMService.initializeFCM(accessToken)
+            }
+          } else if (Notification.permission === 'granted') {
+            console.log("🎉 Permission already granted! Initializing FCM...")
+            await FCMService.initializeFCM(accessToken)
           } else {
-            console.log("❌ Permission denied or dismissed");
+            console.log("❌ Permission previously denied")
           }
         } catch (error) {
-          console.error("❌ Notification setup failed:", error);
+          console.error("❌ Error requesting permission:", error)
         }
+      } else {
+        console.log("🚫 Conditions not met for permission request")
       }
-    };
+    }
 
-    // Add a small delay to ensure the page is fully loaded
-    const timer = setTimeout(requestPermission, 1000);
-    
-    return () => clearTimeout(timer);
-  }, [accessToken, requested]);
+    requestPermission()
+  }, [accessToken, requested])
 
-  return null; // Invisible component
+  return null
 }
