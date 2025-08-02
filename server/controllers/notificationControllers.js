@@ -9,6 +9,8 @@ const {
   doc,
   getDoc,
 } = require("firebase/firestore");
+const admin = require('firebase-admin');
+
 const db = require("../firebase/firebaseConfig");
 
 const getNotifications = async (req, res) => {
@@ -85,6 +87,35 @@ const getNotifications = async (req, res) => {
   }
 };
 
+// New function to create notifications with push support
+const createNotification = async (notificationData) => {
+  try {
+    const db = admin.firestore();
+    
+    const notification = {
+      recipientId: notificationData.recipientId,
+      senderId: notificationData.senderId,
+      senderName: notificationData.senderName,
+      senderProfilePicture: notificationData.senderProfilePicture || null,
+      message: notificationData.message,
+      type: notificationData.type,
+      postId: notificationData.postId || null,
+      date: admin.firestore.FieldValue.serverTimestamp(),
+      pushed: false, // ← Important: Will be picked up by cron job
+      read: false
+    };
+    
+    const docRef = await db.collection('notifications').add(notification);
+    console.log(`📝 Notification created: ${docRef.id}`);
+    
+    return docRef.id;
+  } catch (error) {
+    console.error('❌ Error creating notification:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   getNotifications,
+  createNotification // Export this for use in other routes
 };
