@@ -7,13 +7,13 @@ let messaging;
 fetch('/api/firebase-config')
   .then(response => response.json())
   .then(config => {
-    console.log('🔧 Initializing Firebase in service worker with config:', config);
+    // console.log('🔧 Initializing Firebase in service worker with config:', config);
     firebase.initializeApp(config);
     messaging = firebase.messaging();
     
     // Handle background messages
     messaging.onBackgroundMessage((payload) => {
-      console.log('[firebase-messaging-sw.js] Received background message:', payload);
+      // console.log('[firebase-messaging-sw.js] Received background message:', payload);
 
       const notificationTitle = payload.notification?.title || 'New Notification';
       const notificationOptions = {

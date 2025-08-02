@@ -1,21 +1,29 @@
 {
-  "name": "Interconnect",
-  "short_name": "Interconnect",
+  "name": "ITER Social Connect",
+  "short_name": "ITERConnect",
+  "description": "Social platform for ITER students",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#000000",
-  "gcm_sender_id": "103953800507",
+  "theme_color": "#3b82f6",
   "icons": [
     {
-      "src": "/android-192x192.png",
+      "src": "/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable any"
     },
     {
-      "src": "/android-512x512.png",
+      "src": "/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable any"
     }
-  ]
+  ],
+  "categories": [
+    "social",
+    "education"
+  ],
+  "lang": "en",
+  "dir": "ltr"
 }
