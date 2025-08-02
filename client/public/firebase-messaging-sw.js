@@ -18,8 +18,8 @@ fetch('/api/firebase-config')
       const notificationTitle = payload.notification?.title || 'New Notification';
       const notificationOptions = {
         body: payload.notification?.body || 'You have a new notification',
-        icon: payload.notification?.icon || '/android-192x192.png',
-        badge: '/android-192x192.png',
+        icon: payload.notification?.icon || '/icon-192x192.png',
+        badge: '/icon-192x192.png',
         tag: payload.data?.notificationId || 'default',
         data: payload.data || {},
         requireInteraction: true,

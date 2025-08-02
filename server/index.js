@@ -163,6 +163,18 @@ app.use("/api/filter", filterRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/fcm", fcmRoutes);
 
+
+app.get('/api/firebase-config', (req, res) => {
+  res.json({
+    apiKey: process.env.apiKey,
+    authDomain: process.env.authDomain, 
+    projectId: process.env.projectId,
+    storageBucket: process.env.storageBucket,
+    messagingSenderId: process.env.messagingSenderId,
+    appId: process.env.appId
+  });
+});
+
 // --- Start the Server ---
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
