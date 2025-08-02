@@ -1,4 +1,3 @@
-// src/components/ServiceWorkerRegistration.tsx
 "use client";
 import { useEffect } from 'react';
 import firebase from 'firebase/compat/app';
@@ -8,42 +7,44 @@ export default function ServiceWorkerRegistration() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // 1. Fetch Firebase config from backend API
-        const response = await fetch('/api/firebase-config');
+        // 1. Determine API URL based on environment
+        const isDev = process.env.NODE_ENV === 'development';
+        const apiBaseUrl = isDev ? 'http://localhost:5000' : process.env.NEXT_PUBLIC_PROD_API_URL;
+        
+        // 2. Fetch Firebase config from Express server
+        const response = await fetch(`${apiBaseUrl}/api/firebase-config`);
         const firebaseConfig = await response.json();
         
-        // 2. Initialize Firebase app
+        // 3. Initialize Firebase
         const firebaseApp = firebase.initializeApp(firebaseConfig);
         const messaging = firebase.messaging();
         
-        // 3. Register service worker
+        // 4. Register service worker
         if ('serviceWorker' in navigator) {
           const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-          console.log('✅ Service Worker registered:', registration);
+          console.log('✅ Service Worker registered');
           
-          // 4. Wait for service worker to be ready
+          // 5. Wait for service worker to be ready
           await navigator.serviceWorker.ready;
           console.log('🔥 Service Worker is ready');
           
-          // 5. Send Firebase config to service worker
+          // 6. Send config to service worker
           registration.active?.postMessage({
             type: 'INIT_FIREBASE',
             config: firebaseConfig
           });
-          console.log('📬 Sent Firebase config to service worker');
           
-          // 6. Request notification permission
+          // 7. Request notification permission
           const permission = await Notification.requestPermission();
           if (permission === 'granted') {
-            console.log('🔔 Notification permission granted');
-            
-            // 7. Get FCM token
             const token = await messaging.getToken();
             console.log('🔑 FCM Token:', token);
-            
-            // TODO: Send token to your backend for push notifications
-          } else {
-            console.log('🔕 Notification permission denied');
+            // Send token to your backend
+            await fetch(`${apiBaseUrl}/api/store-fcm-token`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token })
+            });
           }
         }
       } catch (error) {
@@ -52,16 +53,7 @@ export default function ServiceWorkerRegistration() {
     };
 
     initializeApp();
-    
-    // 8. Ensure manifest exists (fallback if metadata didn't add it)
-    if (!document.querySelector('link[rel="manifest"]')) {
-      const manifestLink = document.createElement('link');
-      manifestLink.rel = 'manifest';
-      manifestLink.href = '/manifest.json';
-      document.head.appendChild(manifestLink);
-      console.log('📝 Manifest injected programmatically');
-    }
   }, []);
 
-  return null; // Component doesn't render anything
+  return null;
 }
