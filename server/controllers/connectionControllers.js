@@ -12,6 +12,8 @@ const {
   deleteDoc,
 } = require("firebase/firestore");
 const db = require("../firebase/firebaseConfig");
+const { pushNotification } = require("../helpers/liveNotificationService")
+
 
 // --- Send Connection Request ---
 const sendConnectionRequest = async (req, res) => {
@@ -23,7 +25,6 @@ const sendConnectionRequest = async (req, res) => {
       return res.status(400).json({ message: "Target email is required." });
     }
 
-    // Find target user by email
     const usersQuery = query(
       collection(db, "users"),
       where("email", "==", targetEmail)
@@ -37,14 +38,10 @@ const sendConnectionRequest = async (req, res) => {
     const targetUser = usersSnapshot.docs[0];
     const targetUserId = targetUser.id;
 
-    // Prevent self-connections
     if (targetUserId === senderId) {
-      return res
-        .status(400)
-        .json({ message: "You cannot send a connection request to yourself." });
+      return res.status(400).json({ message: "Cannot connect with yourself." });
     }
 
-    // Check if connection already exists
     const senderConnectionRef = doc(
       db,
       `users/${senderId}/connections/${targetUserId}`
@@ -53,32 +50,23 @@ const sendConnectionRequest = async (req, res) => {
 
     if (senderConnectionDoc.exists()) {
       const status = senderConnectionDoc.data().status;
-
       if (status === "accepted") {
-        return res.status(400).json({ message: "You are already connected!" });
+        return res.status(400).json({ message: "Already connected." });
       }
-
       if (status === "pending") {
-        return res
-          .status(400)
-          .json({ message: "Connection request already pending!" });
+        return res.status(400).json({ message: "Request already pending." });
       }
     }
 
-    // Get sender details
-    const senderRef = doc(db, "users", senderId);
-    const senderSnapshot = await getDoc(senderRef);
-
+    const senderSnapshot = await getDoc(doc(db, "users", senderId));
     let senderName = "Someone";
     let senderProfilePicture = "";
-
     if (senderSnapshot.exists()) {
       const senderData = senderSnapshot.data();
       senderName = senderData.name || senderName;
       senderProfilePicture = senderData.profilePicture || "";
     }
 
-    // Create connection docs (pending, both sides)
     await setDoc(doc(db, `users/${senderId}/connections/${targetUserId}`), {
       userId: targetUserId,
       status: "pending",
@@ -93,17 +81,30 @@ const sendConnectionRequest = async (req, res) => {
       createdAt: Date.now(),
     });
 
-    // Send notification
+    // 1️⃣ Save in-app notification
     const notificationRef = doc(collection(db, "notifications"));
     await setDoc(notificationRef, {
       userId: targetUserId,
       message: `You have a new connection request from ${senderName}.`,
       senderId: senderId,
-      senderName: senderName,
-      senderProfilePicture: senderProfilePicture,
+      senderName,
+      senderProfilePicture,
       timestamp: Date.now(),
       isRead: false,
-      type: "New Connection",
+      type: "connection_request",
+      postId: "", // Not applicable
+      link: "/connections", // You can change this to where connection requests are shown
+    });
+
+    // 2️⃣ Push mobile notification
+    pushNotification(targetUserId, {
+      title: "🔗 Connection Request",
+      body: `${senderName} wants to connect with you.`,
+      data: {
+        type: "connection_request",
+        url: "/connections", // Deep link or in-app path
+        senderId,
+      },
     });
 
     res.status(200).json({ message: "Connection request sent successfully!" });

@@ -10,6 +10,7 @@ const {
   writeBatch,
 } = require("firebase/firestore");
 const db = require("../firebase/firebaseConfig");
+const { pushNotification } = require("../helpers/liveNotificationService")
 
 // --- Event Form Submission ---
 const createEvent = async (req, res) => {
@@ -87,6 +88,7 @@ const createEvent = async (req, res) => {
     });
 
     await batch.commit();
+    pushNotification(recipientId, notificationData.message);
 
     res.status(200).json({ message: "Event submitted successfully!" });
   } catch (error) {

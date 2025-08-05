@@ -8,6 +8,7 @@ const {
   deleteDoc,
   setDoc,
 } = require("firebase/firestore");
+const { pushNotification } = require("../helpers/liveNotificationService")
 
 const getAllComments = async (req, res) => {
   try {
@@ -102,7 +103,6 @@ const createComment = async (req, res) => {
 
     // Send notification to post owner
     if (postOwnerId !== userId) {
-      // Prevent self-notification
       const notificationRef = doc(collection(db, "notifications"));
 
       await setDoc(notificationRef, {
@@ -115,7 +115,13 @@ const createComment = async (req, res) => {
         timestamp: Date.now(),
         isRead: false,
         type: "comment",
-        postId: postId,
+      });
+
+      // Push notification
+      pushNotification(postOwnerId, {
+        title: `${userData.name} commented on your post`,
+        body: `Tap to see what they said.`,
+        data: { postId, url: `/notifications` },
       });
     }
 
@@ -135,6 +141,7 @@ const createComment = async (req, res) => {
     });
   }
 };
+
 
 const deleteComment = async (req, res) => {
   try {

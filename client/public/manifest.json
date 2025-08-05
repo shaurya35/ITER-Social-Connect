@@ -1,8 +1,10 @@
 {
-  "name": "Interconnect",
-  "short_name": "Interconnect",
+  "name": "ITER Connect",
+  "short_name": "ITER Connect",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
   "background_color": "#ffffff",
   "theme_color": "#000000",
   "gcm_sender_id": "103953800507",

@@ -179,6 +179,23 @@ export default function MainFeed() {
     }
   }, [profile]);
 
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/firebase-messaging-sw.js')
+        .then(registration => {
+          // Add this to force immediate activation
+          if (registration.waiting) {
+            registration.waiting.postMessage({type: 'SKIP_WAITING'});
+          }
+          
+          // Listen for controller change
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            window.location.reload();
+          });
+        });
+    }
+  }, []);
+
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey && !isMobile) {
       e.preventDefault();

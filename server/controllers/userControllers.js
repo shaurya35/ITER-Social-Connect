@@ -18,6 +18,7 @@ const {
   setDoc,
 } = require("firebase/firestore");
 require("dotenv").config();
+const { pushNotification } = require("../helpers/liveNotificationService")
 
 const jwt = require("jsonwebtoken");
 
@@ -391,94 +392,89 @@ const likePost = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { postId } = req.body;
-
-    if (!postId) {
-      return res.status(400).json({ error: "Post ID is required" });
-    }
+    if (!postId) return res.status(400).json({ error: "Post ID is required" });
 
     const postRef = doc(db, "posts", postId);
-    const postSnapshot = await getDoc(postRef);
+    const postSnap = await getDoc(postRef);
+    if (!postSnap.exists()) return res.status(404).json({ error: "Post not found" });
 
-    if (!postSnapshot.exists()) {
-      return res.status(404).json({ error: "Post not found" });
-    }
-
-    const postData = postSnapshot.data();
+    const postData    = postSnap.data();
     const postOwnerId = postData.userId;
 
-    // Get current likes array
     let likes = Array.isArray(postData.likes) ? [...postData.likes] : [];
+    const alreadyLiked = likes.includes(userId);
 
-    // SIMPLE toggle logic
-    const userAlreadyLiked = likes.includes(userId);
+    let sendPush = false;
+    let likerData;
 
-    if (userAlreadyLiked) {
-      // Unlike: remove user ID
-      likes = likes.filter((id) => id !== userId);
-
-      // Delete notification
-      const q = query(
+    if (alreadyLiked) {
+      likes = likes.filter(id => id !== userId);
+      const notifQ = query(
         collection(db, "notifications"),
         where("userId", "==", postOwnerId),
         where("senderId", "==", userId),
         where("postId", "==", postId),
         where("type", "==", "like")
       );
-      const notificationSnapshot = await getDocs(q);
-      notificationSnapshot.forEach(async (doc) => {
-        await deleteDoc(doc.ref);
-      });
+      const snap = await getDocs(notifQ);
+      snap.forEach(d => deleteDoc(d.ref));
+
     } else {
-      // Like: add user ID
       likes.push(userId);
-
-      // Create notification
-      const userRef = doc(db, "users", userId);
-      const userSnapshot = await getDoc(userRef);
-
-      if (userSnapshot.exists() && postOwnerId !== userId) {
-        const userData = userSnapshot.data();
-        const q = query(
+      const userSnap = await getDoc(doc(db, "users", userId));
+      if (userSnap.exists() && postOwnerId !== userId) {
+        likerData = userSnap.data();
+        const notifQ = query(
           collection(db, "notifications"),
           where("userId", "==", postOwnerId),
           where("senderId", "==", userId),
           where("postId", "==", postId),
           where("type", "==", "like")
         );
-        const notificationSnapshot = await getDocs(q);
-        if (notificationSnapshot.empty) {
-          const notificationRef = doc(collection(db, "notifications"));
-          await setDoc(notificationRef, {
+        const snap = await getDocs(notifQ);
+        if (snap.empty) {
+          await setDoc(doc(collection(db, "notifications")), {
             userId: postOwnerId,
             senderId: userId,
-            senderName: userData.name || "Unknown",
-            senderProfilePicture: userData.profilePicture || "",
-            // message: `${userData.name} liked your post.`,
-            message: `${userData.name} liked your post. View Post`,
-            postId: postId,
+            senderName: likerData.name || "Unknown",
+            senderProfilePicture: likerData.profilePicture || "",
+            message: `${likerData.name} liked your post. View Post`,
+            postId,
+            link: `/post/${postId}`,
             timestamp: Date.now(),
             isRead: false,
             type: "like",
           });
+          sendPush = true;
         }
       }
     }
 
-    // Update post with new likes
     await updateDoc(postRef, {
       likes,
-      likeCount: likes.length, // Always derive from array
+      likeCount: likes.length,
     });
 
-    res.status(200).json({
-      message: userAlreadyLiked
-        ? "Post unliked successfully"
-        : "Post liked successfully",
+    if (sendPush && likerData) {
+      // pushNotification(postOwnerId, {
+      //   title: "👏 New Like!",
+      //   body:  `${likerData.name} liked your post.`,
+      //   data:  { postId, url: `/post/${postId}` },
+      // });
+      pushNotification(postOwnerId, {
+        title: `${likerData.name} liked your post`,
+        body: `Tap to view your post.`,
+        data: { postId, url: `/notifications` },
+      });
+    }
+
+    return res.status(200).json({
+      message: alreadyLiked ? "Post unliked" : "Post liked",
       totalLikes: likes.length,
     });
   } catch (error) {
     console.error("Like Post Error:", error);
-    res.status(500).json({ error: "Failed to like the post" });
+    return res.status(500).json({ error: "Failed to like the post" });
   }
 };
 
