@@ -49,12 +49,12 @@ cd client
 
 Install the dependencies:
 ```bash
-npm install
+pnpm install
 ```
 
 Run client Interface:
 ```bash
-npm run dev
+pnpm dev
 ```
 ## Server Setup
 
@@ -84,6 +84,9 @@ JWT_SECRET=
 JWT_REFRESH_SECRET=
 EMAIL_USER=
 EMAIL_PASS=
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
 ```
 
 4. Run Server:
