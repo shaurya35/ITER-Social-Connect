@@ -1,7 +1,7 @@
 {
   "name": "ITER Connect",
   "short_name": "ITER Connect",
-  "start_url": "/",
+  "start_url": "/explore",
   "scope": "/",
   "display": "fullscreen",
   "display_override": ["window-controls-overlay", "fullscreen"],
