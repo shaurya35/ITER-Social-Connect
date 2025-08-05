@@ -1,12 +1,11 @@
-
-
-import { initializeApp } from "firebase/app"
+import { initializeApp } from "firebase/app";
 import {
   getFirestore,
   connectFirestoreEmulator,
   enableIndexedDbPersistence,
-} from "firebase/firestore"
-import { getAuth } from "firebase/auth"
+} from "firebase/firestore";
+import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getMessaging, isSupported } from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -15,39 +14,54 @@ const firebaseConfig = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-}
+};
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig)
+export const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore
-export const db = getFirestore(app)
-
-// ✅ Enable Firestore local cache (IndexedDB)
-enableIndexedDbPersistence(db)
-  .then(() => {
-    console.log("✅ Firestore persistence enabled (IndexedDB)")
-  })
-  .catch((err) => {
-    if (err.code === "failed-precondition") {
-      console.warn("⚠️ Firestore persistence failed: multiple tabs open")
-    } else if (err.code === "unimplemented") {
-      console.warn("⚠️ Firestore persistence not supported in this browser")
-    } else {
-      console.error("❌ Firestore persistence error:", err)
-    }
-  })
+export const db = getFirestore(app);
 
 // Initialize Auth
-export const auth = getAuth(app)
+export const auth = getAuth(app);
+
+// Initialize Messaging (only if supported and in browser)
+export let messaging = null;
+if (typeof window !== "undefined") {
+  isSupported().then((supported) => {
+    if (supported) {
+      messaging = getMessaging(app);
+    }
+  });
+}
+
+// Define firebaseEnabled - this was missing!
+export const firebaseEnabled = true;
+
+// Enable Firestore local cache (IndexedDB)
+if (typeof window !== "undefined") {
+  enableIndexedDbPersistence(db)
+    .then(() => {
+      console.log("✅ Firestore persistence enabled (IndexedDB)");
+    })
+    .catch((err) => {
+      if (err.code === "failed-precondition") {
+        console.warn("⚠️ Firestore persistence failed: multiple tabs open");
+      } else if (err.code === "unimplemented") {
+        console.warn("⚠️ Firestore persistence not available in this browser");
+      } else {
+        console.error("❌ Firestore persistence error:", err);
+      }
+    });
+}
 
 // Connect to emulator in development (optional)
 if (process.env.NODE_ENV === "development") {
   try {
-    connectFirestoreEmulator(db, "localhost", 8080)
+    connectFirestoreEmulator(db, "localhost", 8080);
   } catch (error) {
-    console.log("Firestore emulator connection failed:", error)
+    console.log("Firestore emulator connection failed:", error);
   }
 }
 
-export default app
+export default app;

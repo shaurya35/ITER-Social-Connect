@@ -7,6 +7,7 @@ import Navbar from "@/components/home/navbar/Navbar";
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import "./globals.css";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -41,6 +42,7 @@ export default function RootLayout({ children }) {
         <ThemeProvider>
           <AuthProvider>
             <ProfileProvider>
+              <ServiceWorkerRegistration />
               <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
                 <Navbar />
                 {children}
