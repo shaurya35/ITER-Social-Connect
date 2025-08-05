@@ -11,36 +11,6 @@ body {
   overflow-y: scroll;
 }
 
-@media all and (display-mode: window-controls-overlay) {
-  :root {
-    /* height of the draggable titlebar region */
-    --titlebar-height: env(titlebar-area-height, 32px);
-  }
-
-  html, body {
-    margin: 0;
-    height: 100%;
-    background-color: var(--app-theme-color);
-    /* push your Tailwind app content below the native overlay */
-    padding-top: var(--titlebar-height);
-  }
-
-  /* the wrapper for your own titlebar controls */
-  .app-titlebar {
-    @apply fixed inset-x-0 top-0 flex items-center px-4 z-50;
-    height: var(--titlebar-height);
-    background-color: var(--app-theme-color);
-  }
-
-  /* example back-button inside the titlebar */
-  .app-titlebar button {
-    @apply text-white text-lg bg-transparent border-0 cursor-pointer;
-  }
-  .app-titlebar h1 {
-    @apply flex-1 text-center text-white text-base m-0;
-  }
-}
-
 ::-webkit-scrollbar {
   display: none;
 }
