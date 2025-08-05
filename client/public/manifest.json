@@ -3,7 +3,7 @@
   "short_name": "ITER Connect",
   "start_url": "/",
   "scope": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "display_override": ["window-controls-overlay"],
   "background_color": "#ffffff",
   "theme_color": "#000000",
