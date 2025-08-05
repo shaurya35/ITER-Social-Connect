@@ -11,7 +11,7 @@
     "browser"
   ],
   "background_color": "#1f2937",
-  "theme_color": "#22c55e",
+  "theme_color": "#000000",
   "gcm_sender_id": "103953800507",
   "icons": [
     {
