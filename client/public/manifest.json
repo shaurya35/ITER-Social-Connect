@@ -3,8 +3,13 @@
   "short_name": "ITER Connect",
   "start_url": "/explore",
   "scope": "/",
-  "display": "fullscreen",
-  "display_override": ["window-controls-overlay", "fullscreen"],
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui",
+    "browser"
+  ],
   "background_color": "#ffffff",
   "theme_color": "#000000",
   "gcm_sender_id": "103953800507",
