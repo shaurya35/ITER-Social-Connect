@@ -45,7 +45,6 @@ const urlsToCache = [
   "/android-chrome-192x192.png",
   "/android-chrome-512x512.png",
   "/favicon.ico",
-  "/_next/static/", // Wildcard pattern not directly cacheable; handled in fetch
 ];
 
 // ⚡ Install: cache static assets

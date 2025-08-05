@@ -27,30 +27,43 @@ function initFirebase() {
  * @param {object} [opts.data]  – Optional custom data payload
  */
 async function pushNotification(userId, opts) {
-  // 1) Ensure Admin SDK is initialized
-  const adminApp = initFirebase();
+  const firebaseAdmin = initFirebase();
 
-  // 2) Lookup the recipient's FCM token in Firestore
-  const userSnap = await getDoc(doc(db, "users", userId));
+  // 1) Fetch the user doc
+  const userRef = doc(db, "users", userId);
+  const userSnap = await getDoc(userRef);
   if (!userSnap.exists()) return;
 
-  const token = userSnap.data().fcmToken;
-  if (!token) return;  // no device registered
+  const fcmToken = userSnap.data().fcmToken;
+  if (!fcmToken) return;  // no token to send to
 
-  // 3) Build the FCM message
+  // 2) Build the message
   const message = {
-    token,
+    token: fcmToken,
     notification: {
       title: opts.title,
-      body:  opts.body,
+      body: opts.body,
     },
     data: opts.data || {},
   };
 
-  // 4) Fire-and-forget send
-  await adminApp.messaging().send(message);
-}
+  try {
+    // 3) Attempt to send
+    await firebaseAdmin.messaging().send(message);
+  } catch (err) {
+    console.error("FCM push error:", err);
 
+    const code = err.errorInfo?.code;
+    // 4) If token is no longer registered, remove it
+    if (
+      code === "messaging/registration-token-not-registered" ||
+      code === "messaging/invalid-registration-token"
+    ) {
+      console.warn(`Removing stale FCM token for user ${userId}`);
+      await updateDoc(userRef, { fcmToken: "" });
+    }
+  }
+}
 module.exports = {
   pushNotification,
 };
