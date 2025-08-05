@@ -11,6 +11,25 @@ body {
   overflow-y: scroll;
 }
 
+@media all and (display-mode: standalone),
+       all and (display-mode: window-controls-overlay) {
+  html, body {
+    margin: 0;
+    /* env() only works when WCO is supported; the fallback is for standalone mode */
+    padding-top: env(titlebar-area-height, 32px);
+  }
+
+  /* draw your custom titlebar behind the overlay controls */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: env(titlebar-area-height, 32px);
+    background-color: var(--theme-color);
+    z-index: 999;
+  }
+}
+
 ::-webkit-scrollbar {
   display: none;
 }
