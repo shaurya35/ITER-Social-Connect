@@ -1,0 +1,13 @@
+[
+    {
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.itersocialconnect.twa",              
+        "sha256_cert_fingerprints": [
+          "65:C3:72:46:58:A4:4D:29:9C:30:67:41:B1:63:22:6A:0C:BD:59:8C:ED:E2:88:73:7A:70:52:EA:93:CA:8C:73"  
+        ]
+      }
+    }
+  ]
+  
