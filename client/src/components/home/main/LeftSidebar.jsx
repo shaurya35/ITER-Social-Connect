@@ -5,6 +5,7 @@ import NextImage from "next/image";
 import { useProfile } from "@/contexts/ProfileContext";
 import { BACKEND_URL } from "@/configs/index";
 import { useRouter } from "next/navigation";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   BookMarked,
   FileText,
@@ -21,6 +22,7 @@ import {
 export default function LeftSidebar() {
   const { profile, loading } = useProfile();
   const router = useRouter();
+  const { isDarkMode } = useTheme();
 
   const menuItems = [
     { icon: User, label: "Profile", route: "/profile" },
@@ -44,6 +46,8 @@ export default function LeftSidebar() {
     router.push(`/bio`);
   }
 
+  const src = isDarkMode ? "/placeholder-banner-dark.png": "/placeholder-banner-light.png";
+
   return (
     <>
       <aside className="w-64 lg:flex-shrink-0">
@@ -55,7 +59,7 @@ export default function LeftSidebar() {
                 <div className="absolute inset-0 bg-gray-300 dark:bg-gray-700 animate-pulse transition-all duration-700"></div>
               ) : (
                 <NextImage
-                  src="/banner.png"
+                  src={src}
                   alt="Cover"
                   priority
                   fill

@@ -5,6 +5,7 @@ import LeftPanel from "@/components/panels/LeftPanel";
 import RightTopPanel from "@/components/panels/RightTopPanel";
 import PanelsPreloader from "../preloaders/PanelsPreloader";
 import { Card, CardContent } from "@/components/ui/card";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   Users,
   Github,
@@ -21,6 +22,10 @@ import { useRouter } from "next/navigation";
 export default function BioComponent() {
   const { profile, loading } = useProfile();
   const router = useRouter();
+  const { isDarkMode} = useTheme();
+
+  const src = isDarkMode ? "/placeholder-banner-dark.png": "/placeholder-banner-light.png";
+
 
   const buttons = [
     {
@@ -64,7 +69,7 @@ export default function BioComponent() {
           />
         ) : (
           <Image
-            src="/banner.png"
+            src={src}
             alt="Profile banner"
             fill
             className="object-cover"
