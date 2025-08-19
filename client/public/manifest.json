@@ -1,6 +1,7 @@
 {
-  "name": "Campus Connect",
-  "short_name": "Campus Connect",
+  "name": "ITER Connect - Student Collaboration Platform",
+  "short_name": "ITER Connect",
+  "description": "Connect, collaborate, and grow with fellow students. Find project partners, gain mentorship, and build your network.",
   "start_url": "/explore",
   "scope": "/",
   "display": "standalone",
@@ -10,19 +11,64 @@
     "minimal-ui",
     "browser"
   ],
+  "orientation": "portrait-primary",
   "background_color": "#1f2937",
   "theme_color": "#000000",
   "gcm_sender_id": "103953800507",
+  "categories": ["education", "social", "networking", "productivity"],
+  "lang": "en",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/android-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/android-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "/banner.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "ITER Connect Platform Overview"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Explore",
+      "short_name": "Explore",
+      "description": "Discover new posts and connections",
+      "url": "/explore",
+      "icons": [{ "src": "/android-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Profile",
+      "short_name": "Profile",
+      "description": "View and edit your profile",
+      "url": "/profile",
+      "icons": [{ "src": "/android-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Messages",
+      "short_name": "Messages",
+      "description": "Check your messages",
+      "url": "/messaging",
+      "icons": [{ "src": "/android-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://itersocialconnect.vercel.app/"
+    }
+  ],
+  "prefer_related_applications": false
 }

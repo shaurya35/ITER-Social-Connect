@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Settings, User, Github, Linkedin, Twitter } from "lucide-react";
 import LeftPanel from "@/components/panels/LeftPanel";
 import RightTopPanel from "@/components/panels/RightTopPanel";
+import Head from "next/head";
 
 // Team member data
 const teamMembers = [
@@ -85,8 +86,43 @@ export default function TeamComponent() {
     { label: "Our Team", icons: Settings, showChevron: true, key: "team" },
   ];
 
+  // Generate structured data for the organization and team
+  const organizationStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "ITER Connect",
+    "description": "A platform for students to collaborate, innovate, and grow together",
+    "url": "https://itersocialconnect.vercel.app",
+    "logo": "https://itersocialconnect.vercel.app/android-512x512.png",
+    "foundingDate": "2024",
+    "sameAs": [
+      "https://github.com/shaurya35/ITER-Social-Connect"
+    ],
+    "employee": teamMembers.map(member => ({
+      "@type": "Person",
+      "name": member.name,
+      "jobTitle": member.position,
+      "image": member.imageUrl,
+      "sameAs": [member.linkedin, member.github, member.twitter].filter(Boolean)
+    })),
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer service",
+      "email": "itersocialconnect@gmail.com"
+    }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto h-full">
+    <>
+      <Head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationStructuredData)
+          }}
+        />
+      </Head>
+      <div className="max-w-7xl mx-auto h-full">
       <div className="flex flex-col lg:flex-row gap-8">
         <LeftPanel
           heading="Our Team"
@@ -153,5 +189,6 @@ export default function TeamComponent() {
         </div>
       </div>
     </div>
+    </>
   );
 }
