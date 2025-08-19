@@ -12,8 +12,6 @@ const {
   deleteDoc,
 } = require("firebase/firestore");
 const db = require("../firebase/firebaseConfig");
-const { pushNotification } = require("../helpers/liveNotificationService")
-
 
 // --- Send Connection Request ---
 const sendConnectionRequest = async (req, res) => {
@@ -25,6 +23,7 @@ const sendConnectionRequest = async (req, res) => {
       return res.status(400).json({ message: "Target email is required." });
     }
 
+    // Find target user by email
     const usersQuery = query(
       collection(db, "users"),
       where("email", "==", targetEmail)
@@ -38,10 +37,14 @@ const sendConnectionRequest = async (req, res) => {
     const targetUser = usersSnapshot.docs[0];
     const targetUserId = targetUser.id;
 
+    // Prevent self-connections
     if (targetUserId === senderId) {
-      return res.status(400).json({ message: "Cannot connect with yourself." });
+      return res
+        .status(400)
+        .json({ message: "You cannot send a connection request to yourself." });
     }
 
+    // Check if connection already exists
     const senderConnectionRef = doc(
       db,
       `users/${senderId}/connections/${targetUserId}`
@@ -50,23 +53,32 @@ const sendConnectionRequest = async (req, res) => {
 
     if (senderConnectionDoc.exists()) {
       const status = senderConnectionDoc.data().status;
+
       if (status === "accepted") {
-        return res.status(400).json({ message: "Already connected." });
+        return res.status(400).json({ message: "You are already connected!" });
       }
+
       if (status === "pending") {
-        return res.status(400).json({ message: "Request already pending." });
+        return res
+          .status(400)
+          .json({ message: "Connection request already pending!" });
       }
     }
 
-    const senderSnapshot = await getDoc(doc(db, "users", senderId));
+    // Get sender details
+    const senderRef = doc(db, "users", senderId);
+    const senderSnapshot = await getDoc(senderRef);
+
     let senderName = "Someone";
     let senderProfilePicture = "";
+
     if (senderSnapshot.exists()) {
       const senderData = senderSnapshot.data();
       senderName = senderData.name || senderName;
       senderProfilePicture = senderData.profilePicture || "";
     }
 
+    // Create connection docs (pending, both sides)
     await setDoc(doc(db, `users/${senderId}/connections/${targetUserId}`), {
       userId: targetUserId,
       status: "pending",
@@ -81,30 +93,17 @@ const sendConnectionRequest = async (req, res) => {
       createdAt: Date.now(),
     });
 
-    // 1️⃣ Save in-app notification
+    // Send notification
     const notificationRef = doc(collection(db, "notifications"));
     await setDoc(notificationRef, {
       userId: targetUserId,
       message: `You have a new connection request from ${senderName}.`,
       senderId: senderId,
-      senderName,
-      senderProfilePicture,
+      senderName: senderName,
+      senderProfilePicture: senderProfilePicture,
       timestamp: Date.now(),
       isRead: false,
       type: "connection_request",
-      postId: "", // Not applicable
-      link: "/connections", // You can change this to where connection requests are shown
-    });
-
-    // 2️⃣ Push mobile notification
-    pushNotification(targetUserId, {
-      title: "🔗 Connection Request",
-      body: `${senderName} wants to connect with you.`,
-      data: {
-        type: "connection_request",
-        url: "/connections", // Deep link or in-app path
-        senderId,
-      },
     });
 
     res.status(200).json({ message: "Connection request sent successfully!" });
@@ -153,86 +152,6 @@ const getConnectionRequests = async (req, res) => {
 };
 
 // --- Respond to Connection Request ---
-// const respondToConnectionRequest = async (req, res) => {
-//   try {
-//     const { targetEmail, action } = req.body;
-//     const userId = req.user.userId;
-
-//     if (!targetEmail || !["true", "false"].includes(action)) {
-//       return res.status(400).json({ message: "Invalid request!" });
-//     }
-
-//     // Find target user by email
-//     const usersQuery = query(
-//       collection(db, "users"),
-//       where("email", "==", targetEmail)
-//     );
-//     const usersSnapshot = await getDocs(usersQuery);
-
-//     if (usersSnapshot.empty) {
-//       return res.status(404).json({ message: "Target user not found." });
-//     }
-
-//     const targetUser = usersSnapshot.docs[0];
-//     const targetUserId = targetUser.id;
-
-//     // Fetch current user's connection document
-//     const senderConnectionRef = doc(
-//       db,
-//       `users/${userId}/connections/${targetUserId}`
-//     );
-//     const receiverConnectionRef = doc(
-//       db,
-//       `users/${targetUserId}/connections/${userId}`
-//     );
-
-//     const connSnapshot = await getDoc(senderConnectionRef);
-//     if (!connSnapshot.exists()) {
-//       return res.status(404).json({ message: "Connection request not found." });
-//     }
-
-//     const connData = connSnapshot.data();
-//     if (connData.status !== "pending" || connData.direction !== "received") {
-//       return res
-//         .status(403)
-//         .json({ message: "No received request to respond to." });
-//     }
-
-//     const status = action === "true" ? "accepted" : "rejected";
-
-//     // Update status in both users' documents
-//     await updateDoc(senderConnectionRef, {
-//       status,
-//       updatedAt: Date.now(),
-//     });
-
-//     await updateDoc(receiverConnectionRef, {
-//       status,
-//       updatedAt: Date.now(),
-//     });
-
-//     // If accepted, update connections count
-//     if (action === "true") {
-//       const senderDocRef = doc(db, "users", userId);
-//       const receiverDocRef = doc(db, "users", targetUserId);
-
-//       await updateDoc(senderDocRef, { connectionsCount: increment(1) });
-//       await updateDoc(receiverDocRef, { connectionsCount: increment(1) });
-//     }
-
-//     // Fetch target user's profile picture
-//     const targetUserDoc = await getDoc(doc(db, "users", targetUserId));
-//     const targetUserData = targetUserDoc.data();
-
-//     res.status(200).json({
-//       message: `Connection request ${status} successfully.`,
-//       profilePicture: targetUserData.profilePicture,
-//     });
-//   } catch (error) {
-//     console.error("Respond to Connection Request Error:", error);
-//     res.status(500).json({ message: "Internal server error." });
-//   }
-// };
 const respondToConnectionRequest = async (req, res) => {
   try {
     const { targetEmail, action } = req.body;
@@ -242,6 +161,7 @@ const respondToConnectionRequest = async (req, res) => {
       return res.status(400).json({ message: "Invalid request!" });
     }
 
+    // Find target user by email
     const usersQuery = query(
       collection(db, "users"),
       where("email", "==", targetEmail)
@@ -255,6 +175,7 @@ const respondToConnectionRequest = async (req, res) => {
     const targetUser = usersSnapshot.docs[0];
     const targetUserId = targetUser.id;
 
+    // Fetch current user's connection document
     const senderConnectionRef = doc(
       db,
       `users/${userId}/connections/${targetUserId}`
@@ -278,37 +199,33 @@ const respondToConnectionRequest = async (req, res) => {
 
     const status = action === "true" ? "accepted" : "rejected";
 
-    await updateDoc(senderConnectionRef, { status, updatedAt: Date.now() });
-    await updateDoc(receiverConnectionRef, { status, updatedAt: Date.now() });
+    // Update status in both users' documents
+    await updateDoc(senderConnectionRef, {
+      status,
+      updatedAt: Date.now(),
+    });
 
+    await updateDoc(receiverConnectionRef, {
+      status,
+      updatedAt: Date.now(),
+    });
+
+    // If accepted, update connections count
     if (action === "true") {
       const senderDocRef = doc(db, "users", userId);
       const receiverDocRef = doc(db, "users", targetUserId);
+
       await updateDoc(senderDocRef, { connectionsCount: increment(1) });
       await updateDoc(receiverDocRef, { connectionsCount: increment(1) });
     }
 
-    // ✅ Delete connection_request notification if rejected
-    if (action === "false") {
-      const notiQuery = query(
-        collection(db, "notifications"),
-        where("userId", "==", userId),
-        where("senderId", "==", targetUserId),
-        where("type", "in", ["connection_request", "New Connection"])
-      );
-      const snapshot = await getDocs(notiQuery);
-      const deletions = snapshot.docs.map((docSnap) =>
-        deleteDoc(doc(db, "notifications", docSnap.id))
-      );
-      await Promise.all(deletions);
-    }
-
+    // Fetch target user's profile picture
     const targetUserDoc = await getDoc(doc(db, "users", targetUserId));
     const targetUserData = targetUserDoc.data();
 
     res.status(200).json({
       message: `Connection request ${status} successfully.`,
-      profilePicture: targetUserData.profilePicture || "",
+      profilePicture: targetUserData.profilePicture,
     });
   } catch (error) {
     console.error("Respond to Connection Request Error:", error);
@@ -449,7 +366,7 @@ const getConnectionStatus = async (req, res) => {
     }
 
     let { status } = connectionDoc.data();
-
+    
     // Map 'accepted' status to 'connected' for frontend consistency
     if (status === "accepted") {
       status = "connected";
