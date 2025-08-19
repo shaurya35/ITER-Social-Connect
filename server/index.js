@@ -20,12 +20,34 @@ app.use(
   })
 );
 
+// const allowedOrigins = [
+//   "http://localhost:3000",
+//   "http://itersocialconnect.vercel.app",
+//   "https://itersocialconnect.vercel.app",
+//   "https://next-chat-check.vercel.app"
+// ];
+
 const allowedOrigins = [
-  "http://localhost:3000",
+  "http://localhost:8080",
+  "capacitor://localhost",
   "http://itersocialconnect.vercel.app",
   "https://itersocialconnect.vercel.app",
+  "http://iterconnect.vercel.app",
+  "https://iterconnect.vercel.app",
+  "http://www.iterconnect.vercel.app",
+  "https://www.iterconnect.vercel.app",
+  // "http://admin-itersocialconnect.vercel.app/",
+  // "https://admin-itersocialconnect.vercel.app/",
+  "http://iterconnect.live",
+  "https://iterconnect.live",
+  "http://www.iterconnect.live", 
+  "https://www.iterconnect.live" ,
+  "https://iter-social-connect.vercel.app",
   "https://next-chat-check.vercel.app"
+
 ];
+
+
 
 const corsOptions = {
   origin: (origin, callback) => {
