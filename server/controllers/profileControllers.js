@@ -151,7 +151,6 @@ const getUserProfile = async (req, res) => {
 
     // Build the profile response
     const profileData = {
-      userId,
       name: userData.name,
       email: userData.email,
       about: userData.about || "",

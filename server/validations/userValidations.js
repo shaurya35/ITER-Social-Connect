@@ -2,7 +2,13 @@
 const { z } = require("zod");
 
 const userSignupSchema = z.object({
-  email: z.string().email("Invalid email format."),
+  email: z
+    .string()
+    .email("Invalid email format.")
+    .refine(
+      (email) => !email.endsWith("@soa.ac.in"),
+      "Email should not end with @soa.ac.in"
+    ),
 });
 
 const userSigninSchema = z.object({
@@ -11,27 +17,29 @@ const userSigninSchema = z.object({
 });
 
 const completeProfileSchema = z.object({
-  name: z.string().nonempty("Name is required."),
-  about: z.string().nonempty("About is required."),
-
+  name: z.string().nonempty("Name is required."), // Mandatory field
+  about: z.string().nonempty("About is required."), // Mandatory field
+  email: z.string().email("Invalid email address.").optional(),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters long.")
+    .optional(),
   github: z
     .string()
     .url("Invalid GitHub URL.")
     .optional()
     .refine(
       (url) => !url || url.startsWith("https://github.com/"),
-      "GitHub URL must start with 'https://github.com/'"
+      "Invalid GitHub URL. It must start with 'https://github.com/'"
     ),
-
   linkedin: z
     .string()
     .url("Invalid LinkedIn URL.")
-    .optional()
+    .nonempty("LinkedIn profile is required.")
     .refine(
-      (url) => !url || url.startsWith("https://www.linkedin.com/"),
-      "LinkedIn URL must start with 'https://www.linkedin.com/'"
+      (url) => url.startsWith("https://www.linkedin.com/"),
+      "Invalid LinkedIn URL. It must start with 'https://www.linkedin.com/'"
     ),
-
   x: z
     .string()
     .url("Invalid X (Twitter) URL.")
@@ -41,16 +49,23 @@ const completeProfileSchema = z.object({
         !url ||
         url.startsWith("https://twitter.com/") ||
         url.startsWith("https://x.com/"),
-      "X URL must start with 'https://twitter.com/' or 'https://x.com/'"
+      "Invalid X URL. It must start with 'https://twitter.com/' or 'https://x.com/'"
     ),
-
-  profilePicture: z.string().optional(),
-
+  profilePicture: z
+    .string()
+    .url("Invalid URL format.")
+    .regex(
+      /^https:\/\/media\.discordapp\.net\/.*/,
+      "Invalid Discord media URL."
+    )
+    .optional(),
   fieldsOfInterest: z
     .array(z.string().nonempty("Interest must not be empty."))
     .min(1, "At least one interest is required.")
     .optional(),
 });
+
+
 
 const changePasswordSchema = z.object({
   currentPassword: z
@@ -66,44 +81,16 @@ const changePasswordSchema = z.object({
 const updateProfileSchema = z.object({
   name: z.string().optional(),
   about: z.string().optional(),
-
-  github: z
+  github: z.string().url("Invalid GitHub URL.").optional(),
+  linkedin: z.string().url("Invalid LinkedIn URL.").optional(),
+  x: z.any().optional(), // Accepts any type, optional
+  profilePicture: z
     .string()
-    .url("Invalid GitHub URL.")
-    .optional()
-    .refine(
-      (url) => !url || url.startsWith("https://github.com/"),
-      "GitHub URL must start with 'https://github.com/'"
-    ),
-
-  linkedin: z
-    .string()
-    .url("Invalid LinkedIn URL.")
-    .optional()
-    .refine(
-      (url) => !url || url.startsWith("https://www.linkedin.com/"),
-      "LinkedIn URL must start with 'https://www.linkedin.com/'"
-    ),
-
-  x: z
-    .string()
-    .url("Invalid X (Twitter) URL.")
-    .optional()
-    .refine(
-      (url) =>
-        !url ||
-        url.startsWith("https://twitter.com/") ||
-        url.startsWith("https://x.com/"),
-      "X URL must start with 'https://twitter.com/' or 'https://x.com/'"
-    ),
-
-  profilePicture: z.string().url("Invalid profile picture URL.").optional(),
-
-  bannerPhoto: z.string().url("Invalid profile picture URL.").optional(),
-
-  fieldsOfInterest: z
-    .array(z.string().nonempty("Interest must not be empty."))
-    .min(1, "At least one interest is required.")
+    .url("Invalid URL format.")
+    .regex(
+      /^https:\/\/media\.discordapp\.net\/.*/,
+      "Invalid Discord media URL."
+    )
     .optional(),
 });
 
