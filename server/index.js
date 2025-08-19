@@ -43,8 +43,8 @@ const allowedOrigins = [
   "http://www.iterconnect.live", 
   "https://www.iterconnect.live" ,
   "https://iter-social-connect.vercel.app",
-  "https://next-chat-check.vercel.app"
-
+  "https://next-chat-check.vercel.app",
+  "https://client-check.vercel.app"
 ];
 
 
