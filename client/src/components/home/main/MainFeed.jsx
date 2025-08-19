@@ -586,12 +586,13 @@ export default function MainFeed() {
     }
   };
 
-  /* Share Service using POST route */
+  /* Enhanced Share Service with social media optimization */
   const sharePost = async (postId) => {
     if (!accessToken) {
       router.push("/signup");
       return;
     }
+    
     try {
       const response = await axios.post(
         `${BACKEND_URL}/api/user/post/share`,
@@ -603,28 +604,63 @@ export default function MainFeed() {
             : {},
         }
       );
+      
       const { directLink, whatsappLink } = response.data;
-      if (navigator.share) {
-        await navigator.share({
-          title: "Check out this post",
-          text: "I thought you might like this post:",
-          url: directLink,
-        });
-      } else {
-        const shareChoice = window.confirm(
-          "Share via WhatsApp? Press OK for WhatsApp, or Cancel to copy the direct link."
-        );
-        if (shareChoice) {
-          window.open(whatsappLink, "_blank");
-        } else {
-          if (navigator.clipboard) {
-            await navigator.clipboard.writeText(directLink);
-            alert("Direct link copied to clipboard!");
-          } else {
-            prompt("Copy this link:", directLink);
-          }
+      
+      // Find the post to get better sharing data
+      const post = posts.find(p => p.id === postId);
+      const shareData = {
+        title: post ? `${post.authorName} on ITER Connect` : "Check out this post on ITER Connect",
+        text: post ? post.content.substring(0, 100) + (post.content.length > 100 ? "..." : "") : "I thought you might like this post:",
+        url: directLink
+      };
+
+      // Try enhanced native sharing first
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (error) {
+          console.log('Native sharing cancelled or failed:', error);
         }
       }
+
+      // Enhanced fallback with multiple options
+      const shareOptions = [
+        { name: "Twitter", action: () => {
+          const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareData.title)}&url=${encodeURIComponent(directLink + '?utm_source=twitter&utm_medium=social&utm_campaign=post_share')}&hashtags=ITERConnect,StudentCollaboration&via=_shaurya35`;
+          window.open(twitterUrl, '_blank', 'width=600,height=400');
+        }},
+        { name: "LinkedIn", action: () => {
+          const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(directLink + '?utm_source=linkedin&utm_medium=social&utm_campaign=post_share')}&title=${encodeURIComponent(shareData.title)}&summary=${encodeURIComponent(shareData.text)}`;
+          window.open(linkedinUrl, '_blank', 'width=600,height=400');
+        }},
+        { name: "WhatsApp", action: () => window.open(whatsappLink + '&utm_source=whatsapp&utm_medium=messaging&utm_campaign=post_share', "_blank") },
+        { name: "Copy Link", action: async () => {
+          try {
+            const linkWithUTM = directLink + '?utm_source=direct&utm_medium=copy&utm_campaign=post_share';
+            if (navigator.clipboard) {
+              await navigator.clipboard.writeText(linkWithUTM);
+              alert("Link copied to clipboard!");
+            } else {
+              prompt("Copy this link:", linkWithUTM);
+            }
+          } catch (error) {
+            console.error("Failed to copy link:", error);
+          }
+        }}
+      ];
+
+      // Create a simple share menu
+      const choice = prompt(
+        `Choose sharing option:\n${shareOptions.map((opt, i) => `${i + 1}. ${opt.name}`).join('\n')}\n\nEnter number (1-${shareOptions.length}):`
+      );
+      
+      const choiceIndex = parseInt(choice) - 1;
+      if (choiceIndex >= 0 && choiceIndex < shareOptions.length) {
+        shareOptions[choiceIndex].action();
+      }
+
     } catch (error) {
       console.error("Error sharing post:", error);
       alert("Failed to generate share links. Please try again.");
