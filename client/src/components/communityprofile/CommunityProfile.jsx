@@ -21,6 +21,7 @@ import {
   UserX
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from "next/navigation";
 import { BACKEND_URL } from "@/configs/index";
 
@@ -32,6 +33,9 @@ export default function CommunityProfile({ profileId }) {
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { isDarkMode} = useTheme();
+
+  const src = isDarkMode ? "/placeholder-banner-dark.png": "/placeholder-banner-light.png";
   
   const isOwnProfile = user?.id === profileId;
 
@@ -223,7 +227,7 @@ export default function CommunityProfile({ profileId }) {
           />
         ) : (
           <Image
-            src="/banner.png"
+            src={src}
             alt="Profile banner"
             fill
             className="object-cover"

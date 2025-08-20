@@ -215,7 +215,7 @@ export default function MainFeed() {
 
           getToken(messaging, {
             vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-            serviceWorkerRegistration: registration,   // ← pass the SW here
+            serviceWorkerRegistration: registration, // ← pass the SW here
           })
             .then((fcmToken) => {
               if (!fcmToken) {
@@ -290,10 +290,15 @@ export default function MainFeed() {
       });
 
       const newPosts = response.data.posts || [];
-
+      const currentUserId = profile?.userId;
       // SIMPLE processing - backend provides isLiked
       const processedPosts = newPosts.map((post) => ({
         ...post,
+        isLiked: Array.isArray(post.likes)
+          ? post.likes.includes(currentUserId)
+          : false,
+        likeCount:
+          post.likeCount ?? (Array.isArray(post.likes) ? post.likes.length : 0),
         category: post.category || "general",
       }));
 
@@ -669,7 +674,7 @@ export default function MainFeed() {
           : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
       }`}
             >
-              Teacher 
+              Teacher
             </button>
 
             {/* Alumni Posts Button */}
@@ -682,7 +687,7 @@ export default function MainFeed() {
           : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
       }`}
             >
-              Alumni 
+              Alumni
             </button>
 
             {/* Remaining Categories (excluding "general") */}
