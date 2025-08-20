@@ -138,7 +138,7 @@ const getAllPosts = async (req, res) => {
   try {
     const { page = 1, limit: limitParam = 10 } = req.query;
     const limitValue = parseInt(limitParam, 10);
-    // const currentUserId = req.user?.userId; // Get current user ID
+    const currentUserId = req.user?.userId; 
 
     if (isNaN(page) || isNaN(limitValue) || page < 1 || limitValue < 1) {
       return res.status(400).json({ error: "Invalid page or limit parameter" });
@@ -180,7 +180,7 @@ const getAllPosts = async (req, res) => {
       const likesArray = Array.isArray(data.likes) ? data.likes : [];
       
       // SIMPLE isLiked calculation
-      const isLiked = currentUserId ? likesArray.includes(currentUserId) : false;
+      // const isLiked = currentUserId ? likesArray.includes(currentUserId) : false;
       
       return {
         id: doc.id,

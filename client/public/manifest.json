@@ -1,6 +1,6 @@
 {
-  "name": "ITER Connect",
-  "short_name": "ITER Connect",
+  "name": "Campus Connect",
+  "short_name": "Campus Connect",
   "start_url": "/explore",
   "scope": "/",
   "display": "standalone",

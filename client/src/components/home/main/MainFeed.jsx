@@ -277,11 +277,10 @@ export default function MainFeed() {
   // }, [page, accessToken, profile?.userId]);
 
   /* Fetch The User Feed */
-  const fetchPosts = useCallback(async () => {
+   const fetchPosts = useCallback(async () => {
     if (isFetchingRef.current || !hasMore) return;
     isFetchingRef.current = true;
     setLoading(true);
-
     try {
       const response = await axios.get(`${BACKEND_URL}/api/feed`, {
         params: { page, limit: 10 },
@@ -291,7 +290,8 @@ export default function MainFeed() {
 
       const newPosts = response.data.posts || [];
       const currentUserId = profile?.userId;
-      // SIMPLE processing - backend provides isLiked
+
+      // Process posts with category filtering
       const processedPosts = newPosts.map((post) => ({
         ...post,
         isLiked: Array.isArray(post.likes)
@@ -310,7 +310,7 @@ export default function MainFeed() {
       isFetchingRef.current = false;
       setLoading(false);
     }
-  }, [page, accessToken]);
+  }, [page, accessToken, profile?.userId]);
 
   // Filter posts based on selected category
   const filteredPosts = posts.filter((post) => {
