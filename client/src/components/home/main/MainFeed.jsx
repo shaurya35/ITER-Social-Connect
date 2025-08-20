@@ -287,7 +287,7 @@ export default function MainFeed() {
         withCredentials: true,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       });
-
+      // console.log(response)
       const newPosts = response.data.posts || [];
       // const currentUserId = profile?.userId;
 
@@ -304,14 +304,16 @@ export default function MainFeed() {
       //   category: post.category || "general",
       // }));
 
+      // const currentUserId = profile?.userId;
       const processedPosts = newPosts.map((post) => {
-        const currentUserId = profile?.userId;
+        // console.log(currentUserId)
       
         return {
           ...post,
-          isLiked: Array.isArray(post.likes)
-            ? post.likes.includes(currentUserId) 
-            : false,
+          // isLiked: Array.isArray(post.likes)
+          //   ? post.likes.includes(currentUserId) 
+          //   : false,
+          isLiked: post.isLiked,
           likeCount: post.likeCount ?? (Array.isArray(post.likes) ? post.likes.length : 0),
           category: post.category || "general",
         };

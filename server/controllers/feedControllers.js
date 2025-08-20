@@ -178,14 +178,12 @@ const getAllPosts = async (req, res) => {
     let posts = postsSnapshot.docs.map((doc) => {
       const data = doc.data();
       const likesArray = Array.isArray(data.likes) ? data.likes : [];
-      
-      // SIMPLE isLiked calculation
-      // const isLiked = currentUserId ? likesArray.includes(currentUserId) : false;
+      const isLiked = currentUserId ? likesArray.includes(currentUserId) : false;
       
       return {
         id: doc.id,
         ...data,
-        // isLiked, // Add isLiked field
+        isLiked, // Add isLiked field
         likeCount: likesArray.length, // Always use array length
         category: data.category || "Uncategorized",
       };
