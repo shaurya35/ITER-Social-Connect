@@ -4,9 +4,7 @@
       "test": "echo \"Error: no test specified\" && exit 1",
   
       "push:main": "git add . && git commit -m \"Minor fixes\" && git push origin main",
-      "push:production": "git add . && git commit -m \"Minor fixes\" && git push origin production",
-
-      "push:main-to-production": "git add . && git commit -m \"Minor fixes\" && git push origin main && git checkout production && git merge main && git add . && git commit -m \"Minor fixes\" && git push origin production"
+      "push:production": "git add . && git commit -m \"Minor fixes\" && git push origin production"
     }
   }
   
