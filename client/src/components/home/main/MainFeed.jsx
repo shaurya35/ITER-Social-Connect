@@ -289,18 +289,34 @@ export default function MainFeed() {
       });
 
       const newPosts = response.data.posts || [];
-      const currentUserId = profile?.userId;
+      // const currentUserId = profile?.userId;
 
       // Process posts with category filtering
-      const processedPosts = newPosts.map((post) => ({
-        ...post,
-        isLiked: Array.isArray(post.likes)
-          ? post.likes.includes(currentUserId)
-          : false,
-        likeCount:
-          post.likeCount ?? (Array.isArray(post.likes) ? post.likes.length : 0),
-        category: post.category || "general",
-      }));
+      // const processedPosts = newPosts.map((post) => (
+        
+      //   {
+      //   ...post,
+      //   isLiked: Array.isArray(post.likes)
+      //     ? post.likes.includes(currentUserId)
+      //     : false,
+      //   likeCount:
+      //     post.likeCount ?? (Array.isArray(post.likes) ? post.likes.length : 0),
+      //   category: post.category || "general",
+      // }));
+
+      const processedPosts = newPosts.map((post) => {
+        const currentUserId = profile?.userId;
+      
+        return {
+          ...post,
+          isLiked: Array.isArray(post.likes)
+            ? post.likes.includes(currentUserId) 
+            : false,
+          likeCount: post.likeCount ?? (Array.isArray(post.likes) ? post.likes.length : 0),
+          category: post.category || "general",
+        };
+      });
+      
 
       setPosts((prev) => [...prev, ...processedPosts]);
       setHasMore(response.data.hasMore);
