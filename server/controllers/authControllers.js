@@ -89,7 +89,7 @@ const sendOtpEmail = async (email, otp) => {
   await transporter.sendMail(mailOptions);
 };
 
-const sendOtpForgetPassowrd = async (email, otp) => {
+const sendOtpForgetPassword = async (email, otp) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -99,10 +99,28 @@ const sendOtpForgetPassowrd = async (email, otp) => {
   });
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: `"ITER Connect" <${process.env.EMAIL_USER}>`,
     to: email,
     subject: "Password Reset OTP",
-    text: `You requested a password reset. Use the OTP ${otp} to reset your password. This OTP is valid for 5 minutes. If you didn't request a password reset, please ignore this email.`,
+    html: `
+      <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: auto; padding: 30px; border: 1px solid #e0e0e0; border-radius: 10px;">
+        <h2 style="color: #333; font-weight: 500;">Password Reset Request</h2>
+        <p style="font-size: 15px; color: #444;">
+          Please use the code below to reset your password for <strong>ITER Connect</strong>.
+          This code will expire in <strong>5 minutes</strong>. If you did not request this, please ignore this email.
+        </p>
+
+        <div style="text-align: center; margin: 40px 0;">
+          <span style="font-size: 42px; font-weight: bold; color: #000;">${otp}</span>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #ccc;" />
+
+        <p style="font-size: 12px; color: #999; margin-top: 20px;">
+          You received this email because a password reset was requested for your account on <strong>ITER Connect</strong>.
+        </p>
+      </div>
+    `,
   };
 
   await transporter.sendMail(mailOptions);
@@ -151,7 +169,8 @@ const signup = async (req, res) => {
 
       if (existingUser.profileCompleted === false) {
         return res.status(400).json({
-          message: "Your account has been created, but the profile is incomplete. Please contact the technical team for assistance.",
+          message:
+            "Your account has been created, but the profile is incomplete. Please contact the technical team for assistance.",
         });
       }
 
@@ -515,7 +534,7 @@ const forgetPassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if an OTP request already exists for the email
+    // Check if OTP exists and is not expired
     const otpDocRef = doc(db, "otps", email);
     const otpDocSnapshot = await getDoc(otpDocRef);
 
@@ -524,25 +543,24 @@ const forgetPassword = async (req, res) => {
       const remainingTime = otpExpiresAt - Date.now();
 
       if (remainingTime > 0) {
-        const remainingSeconds = Math.ceil(remainingTime / 1000);
         return res.status(400).json({
-          message: `An OTP request is already pending. Please wait ${remainingSeconds} seconds before requesting a new OTP or use the OTP sent to your email.`,
+          message: `OTP already sent. Wait ${Math.ceil(
+            remainingTime / 1000
+          )} seconds.`,
         });
       }
     }
 
-    // Generate new OTP and save it to the database
+    // Generate new OTP
     const otp = generateOtp();
-    const otpData = {
+    await setDoc(otpDocRef, {
       email,
       otp,
-      otpExpiresAt: Date.now() + 5 * 60 * 1000, // Expires in 5 minutes
-    };
+      otpExpiresAt: Date.now() + 5 * 60 * 1000,
+      used: false,
+    });
 
-    await setDoc(otpDocRef, otpData); // Save OTP with expiration details
-
-    // Send OTP via email
-    await sendOtpForgetPassowrd(email, otp);
+    await sendOtpForgetPassword(email, otp);
 
     res.status(200).json({ message: "OTP sent to email" });
   } catch (error) {
@@ -552,14 +570,19 @@ const forgetPassword = async (req, res) => {
 };
 
 const verifyOtpForForgetPassword = async (req, res) => {
-  const { email, otp } = req.body;
+  const { email, otp, newPassword } = req.body;
 
   try {
-    // Check if the OTP is a valid 6-digit number
     const otpRegex = /^[0-9]{6}$/;
     if (!otpRegex.test(otp)) {
       return res.status(400).json({
         message: "Invalid OTP format. OTP must be a 6-digit number.",
+      });
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({
+        message: "Password must be at least 6 characters long.",
       });
     }
 
@@ -570,46 +593,49 @@ const verifyOtpForForgetPassword = async (req, res) => {
       return res.status(404).json({ message: "OTP not found or expired" });
     }
 
-    const { otp: savedOtp, expiresAt, used } = otpDocSnapshot.data();
+    const { otp: savedOtp, otpExpiresAt, used } = otpDocSnapshot.data();
 
-    // Check if the OTP has been marked as used
     if (used) {
       return res.status(400).json({
         message: "This OTP has already been used. Please request a new one.",
       });
     }
 
-    // Check if the OTP has expired
-    if (Date.now() > expiresAt) {
+    if (Date.now() > otpExpiresAt) {
       await deleteDoc(otpDocRef); // Clean up expired OTP
       return res
         .status(400)
         .json({ message: "OTP expired. Please request a new one." });
     }
 
-    // Validate the OTP
     if (savedOtp !== otp) {
       return res.status(401).json({ message: "Invalid OTP" });
     }
 
-    // Mark the OTP as used and generate a reset token
-    const resetToken = generateResetToken(); // Create a secure random token
-    const resetTokenExpiresAt = Date.now() + 5 * 60 * 1000; // Token valid for 5 minutes
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await setDoc(
-      otpDocRef,
-      { used: true, resetToken, resetTokenExpiresAt },
-      { merge: true }
+    const userQuery = query(
+      collection(db, "users"),
+      where("email", "==", email)
     );
+    const userSnapshot = await getDocs(userQuery);
+
+    if (userSnapshot.empty) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const userRef = userSnapshot.docs[0].ref;
+    await setDoc(userRef, { password: hashedPassword }, { merge: true });
+
+    // Delete OTP document after successful reset
+    await deleteDoc(otpDocRef);
 
     res.status(200).json({
-      message:
-        "OTP verified successfully. Use the reset token to reset your password.",
-      resetToken,
+      message: "Password has been reset successfully and OTP has been cleared.",
     });
   } catch (error) {
-    console.error("Error verifying OTP:", error);
-    res.status(500).json({ message: "Failed to verify OTP" });
+    console.error("Error verifying OTP and resetting password:", error);
+    res.status(500).json({ message: "Failed to reset password" });
   }
 };
 
