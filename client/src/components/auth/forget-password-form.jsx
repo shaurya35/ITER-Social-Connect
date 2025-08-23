@@ -57,7 +57,7 @@ export function ForgetPasswordForm() {
 
       <div className="text-center mb-6">
         <p className="text-gray-600 dark:text-white">
-          Enter your email address and we'll send you an OTP to reset your password.
+          Enter your email address and we will send you an OTP to reset your password.
         </p>
       </div>
 
