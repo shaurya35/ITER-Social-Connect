@@ -370,7 +370,7 @@ export default function CompleteProfile() {
               id="idCard"
               type="file"
               accept="image/*"
-              required
+              // required
               onChange={handleIdCardChange}
               disabled={isUploading && !error}
               className={`mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 ${

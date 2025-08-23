@@ -5,6 +5,7 @@ require("dotenv").config();
 // --- checks, extract, verify JWT tokens ---
 const isLoggedIn = (req, res, next) => {
   const authHeader = req.headers.authorization;
+
   if (!authHeader) {
     return res.status(401).json({ error: "Authorization header is missing" });
   }
@@ -13,7 +14,7 @@ const isLoggedIn = (req, res, next) => {
   const token =
     req.cookies.token ||
     (req.headers.authorization && req.headers.authorization.split(" ")[1]);
-
+    // console.log(authHeader)
   if (!token) {
     return res.status(401).json({ error: "Authentication token is missing" });
   }
@@ -25,7 +26,8 @@ const isLoggedIn = (req, res, next) => {
         .status(401)
         .json({ error: "Invalid token: userId is missing" });
     }
-    req.user = { userId: decoded.userId };
+    // console.log(decoded)
+    req.user = { userId: decoded.userId, email: decoded.email };
     next();
   } catch (error) {
     res.status(401).json({ error: "Invalid or expired token" });

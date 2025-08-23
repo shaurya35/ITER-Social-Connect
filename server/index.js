@@ -94,6 +94,13 @@ app.use((err, req, res, next) => {
   }
 });
 
+// logger
+app.use((req, res, next) => {
+  console.log(`[REQ] ${new Date().toISOString()} ${req.method} ${req.originalUrl} host:${req.headers.host}`);
+  next();
+});
+
+
 // --- .env Port ---
 const port = process.env.PORT || 8080;
 

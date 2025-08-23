@@ -16,12 +16,14 @@ export const ProfileProvider = ({ children }) => {
     if (user && accessToken) {
       const fetchProfile = async () => {
         setLoading(true);
+        // console.log(accessToken)
         try {
           const response = await axios.get(`${BACKEND_URL}/api/profile`, {
             headers: {
               Authorization: `Bearer ${accessToken}`,
             },
           });
+          // console.log(response.data)
           setProfile(response.data);
           // console.log(response.data)
         } catch (error) {
