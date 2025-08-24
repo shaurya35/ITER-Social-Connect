@@ -27,30 +27,6 @@ function convertFirebaseTimestamp(timestamp) {
   return new Date().toISOString();
 }
 
-// Helper function to extract current user ID from JWT token
-function getCurrentUserIdFromToken(token) {
-  try {
-    if (!token) return null;
-
-    const base64Url = token.split(".")[1];
-    if (!base64Url) return null;
-
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-
-    const decoded = JSON.parse(jsonPayload);
-    return decoded.id || decoded.userId || decoded.sub || decoded._id;
-  } catch (error) {
-    console.error("Error decoding token:", error);
-    return null;
-  }
-}
-
 export async function GET(request, { params }) {
   try {
     // Fix for Next.js 15 - await params
@@ -71,8 +47,9 @@ export async function GET(request, { params }) {
     let authToken = accessToken;
     if (!authToken && refreshToken) {
       try {
+        // const refreshResponse = await fetch("http://localhost:8080/api/auth/refresh", {
         const refreshResponse = await fetch(
-          `${process.env.BACKEND_URL}/api/auth/refresh`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/refresh`,
           {
             method: "POST",
             headers: {
@@ -91,9 +68,6 @@ export async function GET(request, { params }) {
       }
     }
 
-    // 🔍 Get current user ID from token for proper message alignment
-    const currentUserId = getCurrentUserIdFromToken(authToken);
-
     const headers = {
       "Content-Type": "application/json",
       Cookie: cookieHeader,
@@ -104,7 +78,8 @@ export async function GET(request, { params }) {
     }
 
     // Call your actual backend messages endpoint
-    const backendUrl = `${process.env.BACKEND_URL}/api/chat/messages?receiverId=${conversationId}`;
+    // const backendUrl = `http://localhost:8080/api/chat/messages?receiverId=${conversationId}`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/chat/messages?receiverId=${conversationId}`;
 
     const response = await fetch(backendUrl, { headers });
 

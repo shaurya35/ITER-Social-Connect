@@ -1,51 +1,41 @@
 // Helper function to extract token from cookies (server-side)
+
+import { API_CONFIG } from "@/configs/api";
+const backendUrl = API_CONFIG.ENDPOINTS.CHAT.CONVERSATIONS;
+
 function getTokenFromCookies(cookieHeader) {
   if (!cookieHeader) return null;
 
-  const cookies = cookieHeader.split(";").reduce((acc, cookie) => {
-    const [key, value] = cookie.trim().split("=");
-    if (key && value) {
-      acc[key] = decodeURIComponent(value);
-    }
-    return acc;
-  }, {});
-
-  return {
-    refreshToken: cookies.refreshToken,
-    accessToken:
-      cookies.accessToken || cookies.token || cookies.authToken || cookies.jwt,
-  };
-}
-
-// Helper function to extract current user ID from JWT token
-function getCurrentUserIdFromToken(token) {
   try {
-    if (!token) return null;
+    const cookies = cookieHeader.split(";").reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split("=");
+      if (key && value) {
+        acc[key] = decodeURIComponent(value);
+      }
+      return acc;
+    }, {});
 
-    const base64Url = token.split(".")[1];
-    if (!base64Url) return null;
-
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-
-    const decoded = JSON.parse(jsonPayload);
-    return decoded.id || decoded.userId || decoded.sub || decoded._id;
+    return {
+      refreshToken: cookies.refreshToken,
+      accessToken:
+        cookies.accessToken ||
+        cookies.token ||
+        cookies.authToken ||
+        cookies.jwt,
+    };
   } catch (error) {
-    console.error("Error decoding token:", error);
+    console.error("Error parsing cookies:", error);
     return null;
   }
 }
 
 export async function GET(request) {
+
   try {
     const cookieHeader = request.headers.get("cookie");
 
     if (!cookieHeader) {
+      console.error("❌ No authentication cookies found");
       return Response.json(
         { error: "No authentication cookies" },
         { status: 401 }
@@ -53,14 +43,22 @@ export async function GET(request) {
     }
 
     // Extract tokens from cookies
-    const { refreshToken, accessToken } = getTokenFromCookies(cookieHeader);
+    const tokens = getTokenFromCookies(cookieHeader);
+    if (!tokens) {
+      console.error("❌ Failed to parse cookies");
+      return Response.json({ error: "Invalid cookies" }, { status: 401 });
+    }
+
+    const { refreshToken, accessToken } = tokens;
 
     // Get access token (refresh if needed)
     let authToken = accessToken;
     if (!authToken && refreshToken) {
       try {
         const refreshResponse = await fetch(
-          `${process.env.BACKEND_URL}/api/auth/refresh`,
+          `${
+            process.env.NEXT_PUBLIC_BACKEND_URL
+          }/api/auth/refresh`,
           {
             method: "POST",
             headers: {
@@ -73,14 +71,21 @@ export async function GET(request) {
         if (refreshResponse.ok) {
           const refreshData = await refreshResponse.json();
           authToken = refreshData.accessToken || refreshData.token;
+        } else {
+          const errorText = await refreshResponse.text();
         }
       } catch (refreshError) {
-        console.error("Error refreshing token:", refreshError);
+        console.error("❌ Error refreshing token:", refreshError);
       }
     }
 
-    // Get current user ID from token
-    const currentUserId = getCurrentUserIdFromToken(authToken);
+    if (!authToken) {
+      console.error("❌ No valid auth token found");
+      return Response.json(
+        { error: "No valid authentication token" },
+        { status: 401 }
+      );
+    }
 
     const headers = {
       "Content-Type": "application/json",
@@ -91,77 +96,130 @@ export async function GET(request) {
       headers["Authorization"] = `Bearer ${authToken}`;
     }
 
+    // const backendUrl = `${
+    //   process.env.NEXT_PUBLIC_BACKEND_URL 
+    // }/api/chat/conversations`;
+
     // Call your actual backend conversations endpoint
-    const response = await fetch(
-      `${process.env.BACKEND_URL}/api/chat/conversations`,
-      { headers }
-    );
+    const response = await fetch(backendUrl, {
+      headers,
+      method: "GET",
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Backend error:", errorText);
+      console.error("❌ Backend error response:", errorText);
+
+      // Return more specific error information
       return Response.json(
-        { error: "Failed to fetch conversations" },
+        {
+          error: "Backend request failed",
+          status: response.status,
+          details: errorText,
+          backendUrl: backendUrl,
+        },
         { status: response.status }
       );
     }
 
     const data = await response.json();
 
+    // Check if backend returned expected format
+    if (!data || typeof data !== "object") {
+      console.error("❌ Invalid backend response format");
+      return Response.json(
+        { error: "Invalid backend response" },
+        { status: 500 }
+      );
+    }
+
     // Transform your backend data to frontend format
-    if (data.status === "ok" && data.conversations) {
-      const transformedConversations = data.conversations.map((conv) => {
-        return {
-          id: conv.user._id, // Use the other user's ID as conversation ID
-          chatId: conv.chatId,
-          participants: [
-            {
-              id: currentUserId, // Use the actual current user ID from JWT
-              name: "You", // Keep "You" for current user in participants
-              email: "you@example.com",
-              avatar: null,
-              isOnline: true,
-            },
-            {
-              id: conv.user._id, // Other user
-              name: conv.user.name, // 👤 Use actual user name from backend
+    if (data.status === "ok" && Array.isArray(data.conversations)) {
+      const transformedConversations = data.conversations
+        .map((conv, index) => {
+          // Handle missing user data
+          if (!conv.user || !conv.user._id) {
+            console.warn("⚠️ Conversation missing user data:", conv);
+            return null;
+          }
+
+          // Handle timestamp conversion safely
+          let timestampISO = new Date().toISOString();
+          if (conv.timestamp && conv.timestamp.seconds) {
+            timestampISO = new Date(
+              conv.timestamp.seconds * 1000
+            ).toISOString();
+          }
+
+          return {
+            id: conv.user._id, // Use the other user's ID as conversation ID
+            chatId: conv.chatId || `chat_${conv.user._id}`,
+            participants: [
+              {
+                id: "current_user", // This will be replaced with actual current user ID
+                name: "You",
+                email: "you@example.com",
+                avatar: null,
+                isOnline: true,
+              },
+              {
+                id: conv.user._id,
+                name: conv.user.name || "Unknown User",
+                email:
+                  conv.user.email ||
+                  `${(conv.user.name || "user")
+                    .toLowerCase()
+                    .replace(/\s+/g, "")}@example.com`,
+                avatar: conv.user.avatar,
+                isOnline: false,
+              },
+            ],
+            otherUser: {
+              id: conv.user._id,
+              name: conv.user.name || "Unknown User",
               email:
                 conv.user.email ||
-                `${conv.user.name.toLowerCase().replace(" ", "")}@example.com`,
-              avatar: conv.user.avatar, // 🖼️ Supabase URL from backend
+                `${(conv.user.name || "user")
+                  .toLowerCase()
+                  .replace(/\s+/g, "")}@example.com`,
+              avatar: conv.user.avatar,
               isOnline: false,
             },
-          ],
-          // 👤 Store the other user info directly for easy access in UI
-          otherUser: {
-            id: conv.user._id,
-            name: conv.user.name, // 👤 Real user name for display (e.g., "Shaurya Jha", "Don Sharma")
-            email:
-              conv.user.email ||
-              `${conv.user.name.toLowerCase().replace(" ", "")}@example.com`,
-            avatar: conv.user.avatar, // 🖼️ Supabase URL for profile picture
-            isOnline: false,
-          },
-          lastMessage: {
-            id: `msg_last_${conv.chatId}`,
-            content: conv.lastMessage,
-            timestamp: new Date(conv.timestamp.seconds * 1000).toISOString(),
-            senderId: "unknown", // We don't know who sent the last message from this endpoint
-          },
-          unreadCount: 0,
-          createdAt: new Date(conv.timestamp.seconds * 1000).toISOString(),
-          updatedAt: new Date(conv.timestamp.seconds * 1000).toISOString(),
-        };
-      });
+            lastMessage: conv.lastMessage
+              ? {
+                  id: `msg_last_${conv.chatId}`,
+                  content: conv.lastMessage,
+                  timestamp: timestampISO,
+                  senderId: "unknown",
+                }
+              : null,
+            unreadCount: 0,
+            createdAt: timestampISO,
+            updatedAt: timestampISO,
+          };
+        })
+        .filter(Boolean); // Remove null entries
 
       return Response.json(transformedConversations);
     }
 
+    // Handle case where backend returns success but no conversations
+    if (data.status === "ok") {
+      return Response.json([]);
+    }
+
+    // Handle unexpected backend response format
     return Response.json([]);
   } catch (error) {
-    console.error("❌ Error fetching conversations:", error);
+    console.error("❌ Critical error in conversations API route:", error);
+    console.error("❌ Error stack:", error.stack);
+
     return Response.json(
-      { error: "Failed to fetch conversations" },
+      {
+        error: "Internal server error",
+        message: error.message,
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      },
       { status: 500 }
     );
   }

@@ -23,7 +23,6 @@ import axios from "axios";
 import PostsPreloader from "@/components/preloaders/PostsPreloader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useMediaQuery } from "react-responsive";
 import {
   Image,
   MessageCircleMore,
@@ -53,8 +52,6 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { initializeApp } from "firebase/app";
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 /**
  * Time Handler Function
@@ -161,7 +158,6 @@ export default function MainFeed() {
   const { isDarkMode } = useTheme();
   const redirectToProfile = useProfileNavigation();
   const router = useRouter();
-  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("general");
@@ -180,65 +176,6 @@ export default function MainFeed() {
       setFetchingUser(false);
     }
   }, [profile]);
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey && !isMobile) {
-      e.preventDefault();
-      handlePostSubmit();
-    }
-  };
-  useEffect(() => {
-    if (!accessToken) return;
-    const app = initializeApp({
-      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_SENDER_ID,
-      appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    });
-    const messaging = getMessaging(app);
-
-    // 2) register your merged service worker
-    navigator.serviceWorker
-      .register("/firebase-messaging-sw.js")
-      .then((registration) => {
-        // immediate activation
-        if (registration.waiting) {
-          registration.waiting.postMessage({ type: "SKIP_WAITING" });
-        }
-        navigator.serviceWorker.addEventListener("controllerchange", () =>
-          window.location.reload()
-        );
-
-        // 3) now request notifications & get FCM token
-        Notification.requestPermission().then((perm) => {
-          if (perm !== "granted") return;
-
-          getToken(messaging, {
-            vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-            serviceWorkerRegistration: registration, // ← pass the SW here
-          })
-            .then((fcmToken) => {
-              if (!fcmToken) {
-                console.error("No FCM token obtained");
-                return;
-              }
-              return axios.post(
-                `${BACKEND_URL}/api/notifications/register-token`,
-                { token: fcmToken },
-                { headers: { Authorization: `Bearer ${accessToken}` } }
-              );
-            })
-            .then(() => console.log("FCM token registered"))
-            .catch(console.error);
-        });
-      })
-      .catch(console.error);
-
-    // 4) optional: handle foreground messages
-    onMessage(messaging, (payload) => {
-      console.log("Foreground push:", payload);
-    });
-  }, [accessToken]);
 
   // /* Fetch The User Feed */
   // const fetchPosts = useCallback(async () => {
@@ -277,48 +214,25 @@ export default function MainFeed() {
   // }, [page, accessToken, profile?.userId]);
 
   /* Fetch The User Feed */
-   const fetchPosts = useCallback(async () => {
+  const fetchPosts = useCallback(async () => {
     if (isFetchingRef.current || !hasMore) return;
     isFetchingRef.current = true;
     setLoading(true);
+
     try {
       const response = await axios.get(`${BACKEND_URL}/api/feed`, {
         params: { page, limit: 10 },
         withCredentials: true,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       });
-      // console.log(response)
+
       const newPosts = response.data.posts || [];
-      // const currentUserId = profile?.userId;
 
-      // Process posts with category filtering
-      // const processedPosts = newPosts.map((post) => (
-        
-      //   {
-      //   ...post,
-      //   isLiked: Array.isArray(post.likes)
-      //     ? post.likes.includes(currentUserId)
-      //     : false,
-      //   likeCount:
-      //     post.likeCount ?? (Array.isArray(post.likes) ? post.likes.length : 0),
-      //   category: post.category || "general",
-      // }));
-
-      // const currentUserId = profile?.userId;
-      const processedPosts = newPosts.map((post) => {
-        // console.log(currentUserId)
-      
-        return {
-          ...post,
-          // isLiked: Array.isArray(post.likes)
-          //   ? post.likes.includes(currentUserId) 
-          //   : false,
-          isLiked: post.isLiked,
-          likeCount: post.likeCount ?? (Array.isArray(post.likes) ? post.likes.length : 0),
-          category: post.category || "general",
-        };
-      });
-      
+      // SIMPLE processing - backend provides isLiked
+      const processedPosts = newPosts.map((post) => ({
+        ...post,
+        category: post.category || "general",
+      }));
 
       setPosts((prev) => [...prev, ...processedPosts]);
       setHasMore(response.data.hasMore);
@@ -328,32 +242,12 @@ export default function MainFeed() {
       isFetchingRef.current = false;
       setLoading(false);
     }
-  }, [page, accessToken, profile?.userId]);
+  }, [page, accessToken]);
 
   // Filter posts based on selected category
-  const filteredPosts = posts.filter((post) => {
-    if (selectedCategory === "alumni") {
-      return post.role === "alumni";
-    } else if (selectedCategory === "teacher") {
-      return post.role === "teacher";
-    } else if (
-      [
-        "general",
-        "aiml",
-        "webdev",
-        "mobile",
-        "cloud",
-        "cybersecurity",
-        "datascience",
-        "devops",
-        "blockchain",
-      ].includes(selectedCategory)
-    ) {
-      return post.category === selectedCategory;
-    }
-
-    return true;
-  });
+  const filteredPosts = posts.filter((post) =>
+    selectedCategory === "general" ? true : post.category === selectedCategory
+  );
 
   // Updated category change handler
   const handleCategoryChange = (category) => {
@@ -669,62 +563,20 @@ export default function MainFeed() {
             ref={navRef}
             style={{ scrollbarWidth: "thin" }}
           >
-            {/* General Button */}
-            <button
-              onClick={() => setSelectedCategory("general")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
-      ${
-        selectedCategory === "general"
-          ? "bg-blue-600 text-white shadow-md dark:bg-blue-500"
-          : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-      }`}
-            >
-              General
-            </button>
-
-            {/* Teacher Posts Button */}
-            <button
-              onClick={() => setSelectedCategory("teacher")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
-      ${
-        selectedCategory === "teacher"
-          ? "bg-blue-600 text-white shadow-md dark:bg-blue-500"
-          : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-      }`}
-            >
-              Teacher
-            </button>
-
-            {/* Alumni Posts Button */}
-            <button
-              onClick={() => setSelectedCategory("alumni")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
-      ${
-        selectedCategory === "alumni"
-          ? "bg-blue-600 text-white shadow-md dark:bg-blue-500"
-          : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-      }`}
-            >
-              Alumni
-            </button>
-
-            {/* Remaining Categories (excluding "general") */}
-            {categories
-              .filter((category) => category.value !== "general")
-              .map((category) => (
-                <button
-                  key={category.value}
-                  onClick={() => setSelectedCategory(category.value)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
-          ${
-            selectedCategory === category.value
-              ? "bg-blue-600 text-white shadow-md dark:bg-blue-500"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-          }`}
-                >
-                  {category.label}
-                </button>
-              ))}
+            {categories.map((category) => (
+              <button
+                key={category.value}
+                onClick={() => setSelectedCategory(category.value)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
+            ${
+              selectedCategory === category.value
+                ? "bg-blue-600 text-white shadow-md dark:bg-blue-500"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            }`}
+              >
+                {category.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -764,13 +616,12 @@ export default function MainFeed() {
                 placeholder="What's on your mind?"
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
-                // onKeyDown={(e) => {
-                //   if (e.key === "Enter" && !e.shiftKey) {
-                //     e.preventDefault();
-                //     handlePostSubmit();
-                //   }
-                // }}
-                onKeyDown={(e) => handleKeyDown(e)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handlePostSubmit();
+                  }
+                }}
                 className="resize-y bg-gray-100 min-h-[100px] dark:bg-gray-700 border-0 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 rounded-lg text-gray-900 dark:text-gray-100 whitespace-pre-wrap overflow-y-auto"
               />
               <div className="mt-4 flex flex-col md:flex-row gap-3 justify-between items-start md:items-center">

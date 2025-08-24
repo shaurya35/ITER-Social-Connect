@@ -1,11 +1,14 @@
-const express = require("express");
-const router = express.Router();
-const { postMessage, fetchMessages,fetchUserConversations,searchUsers } = require("../controllers/chatController");
-const { isLoggedIn } = require("../middlewares/authMiddlewares");
+const express = require("express")
+const router = express.Router()
+const chatController = require("../controllers/chatController")
 
-router.post("/message", isLoggedIn, postMessage); 
-router.get("/messages", isLoggedIn, fetchMessages); 
-router.get("/conversations", isLoggedIn, fetchUserConversations); 
-router.get("/search", isLoggedIn, searchUsers); 
+const { isLoggedIn } = require("../middlewares/authMiddlewares") 
+router.use(isLoggedIn)
 
-module.exports = router;
+router.get("/conversations", chatController.getConversations)
+router.get("/messages", chatController.getMessages)
+router.post("/message", chatController.sendMessage) 
+router.post("/conversations", chatController.createConversation)
+router.get("/search", chatController.searchUsers)
+
+module.exports = router

@@ -1,410 +1,16 @@
-// "use client";
 
-// import { useState, useRef, useEffect } from "react";
-// import {
-//   Send,
-//   MoreVertical,
-//   Phone,
-//   Video,
-//   Info,
-//   RefreshCw,
-// } from "lucide-react";
-// import { Button } from "@/components/ui/button";
-// import { Input } from "@/components/ui/input";
-// import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-// import avatarCache from "@/utils/avatarCache";
-// import { useTheme } from "@/contexts/ThemeContext";
-// import { ChatInfoModal } from "./ChatInfoModal";
-
-// export function ChatWindow({
-//   conversation,
-//   messages,
-//   currentUser,
-//   onSendMessage,
-//   onRefreshMessages,
-//   isFirebase,
-//   userInfo, // Added userInfo prop
-// }) {
-//   const [newMessage, setNewMessage] = useState("");
-//   const [sending, setSending] = useState(false);
-//   const [refreshing, setRefreshing] = useState(false);
-//   const [avatarLoadStates, setAvatarLoadStates] = useState({}); // Track avatar loading
-//   const [showChatInfo, setShowChatInfo] = useState(false);
-//   const messagesEndRef = useRef(null);
-//   const { isDarkMode } = useTheme();
-
-//   useEffect(() => {
-//     scrollToBottom();
-//   }, [messages]);
-
-//   const scrollToBottom = () => {
-//     messagesEndRef.current?.scrollIntoView({
-//       behavior: "smooth",
-//       block: "end", // 👈 only scrolls just enough to reveal the bottom
-//       inline: "nearest",
-//     });
-//   };
-
-//   const handleSendMessage = async (e) => {
-//     e.preventDefault();
-//     if (newMessage.trim() && !sending) {
-//       setSending(true);
-//       try {
-//         console.log("📤 ChatWindow: Sending message:", {
-//           message: newMessage.trim(),
-//           conversationId: conversation?.id,
-//           otherUserId: conversation?.otherUser?.id,
-//         });
-
-//         await onSendMessage(newMessage.trim());
-//         setNewMessage("");
-//         console.log("✅ ChatWindow: Message sent successfully");
-//       } catch (error) {
-//         console.error("❌ ChatWindow: Failed to send message:", error);
-//         // Show user-friendly error message
-//         alert(`Failed to send message: ${error.message || "Unknown error"}`);
-//       } finally {
-//         setSending(false);
-//       }
-//     }
-//   };
-
-//   const handleRefresh = async () => {
-//     if (refreshing || !onRefreshMessages) return;
-
-//     setRefreshing(true);
-//     try {
-//       await onRefreshMessages();
-//     } catch (error) {
-//       console.error("Failed to refresh messages:", error);
-//     } finally {
-//       setRefreshing(false);
-//     }
-//   };
-
-//   const formatMessageTime = (timestamp) => {
-//     return new Date(timestamp).toLocaleTimeString([], {
-//       hour: "2-digit",
-//       minute: "2-digit",
-//     });
-//   };
-
-//   // 🖼️ Enhanced avatar handling with loading states
-//   const handleAvatarLoad = (userId, context = "") => {
-//     console.log(`✅ ${context} avatar loaded for user ${userId}`);
-//     setAvatarLoadStates((prev) => ({
-//       ...prev,
-//       [userId]: { loaded: true, error: false },
-//     }));
-//   };
-
-//   const handleAvatarError = (userId, context = "") => {
-//     console.log(`❌ ${context} avatar failed for user ${userId}`);
-//     setAvatarLoadStates((prev) => ({
-//       ...prev,
-//       [userId]: { loaded: false, error: true },
-//     }));
-//   };
-
-//   // 🖼️ Smart avatar resolver - uses cache first, then fallback
-//   const getAvatarForUser = (userId, fallbackAvatar = null) => {
-//     // Try cache first
-//     const cachedAvatar = avatarCache.getAvatar(userId);
-//     if (cachedAvatar) {
-//       return cachedAvatar;
-//     }
-
-//     // Fallback to provided avatar
-//     if (fallbackAvatar) {
-//       // Cache it for future use
-//       avatarCache.setAvatar(userId, fallbackAvatar);
-//       return fallbackAvatar;
-//     }
-
-//     // Final fallback
-//     return "/placeholder.svg";
-//   };
-
-//   if (!conversation) {
-//     return (
-//       <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
-//         <div className="text-center">
-//           <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-//             <Send className="h-12 w-12 text-gray-400 dark:text-gray-500" />
-//           </div>
-//           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-//             Welcome to ITER Social Connect Chat
-//           </h3>
-//           <p className="text-gray-600 dark:text-gray-400">
-//             Select a conversation to start messaging
-//           </p>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   const otherUser = conversation.otherUser || {
-//     id: "unknown",
-//     name: "Unknown User",
-//     avatar: null,
-//     isOnline: false,
-//   };
-
-//   const headerLoadState = avatarLoadStates[otherUser.id] || {
-//     loaded: false,
-//     error: false,
-//   };
-
-//   return (
-//     <>
-//       {/* Fixed height: Take remaining space after navbar */}
-//       <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 h-full max-h-[calc(100vh-4rem)] lg:max-h-[calc(100vh-4rem)]">
-//         {/* Chat Header - Fixed height */}
-//         <div className="flex-shrink-0 p-3 lg:p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
-//           <div className="flex items-center justify-between">
-//             <div className="flex items-center space-x-2 lg:space-x-3 min-w-0 flex-1">
-//               <Avatar className="h-8 w-8 lg:h-10 lg:w-10 flex-shrink-0">
-//                 {/* 🖼️ ENHANCED: Better avatar handling with CORS */}
-//                 {otherUser.avatar ? (
-//                   <AvatarImage
-//                     src={
-//                       getAvatarForUser(otherUser.id, otherUser.avatar) ||
-//                       "/placeholder.svg" ||
-//                       "/placeholder.svg"
-//                     }
-//                     alt={otherUser.name}
-//                     className="object-cover"
-//                     crossOrigin="anonymous"
-//                     onLoad={() => handleAvatarLoad(otherUser.id, "Chat header")}
-//                     onError={() =>
-//                       handleAvatarError(otherUser.id, "Chat header")
-//                     }
-//                     style={{
-//                       display: headerLoadState.error ? "none" : "block",
-//                     }}
-//                   />
-//                 ) : null}
-//                 <AvatarFallback className="bg-blue-600 dark:bg-blue-500 text-white text-xs lg:text-sm">
-//                   {otherUser.name?.charAt(0)?.toUpperCase() || "U"}
-//                 </AvatarFallback>
-//               </Avatar>
-//               <div className="min-w-0 flex-1">
-//                 <h2 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white truncate">
-//                   {otherUser.name || "Unknown User"}
-//                 </h2>
-//                 <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
-//                   {otherUser.isOnline ? "Online" : "Offline"}
-//                 </p>
-//               </div>
-//             </div>
-
-//             <div className="flex items-center space-x-1 lg:space-x-2 flex-shrink-0">
-//               {/* 🎯 Manual Refresh Button (only for backend mode) */}
-//               {!isFirebase && (
-//                 <Button
-//                   variant="ghost"
-//                   size="sm"
-//                   title="Refresh Messages"
-//                   onClick={handleRefresh}
-//                   disabled={refreshing}
-//                   className="hover:bg-gray-100 dark:hover:bg-gray-700 hidden sm:flex"
-//                 >
-//                   <RefreshCw
-//                     className={`h-4 w-4 text-gray-600 dark:text-gray-400 ${
-//                       refreshing ? "animate-spin" : ""
-//                     }`}
-//                   />
-//                 </Button>
-//               )}
-//               <Button
-//                 variant="ghost"
-//                 size="sm"
-//                 title="Voice Call"
-//                 className="hover:bg-gray-100 dark:hover:bg-gray-700 hidden sm:flex"
-//                 disabled
-//               >
-//                 <Phone className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-//               </Button>
-//               <Button
-//                 variant="ghost"
-//                 size="sm"
-//                 title="Video Call"
-//                 className="hover:bg-gray-100 dark:hover:bg-gray-700 hidden sm:flex"
-//                 disabled
-//               >
-//                 <Video className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-//               </Button>
-//               <Button
-//                 variant="ghost"
-//                 size="sm"
-//                 title="Chat Info"
-//                 className="hover:bg-gray-100 dark:hover:bg-gray-700"
-//                 onClick={() => setShowChatInfo(true)}
-//               >
-//                 <Info className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-//               </Button>
-//               <Button
-//                 variant="ghost"
-//                 size="sm"
-//                 title="More Options"
-//                 className="hover:bg-gray-100 dark:hover:bg-gray-700"
-//                 disabled
-//               >
-//                 <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-//               </Button>
-//             </div>
-//           </div>
-
-//           {/* Status indicator */}
-//           {!isFirebase && (
-//             <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 hidden lg:block">
-//               <span>💡 Refresh for new messages</span>
-//             </div>
-//           )}
-//         </div>
-
-//         {/* Messages - Scrollable area with calculated height */}
-//         <div className="flex-1 overflow-y-auto p-2 lg:p-3 bg-gray-50 dark:bg-gray-900 min-h-0">
-//           {!messages || messages.length === 0 ? (
-//             <div className="text-center text-gray-500 dark:text-gray-400 mt-8">
-//               <p className="text-sm lg:text-base">No messages yet</p>
-//               <p className="text-xs lg:text-sm mt-1">Start the conversation!</p>
-//             </div>
-//           ) : (
-//             <div className="space-y-2 lg:space-y-3">
-//               {messages.map((message, index) => {
-//                 if (!message || !message.id) {
-//                   return null;
-//                 }
-
-//                 const isMyMessage =
-//                   String(message.senderId) === String(currentUser?.id);
-
-//                 const senderAvatar =
-//                   message.senderAvatar ||
-//                   userInfo?.[`${message.senderId}Avatar`] ||
-//                   null;
-
-//                 return (
-//                   <div
-//                     key={message.id}
-//                     className={`flex w-full ${
-//                       isMyMessage ? "justify-end" : "justify-start"
-//                     }`}
-//                   >
-//                     <div
-//                       className={`flex items-start max-w-[85%] lg:max-w-[70%] ${
-//                         isMyMessage ? "flex-row-reverse" : ""
-//                       }`}
-//                     >
-//                       {/* Avatar aligned to start of the message */}
-//                       <Avatar
-//                         className={`h-6 w-6 lg:h-8 lg:w-8 mt-1 flex-shrink-0 ${
-//                           isMyMessage ? "ml-2 lg:ml-3" : "mr-2 lg:mr-3"
-//                         }`}
-//                       >
-//                         <AvatarImage
-//                           src={senderAvatar || "/placeholder.svg"}
-//                           alt={isMyMessage ? "You" : otherUser.name}
-//                           className="object-cover"
-//                           onError={(e) => (e.target.style.display = "none")}
-//                         />
-//                         <AvatarFallback
-//                           className={`text-white text-xs ${
-//                             isMyMessage
-//                               ? "bg-blue-600 dark:bg-blue-500"
-//                               : "bg-gray-400 dark:bg-gray-600"
-//                           }`}
-//                         >
-//                           {isMyMessage
-//                             ? "Y"
-//                             : otherUser.name?.charAt(0)?.toUpperCase() || "U"}
-//                         </AvatarFallback>
-//                       </Avatar>
-
-//                       {/* Message Bubble and Timestamp */}
-//                       <div className="flex flex-col min-w-0">
-//                         <div
-//                           className={`px-3 lg:px-4 py-2 rounded-2xl max-w-full break-words ${
-//                             isMyMessage
-//                               ? "bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white shadow-md"
-//                               : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm border border-gray-300 dark:border-gray-600"
-//                           }`}
-//                         >
-//                           <p className="text-sm leading-relaxed whitespace-pre-wrap">
-//                             {message.content || message.text || "No content"}
-//                           </p>
-//                         </div>
-
-//                         <p
-//                           className={`text-xs text-gray-500 dark:text-gray-400 mt-1 ${
-//                             isMyMessage ? "text-right mr-2" : "text-left ml-2"
-//                           }`}
-//                         >
-//                           {message.timestamp
-//                             ? formatMessageTime(message.timestamp)
-//                             : ""}
-//                         </p>
-//                       </div>
-//                     </div>
-//                   </div>
-//                 );
-//               })}
-//             </div>
-//           )}
-//           <div ref={messagesEndRef} />
-//         </div>
-
-//         {/* Message Input - Fixed at bottom */}
-//         <div className="flex-shrink-0 p-3 lg:p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-//           <form
-//             onSubmit={handleSendMessage}
-//             className="flex items-center space-x-2 lg:space-x-3"
-//           >
-//             <div className="flex-1 relative">
-//               <Input
-//                 value={newMessage}
-//                 onChange={(e) => setNewMessage(e.target.value)}
-//                 placeholder="Type a message..."
-//                 className="pr-12 rounded-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500 text-sm lg:text-base"
-//                 disabled={sending}
-//               />
-//             </div>
-//             <Button
-//               type="submit"
-//               disabled={!newMessage.trim() || sending}
-//               className="rounded-full w-9 h-9 lg:w-10 lg:h-10 p-0 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50"
-//             >
-//               {sending ? (
-//                 <div className="animate-spin rounded-full h-3 w-3 lg:h-4 lg:w-4 border-b-2 border-white"></div>
-//               ) : (
-//                 <Send className="h-3 w-3 lg:h-4 lg:w-4" />
-//               )}
-//             </Button>
-//           </form>
-//         </div>
-//       </div>
-
-//       {/* Chat Info Modal */}
-//       <ChatInfoModal
-//         isOpen={showChatInfo}
-//         onClose={() => setShowChatInfo(false)}
-//         otherUser={otherUser}
-//       />
-//     </>
-//   );
-// }
 
 
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Send, MoreVertical, Phone, Video, Info, RefreshCw } from "lucide-react"
+import { Send, MoreVertical, Phone, Video, Settings, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import avatarCache from "@/utils/avatarCache"
 import { useTheme } from "@/contexts/ThemeContext"
+import { useWebSocket } from "@/contexts/WebSocketContext"
 import { ChatInfoModal } from "./ChatInfoModal"
 
 export function ChatWindow({
@@ -414,24 +20,45 @@ export function ChatWindow({
   onSendMessage,
   onRefreshMessages,
   isFirebase,
-  userInfo, // Added userInfo prop
+  userInfo,
 }) {
   const [newMessage, setNewMessage] = useState("")
   const [sending, setSending] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  const [avatarLoadStates, setAvatarLoadStates] = useState({}) // Track avatar loading
+  const [avatarLoadStates, setAvatarLoadStates] = useState({})
   const [showChatInfo, setShowChatInfo] = useState(false)
   const messagesEndRef = useRef(null)
+  const inputRef = useRef(null)
   const { isDarkMode } = useTheme()
+
+  // ✅ WebSocket integration with all features
+  const { isConnected, joinConversation, handleTyping, isUserOnline, getTypingUsers } = useWebSocket()
+
+  // Join conversation room when conversation changes
+  useEffect(() => {
+    if (conversation?.id && isConnected) {
+      joinConversation(conversation.id)
+    }
+  }, [conversation?.id, isConnected, joinConversation])
 
   useEffect(() => {
     scrollToBottom()
   }, [messages])
 
+  // Auto-focus input when conversation is selected
+  useEffect(() => {
+    if (conversation && inputRef.current) {
+      // Small delay to ensure the component is fully rendered
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 100)
+    }
+  }, [conversation])
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
-      block: "end", // 👈 only scrolls just enough to reveal the bottom
+      block: "end",
       inline: "nearest",
     })
   }
@@ -441,16 +68,26 @@ export function ChatWindow({
     if (newMessage.trim() && !sending) {
       setSending(true)
       try {
-        
-
         await onSendMessage(newMessage.trim())
         setNewMessage("")
+        // Focus back on input after sending
+        setTimeout(() => {
+          inputRef.current?.focus()
+        }, 100)
       } catch (error) {
-        // Show user-friendly error message
         alert(`Failed to send message: ${error.message || "Unknown error"}`)
       } finally {
         setSending(false)
       }
+    }
+  }
+
+  const handleInputChange = (e) => {
+    setNewMessage(e.target.value)
+
+    // ✅ Send typing indicator
+    if (conversation?.id && e.target.value.trim()) {
+      handleTyping(conversation.id)
     }
   }
 
@@ -474,7 +111,6 @@ export function ChatWindow({
     })
   }
 
-  // 🖼️ Enhanced avatar handling with loading states
   const handleAvatarLoad = (userId, context = "") => {
     setAvatarLoadStates((prev) => ({
       ...prev,
@@ -489,33 +125,26 @@ export function ChatWindow({
     }))
   }
 
-  // 🖼️ Smart avatar resolver - uses cache first, then fallback
   const getAvatarForUser = (userId, fallbackAvatar = null) => {
-    // Try cache first
     const cachedAvatar = avatarCache.getAvatar(userId)
     if (cachedAvatar) {
       return cachedAvatar
     }
 
-    // Fallback to provided avatar
     if (fallbackAvatar) {
-      // Cache it for future use
       avatarCache.setAvatar(userId, fallbackAvatar)
       return fallbackAvatar
     }
 
-    // Final fallback
     return "/placeholder.svg"
   }
 
-  // 🎯 Helper function to determine if messages should be grouped
   const shouldGroupWithPrevious = (currentMessage, previousMessage) => {
     if (!previousMessage) return false
 
-    // Group if same sender and within 2 minutes
     const timeDiff = new Date(currentMessage.timestamp) - new Date(previousMessage.timestamp)
     const sameUser = String(currentMessage.senderId) === String(previousMessage.senderId)
-    const withinTimeLimit = timeDiff < 2 * 60 * 1000 // 2 minutes
+    const withinTimeLimit = timeDiff < 2 * 60 * 1000
 
     return sameUser && withinTimeLimit
   }
@@ -531,6 +160,11 @@ export function ChatWindow({
             Welcome to ITER Social Connect Chat
           </h3>
           <p className="text-gray-600 dark:text-gray-400">Select a conversation to start messaging</p>
+          {/* WebSocket Status Indicator */}
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? "bg-green-500" : "bg-red-500"}`}></div>
+            <span className="text-xs text-gray-500">{isConnected ? "Connected" : "Disconnected"}</span>
+          </div>
         </div>
       </div>
     )
@@ -548,45 +182,64 @@ export function ChatWindow({
     error: false,
   }
 
+  // ✅ Get typing users for this conversation
+  const typingUsers = getTypingUsers(conversation.id)
+  const isOtherUserTyping = typingUsers.has(otherUser.id)
+
+  // ✅ Check if other user is online
+  const otherUserOnline = isUserOnline(otherUser.id)
+
   return (
     <>
-      {/* Fixed height: Take remaining space after navbar */}
       <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 h-full max-h-[calc(100vh-4rem)] lg:max-h-[calc(100vh-4rem)]">
-        {/* Chat Header - Fixed height */}
+        {/* Chat Header */}
         <div className="flex-shrink-0 p-3 lg:p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 lg:space-x-3 min-w-0 flex-1">
-              <Avatar className="h-8 w-8 lg:h-10 lg:w-10 flex-shrink-0">
-                {/* 🖼️ ENHANCED: Better avatar handling with CORS */}
-                {otherUser.avatar ? (
-                  <AvatarImage
-                    src={getAvatarForUser(otherUser.id, otherUser.avatar) || "/placeholder.svg" || "/placeholder.svg"}
-                    alt={otherUser.name}
-                    className="object-cover"
-                    crossOrigin="anonymous"
-                    onLoad={() => handleAvatarLoad(otherUser.id, "Chat header")}
-                    onError={() => handleAvatarError(otherUser.id, "Chat header")}
-                    style={{
-                      display: headerLoadState.error ? "none" : "block",
-                    }}
-                  />
-                ) : null}
-                <AvatarFallback className="bg-blue-600 dark:bg-blue-500 text-white text-xs lg:text-sm">
-                  {otherUser.name?.charAt(0)?.toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-8 w-8 lg:h-10 lg:w-10 flex-shrink-0">
+                  {otherUser.avatar ? (
+                    <AvatarImage
+                      src={getAvatarForUser(otherUser.id, otherUser.avatar) || "/placeholder.svg"}
+                      alt={otherUser.name}
+                      className="object-cover"
+                      crossOrigin="anonymous"
+                      onLoad={() => handleAvatarLoad(otherUser.id, "Chat header")}
+                      onError={() => handleAvatarError(otherUser.id, "Chat header")}
+                      style={{
+                        display: headerLoadState.error ? "none" : "block",
+                      }}
+                    />
+                  ) : null}
+                  <AvatarFallback className="bg-blue-600 dark:bg-blue-500 text-white text-xs lg:text-sm">
+                    {otherUser.name?.charAt(0)?.toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                {/* ✅ Online Status Indicator */}
+                {otherUserOnline && (
+                  <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                )}
+              </div>
               <div className="min-w-0 flex-1">
                 <h2 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white truncate">
                   {otherUser.name || "Unknown User"}
                 </h2>
                 <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
-                  {otherUser.isOnline ? "Online" : "Offline"}
+                  {/* ✅ Show typing indicator or online status */}
+                  {isOtherUserTyping ? "Typing..." : otherUserOnline ? "Online" : "Offline"}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center space-x-1 lg:space-x-2 flex-shrink-0">
-              {/* 🎯 Manual Refresh Button (only for backend mode) */}
+              {/* ✅ WebSocket Status */}
+              {/* <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? "bg-green-500" : "bg-red-500"}`}></div>
+                <span className="text-xs text-gray-600 dark:text-gray-400 hidden sm:inline">
+                  {isConnected ? "Live" : "Offline"}
+                </span>
+              </div> */}
+{/* 
               {!isFirebase && (
                 <Button
                   variant="ghost"
@@ -600,7 +253,7 @@ export function ChatWindow({
                     className={`h-4 w-4 text-gray-600 dark:text-gray-400 ${refreshing ? "animate-spin" : ""}`}
                   />
                 </Button>
-              )}
+              )} */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -619,6 +272,15 @@ export function ChatWindow({
               >
                 <Video className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               </Button>
+              {/* <Button
+                variant="ghost"
+                size="sm"
+                title="Chat Settings"
+                className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => setShowChatInfo(true)}
+              >
+                <Settings className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              </Button> */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -626,34 +288,26 @@ export function ChatWindow({
                 className="hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => setShowChatInfo(true)}
               >
-                <Info className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                title="More Options"
-                className="hover:bg-gray-100 dark:hover:bg-gray-700"
-                disabled
-              >
                 <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               </Button>
             </div>
           </div>
 
           {/* Status indicator */}
-          {!isFirebase && (
-            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 hidden lg:block">
-              <span>💡 Refresh for new messages</span>
-            </div>
-          )}
+          {/* <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 hidden lg:block">
+            <span>💬 Start your conversation with {otherUser.name}</span>
+          </div> */}
         </div>
 
-        {/* Messages - Scrollable area with calculated height */}
+        {/* Messages */}
         <div className="flex-1 overflow-y-auto p-3 lg:p-4 bg-gray-50 dark:bg-gray-900 min-h-0">
           {!messages || messages.length === 0 ? (
             <div className="text-center text-gray-500 dark:text-gray-400 mt-8">
-              <p className="text-sm lg:text-base">No messages yet</p>
-              <p className="text-xs lg:text-sm mt-1">Start the conversation!</p>
+              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Send className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              <p className="text-sm lg:text-base font-medium">Start your conversation</p>
+              <p className="text-xs lg:text-sm mt-1">Send a message to {otherUser.name} to begin chatting</p>
             </div>
           ) : (
             <div className="space-y-1">
@@ -666,11 +320,9 @@ export function ChatWindow({
                 const previousMessage = index > 0 ? messages[index - 1] : null
                 const nextMessage = index < messages.length - 1 ? messages[index + 1] : null
 
-                // 🎯 Smart grouping logic
                 const isGroupedWithPrevious = shouldGroupWithPrevious(message, previousMessage)
                 const isGroupedWithNext = nextMessage ? shouldGroupWithPrevious(nextMessage, message) : false
 
-                // 🎯 Dynamic spacing based on grouping
                 const marginTop = isGroupedWithPrevious ? "mt-0.5" : "mt-3"
                 const marginBottom = isGroupedWithNext ? "mb-0.5" : "mb-2"
 
@@ -682,27 +334,26 @@ export function ChatWindow({
                     <div
                       className={`flex flex-col max-w-[85%] lg:max-w-[70%] ${isMyMessage ? "items-end" : "items-start"}`}
                     >
-                      {/* Message Bubble */}
                       <div
                         className={`px-3 lg:px-4 py-2 max-w-full break-words transition-all duration-200 hover:shadow-md ${
                           isMyMessage
                             ? `bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white shadow-sm ${
                                 isGroupedWithPrevious && isGroupedWithNext
-                                  ? "rounded-lg" // Middle message in group
+                                  ? "rounded-lg"
                                   : isGroupedWithPrevious
-                                    ? "rounded-t-lg rounded-bl-2xl rounded-br-lg" // Last message in group
+                                    ? "rounded-t-lg rounded-bl-2xl rounded-br-lg"
                                     : isGroupedWithNext
-                                      ? "rounded-b-lg rounded-tl-2xl rounded-tr-lg" // First message in group
-                                      : "rounded-2xl" // Single message
+                                      ? "rounded-b-lg rounded-tl-2xl rounded-tr-lg"
+                                      : "rounded-2xl"
                               }`
                             : `bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm border border-gray-200 dark:border-gray-600 ${
                                 isGroupedWithPrevious && isGroupedWithNext
-                                  ? "rounded-lg" // Middle message in group
+                                  ? "rounded-lg"
                                   : isGroupedWithPrevious
-                                    ? "rounded-t-lg rounded-br-2xl rounded-bl-lg" // Last message in group
+                                    ? "rounded-t-lg rounded-br-2xl rounded-bl-lg"
                                     : isGroupedWithNext
-                                      ? "rounded-b-lg rounded-tr-2xl rounded-tl-lg" // First message in group
-                                      : "rounded-2xl" // Single message
+                                      ? "rounded-b-lg rounded-tr-2xl rounded-tl-lg"
+                                      : "rounded-2xl"
                               }`
                         }`}
                       >
@@ -711,7 +362,6 @@ export function ChatWindow({
                         </p>
                       </div>
 
-                      {/* Timestamp - Only show for last message in group or single messages */}
                       {!isGroupedWithNext && (
                         <p
                           className={`text-xs text-gray-500 dark:text-gray-400 mt-1 px-1 ${
@@ -725,26 +375,46 @@ export function ChatWindow({
                   </div>
                 )
               })}
+
+              {/* ✅ Typing Indicator */}
+              {isOtherUserTyping && (
+                <div className="flex justify-start mt-2">
+                  <div className="bg-gray-200 dark:bg-gray-700 rounded-2xl px-4 py-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                      <div
+                        className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.1s" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Message Input - Fixed at bottom */}
+        {/* Message Input */}
         <div className="flex-shrink-0 p-3 lg:p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <form onSubmit={handleSendMessage} className="flex items-center space-x-2 lg:space-x-3">
             <div className="flex-1 relative">
               <Input
+                ref={inputRef}
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
+                onChange={handleInputChange}
+                placeholder={`Message ${otherUser.name}...`}
                 className="pr-12 rounded-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500 text-sm lg:text-base"
-                disabled={sending}
+                disabled={sending || !isConnected}
               />
             </div>
             <Button
               type="submit"
-              disabled={!newMessage.trim() || sending}
+              disabled={!newMessage.trim() || sending || !isConnected}
               className="rounded-full w-9 h-9 lg:w-10 lg:h-10 p-0 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50"
             >
               {sending ? (
@@ -757,7 +427,6 @@ export function ChatWindow({
         </div>
       </div>
 
-      {/* Chat Info Modal */}
       <ChatInfoModal isOpen={showChatInfo} onClose={() => setShowChatInfo(false)} otherUser={otherUser} />
     </>
   )
