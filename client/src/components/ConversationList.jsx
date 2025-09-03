@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { getAuthHeaders, getCurrentUser } from "../utils/auth";
 import { formatConversationTime } from "../utils/timeFormat";
+import { API_CONFIG } from "@/configs/api";
 
 export function ConversationList({
   onConversationSelect,
@@ -26,9 +27,22 @@ export function ConversationList({
     try {
       const headers = getAuthHeaders();
 
-      const response = await fetch("/api/chat/conversations", {
+      // const response = await fetch("/api/chat/conversations", {
+      //   headers,
+      //   credentials: "include", // Include cookies
+      // });
+
+      // const response = await fetch(
+      //   `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/chat/conversations`,
+      //   {
+      //     headers,
+      //     credentials: "include",
+      //   }
+      // );
+      
+      const response = await fetch(API_CONFIG.ENDPOINTS.CHAT.CONVERSATIONS, {
         headers,
-        credentials: "include", // Include cookies
+        credentials: "include",
       });
 
       if (response.ok) {

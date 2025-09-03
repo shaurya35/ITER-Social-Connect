@@ -12,6 +12,7 @@ const getProfile = async (req, res) => {
   try {
     const userId = req.user?.userId;
     const email = req.user?.email;
+    console.log('[getProfile] userId from req.user:', userId, 'email:', email);
 
     if (!userId) {
       return res.status(401).json({ message: "Invalid token" });
@@ -68,7 +69,6 @@ const getProfile = async (req, res) => {
 
 const getProfileData = async (req, res) => {
   try {
-    // Extract and verify the token
     // const authHeader = req.headers.authorization;
     // if (!authHeader || !authHeader.startsWith("Bearer ")) {
     //   return res
@@ -78,7 +78,6 @@ const getProfileData = async (req, res) => {
 
     // const token = authHeader.split(" ")[1];
     // const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // const userId = decoded.userId;
     const userId = req.user.userId;
 
     if (!userId) {
@@ -94,7 +93,7 @@ const getProfileData = async (req, res) => {
     const userData = userDoc.data();
 
     // Fetch connection count
-    const connectionsCount = userData.connectionsCount || 0;
+    // const connectionsCount = userData.connectionsCount || 0;
 
     // Combine profile and connections count data (without posts)
     const profileData = {

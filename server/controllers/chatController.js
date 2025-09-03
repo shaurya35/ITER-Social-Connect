@@ -1,173 +1,387 @@
 const {
-  sendMessage,
-  getMessages,
-  getConversations,
-} = require("../firebase/firebaseChat");
-const {
   collection,
+  doc,
+  addDoc,
+  updateDoc,
+  getDoc,
+  getDocs,
   query,
   where,
-  getDocs,
-  doc,
-  getDoc,
+  orderBy,
+  serverTimestamp,
 } = require("firebase/firestore");
 const db = require("../firebase/firebaseConfig");
 
-const generateChatId = (userId1, userId2) => {
-  return [userId1, userId2].sort().join("_");
-};
-
-const postMessage = async (req, res) => {
-  const senderId = req.user.userId;
-  const { receiverId, text } = req.body;
-
-  if (!senderId || !receiverId || !text) {
-    return res
-      .status(400)
-      .json({ error: "Missing senderId, receiverId, or text" });
-  }
-
-  const chatId = generateChatId(senderId, receiverId);
-
+// Get conversations for user
+exports.getConversations = async (req, res) => {
   try {
-    const result = await sendMessage(chatId, { text, senderId, receiverId });
-    res.status(200).json({ status: "sent", result });
+    const userId = req.user?.userId || req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const q = query(
+      collection(db, "conversations"),
+      where("participantIds", "array-contains", userId),
+      orderBy("updatedAt", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+    const conversations = [];
+
+    for (const docSnapshot of snapshot.docs) {
+      const data = docSnapshot.data();
+      const otherParticipant = data.participants?.find((p) => p.id !== userId);
+
+      if (otherParticipant) {
+        let lastMessage = null;
+        if (data.lastMessage) {
+          lastMessage = data.lastMessage;
+        } else {
+          try {
+            const messagesQuery = query(
+              collection(db, "messages"),
+              where("conversationId", "==", docSnapshot.id),
+              orderBy("timestamp", "desc")
+            );
+            const messagesSnapshot = await getDocs(messagesQuery);
+            if (!messagesSnapshot.empty) {
+              const latestMessageDoc = messagesSnapshot.docs[0];
+              const latestMessageData = latestMessageDoc.data();
+              lastMessage = latestMessageData.text || latestMessageData.content;
+            }
+          } catch (messageError) {}
+        }
+
+        const conversation = {
+          id: docSnapshot.id,
+          chatId: data.chatId || `chat_${userId}_${otherParticipant.id}`,
+          user: {
+            _id: otherParticipant.id,
+            name: otherParticipant.name || "Unknown User",
+            email:
+              otherParticipant.email ||
+              `${
+                otherParticipant.name?.toLowerCase().replace(/\s+/g, "") ||
+                "user"
+              }@example.com`,
+            avatar: otherParticipant.avatar || null,
+          },
+          lastMessage: lastMessage,
+          timestamp: data.updatedAt ||
+            data.createdAt || { seconds: Date.now() / 1000 },
+          participantIds: data.participantIds || [userId, otherParticipant.id],
+        };
+
+        conversations.push(conversation);
+      }
+    }
+
+    res.json({
+      status: "ok",
+      conversations: conversations,
+    });
   } catch (error) {
-    console.error("Error in postMessage:", error);
-    res.status(500).json({ error: error.message || "Internal server error" });
+    res.status(500).json({ error: "Failed to fetch conversations" });
   }
 };
 
-const fetchMessages = async (req, res) => {
-  const id1 = req.user.userId; // current logged-in user
-  const { receiverId: id2 } = req.query; // user to chat with
-
-  if (!id1 || !id2) {
-    return res.status(400).json({ error: "Missing id1 or id2" });
-  }
-
-  const chatId = generateChatId(id1, id2);
-
+exports.getMessages = async (req, res) => {
   try {
-    const messages = await getMessages(chatId);
+    const { receiverId } = req.query;
+    const userId = req.user?.userId || req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    if (!receiverId) {
+      return res.status(400).json({ error: "receiverId is required" });
+    }
+
+    const q1 = query(
+      collection(db, "messages"),
+      where("senderId", "==", userId),
+      where("receiverId", "==", receiverId),
+      where("isDeleted", "==", false)
+    );
+
+    const q2 = query(
+      collection(db, "messages"),
+      where("senderId", "==", receiverId),
+      where("receiverId", "==", userId),
+      where("isDeleted", "==", false)
+    );
+
+    let snapshot1, snapshot2;
+    try {
+      [snapshot1, snapshot2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+    } catch (firebaseError) {
+      return res.status(500).json({
+        error: "Database query failed",
+        details: firebaseError.message,
+      });
+    }
+
+    const messages = [];
+
+    [...snapshot1.docs, ...snapshot2.docs].forEach((doc) => {
+      try {
+        const data = doc.data();
+        if (!data) return;
+
+        messages.push({
+          id: doc.id,
+          senderId: data.senderId,
+          receiverId: data.receiverId,
+          text: data.content || data.text,
+          timestamp: data.timestamp,
+          type: data.type || "text",
+          isRead: data.isRead || false,
+        });
+      } catch (docError) {}
+    });
 
     messages.sort((a, b) => {
-      const timeA = a.timestamp?.toDate?.() || new Date(0);
-      const timeB = b.timestamp?.toDate?.() || new Date(0);
+      const timeA = a.timestamp?.seconds || 0;
+      const timeB = b.timestamp?.seconds || 0;
       return timeA - timeB;
     });
 
-    // Fetch user profile pictures
-    const [id1Snap, id2Snap] = await Promise.all([
-      getDoc(doc(db, "users", id1)),
-      getDoc(doc(db, "users", id2)),
-    ]);
+    const userInfo = {
+      id1: userId,
+      id2: receiverId,
+      id1Avatar: null,
+      id2Avatar: null,
+    };
 
-    const id1Avatar = id1Snap.exists()
-      ? id1Snap.data().profilePicture || null
-      : null;
-    const id2Avatar = id2Snap.exists()
-      ? id2Snap.data().profilePicture || null
-      : null;
+    try {
+      const [user1Doc, user2Doc] = await Promise.all([
+        getDoc(doc(db, "users", userId)),
+        getDoc(doc(db, "users", receiverId)),
+      ]);
 
-    res.status(200).json({
+      if (user1Doc.exists()) {
+        const user1Data = user1Doc.data();
+        userInfo.id1Avatar = user1Data.profilePicture || user1Data.avatar;
+      }
+
+      if (user2Doc.exists()) {
+        const user2Data = user2Doc.data();
+        userInfo.id2Avatar = user2Data.profilePicture || user2Data.avatar;
+      }
+    } catch (userError) {}
+
+    res.json({
       status: "ok",
-      userInfo: {
-        id1,
-        id2,
-        id1Avatar,
-        id2Avatar,
-      },
-      messages,
+      messages: messages,
+      userInfo: userInfo,
     });
   } catch (error) {
-    console.error("Error in fetchMessages:", error);
-    res.status(500).json({ error: error.message || "Internal server error" });
+    res.status(500).json({ error: "Failed to fetch messages" });
   }
 };
 
-const fetchUserConversations = async (req, res) => {
-  const currentUserId = req.user.userId;
-
+exports.sendMessage = async (req, res) => {
   try {
-    const conversations = await getConversations(currentUserId);
+    const senderId = req.user?.userId || req.user?.id;
+    const { receiverId, text } = req.body;
 
-    const enrichedConversations = await Promise.all(
-      conversations.map(async (conv) => {
-        const otherUserId = conv.userIds.find((id) => id !== currentUserId);
-        const userDocRef = doc(db, "users", otherUserId);
-        const userDocSnap = await getDoc(userDocRef);
-
-        let userData = {};
-        if (userDocSnap.exists()) {
-          const data = userDocSnap.data();
-          userData = {
-            _id: otherUserId,
-            name: data.name,
-            avatar: data.profilePicture || null,
-            username: data.username,
-          };
-        }
-
-        return {
-          chatId: conv.chatId,
-          lastMessage: conv.lastMessage,
-          timestamp: conv.timestamp,
-          user: userData,
-        };
-      })
-    );
-
-    res
-      .status(200)
-      .json({ status: "ok", conversations: enrichedConversations });
-  } catch (error) {
-    console.error("Error fetching conversations:", error);
-    res.status(500).json({ error: error.message || "Server error" });
-  }
-};
-
-const searchUsers = async (req, res) => {
-  try {
-    const { query: searchTerm } = req.query;
-    const loggedInUserId = req.user?.userId;
-
-    if (!searchTerm || searchTerm.trim() === "") {
-      return res.status(400).json({ error: "Search query cannot be empty" });
+    if (!senderId || !receiverId || !text) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const normalizedQuery = searchTerm.trim().toLowerCase();
+    const senderDoc = await getDoc(doc(db, "users", senderId));
+    const senderData = senderDoc.exists() ? senderDoc.data() : {};
 
-    const usersRef = collection(db, "users");
-    const usersSnapshot = await getDocs(usersRef);
+    const receiverDoc = await getDoc(doc(db, "users", receiverId));
+    const receiverData = receiverDoc.exists() ? receiverDoc.data() : {};
 
-    const matchingUsers = usersSnapshot.docs
-      .map((doc) => ({
-        _id: doc.id,
-        name: doc.data().name,
-        username: doc.data().username,
-        avatar: doc.data().profilePicture || null,
-        about: doc.data().about || "",
-      }))
-      .filter(
-        (user) =>
-          user._id !== loggedInUserId &&
-          user.name?.toLowerCase().includes(normalizedQuery)
-      );
+    const messageData = {
+      senderId,
+      receiverId,
+      text: text.trim(),
+      content: text.trim(),
+      timestamp: serverTimestamp(),
+      type: "text",
+      isRead: false,
+      isDeleted: false,
+      senderName: senderData.name || "Unknown User",
+      senderAvatar: senderData.profilePicture || senderData.avatar || null,
+    };
 
-    res.status(200).json({
-      status: "ok",
-      users: matchingUsers,
+    const messageRef = await addDoc(collection(db, "messages"), messageData);
+
+    const conversationId = [senderId, receiverId].sort().join("_");
+    const conversationRef = doc(db, "conversations", conversationId);
+
+    try {
+      await updateDoc(conversationRef, {
+        lastMessage: text.trim(),
+        lastMessageTime: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } catch {
+      const conversationData = {
+        id: conversationId,
+        participantIds: [senderId, receiverId],
+        participants: [
+          {
+            id: senderId,
+            name: senderData.name || "Unknown User",
+            email: senderData.email || `${senderId}@example.com`,
+            avatar: senderData.profilePicture || senderData.avatar || null,
+          },
+          {
+            id: receiverId,
+            name: receiverData.name || "Unknown User",
+            email: receiverData.email || `${receiverId}@example.com`,
+            avatar: receiverData.profilePicture || receiverData.avatar || null,
+          },
+        ],
+        lastMessage: text.trim(),
+        lastMessageTime: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        isActive: true,
+      };
+
+      await addDoc(collection(db, "conversations"), conversationData);
+    }
+
+    try {
+      const broadcastData = {
+        type: "new_message",
+        conversationId: receiverId,
+        senderId: senderId,
+        receiverId: receiverId,
+        content: text.trim(),
+        messageId: `msg_${senderId}_${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        senderName: senderData.name || "Unknown User",
+        senderAvatar: senderData.profilePicture || senderData.avatar || null,
+      };
+
+      if (global.wss) {
+        global.wss.clients.forEach((client) => {
+          if (client.readyState === 1) {
+            try {
+              client.send(JSON.stringify(broadcastData));
+            } catch {}
+          }
+        });
+      }
+    } catch {}
+
+    res.json({
+      status: "sent",
+      result: {
+        senderId,
+        receiverId,
+        text: text.trim(),
+        timestamp: { seconds: Date.now() / 1000 },
+        senderName: senderData.name || "Unknown User",
+        senderAvatar: senderData.profilePicture || senderData.avatar || null,
+      },
     });
   } catch (error) {
-    console.error("Failed to search users:", error);
+    res.status(500).json({ error: "Failed to send message" });
+  }
+};
+
+exports.searchUsers = async (req, res) => {
+  try {
+    const { query: searchQuery } = req.query;
+    const currentUserId = req.user?.userId || req.user?.id;
+
+    if (!searchQuery || searchQuery.trim() === "") {
+      return res.status(400).json({ error: "Search query is required" });
+    }
+
+    const usersRef = collection(db, "users");
+    const snapshot = await getDocs(usersRef);
+
+    const users = [];
+    snapshot.forEach((doc) => {
+      const userData = doc.data();
+      const userName = userData.name || "";
+      const userEmail = userData.email || "";
+
+      if (
+        doc.id !== currentUserId &&
+        (userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          userEmail.toLowerCase().includes(searchQuery.toLowerCase()))
+      ) {
+        users.push({
+          _id: doc.id,
+          name: userData.name || "Unknown User",
+          email: userData.email || `${doc.id}@example.com`,
+          avatar: userData.profilePicture || userData.avatar || null,
+          about: userData.about || userData.bio || "",
+        });
+      }
+    });
+
+    res.json({
+      status: "ok",
+      users: users.slice(0, 10),
+    });
+  } catch (error) {
     res.status(500).json({ error: "Failed to search users" });
   }
 };
 
-module.exports = {
-  postMessage,
-  fetchMessages,
-  fetchUserConversations,
-  searchUsers,
+exports.createConversation = async (req, res) => {
+  try {
+    const createdBy = req.user?.userId || req.user?.id;
+    const { participantIds } = req.body;
+
+    if (!participantIds || !Array.isArray(participantIds)) {
+      return res
+        .status(400)
+        .json({ error: "participantIds array is required" });
+    }
+
+    if (!participantIds.includes(createdBy)) {
+      participantIds.push(createdBy);
+    }
+
+    const participants = [];
+    for (const id of participantIds) {
+      const userDoc = await getDoc(doc(db, "users", id));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        participants.push({
+          id,
+          name: userData.name || "Unknown User",
+          email: userData.email || `${id}@example.com`,
+          avatar: userData.profilePicture || userData.avatar || null,
+        });
+      }
+    }
+
+    const conversationData = {
+      participants,
+      participantIds,
+      createdBy,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      lastMessage: null,
+      lastMessageTime: null,
+      isActive: true,
+    };
+
+    const docRef = await addDoc(
+      collection(db, "conversations"),
+      conversationData
+    );
+
+    res.json({
+      status: "ok",
+      conversationId: docRef.id,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to create conversation" });
+  }
 };

@@ -11,6 +11,14 @@ import RightTopPanel from "@/components/panels/RightTopPanel";
 // Team member data
 const teamMembers = [
   {
+    name: "Shaurya Jha",
+    position: "Product Manager & Frontend Developer",
+    imageUrl: "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//pf1_d4xi6o.jpg",
+    linkedin: "https://www.linkedin.com/in/shaurya--jha",
+    twitter: "https://twitter.com/_shaurya35",
+    github: "https://github.com/shaurya35/"
+  },
+  {
     name: "Satyam Kumar",
     position: "Backend Developer",
     imageUrl:
@@ -25,36 +33,29 @@ const teamMembers = [
     github: "https://github.com/OmShankarDeshmukh01",
     linkedin: "https://www.linkedin.com/in/om-shankar-deshmukh-7431b9245/",
   },
-  {
-    name: "Shaurya Jha",
-    position: "Product Manager & Frontend Developer",
-    imageUrl: "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//pf1_d4xi6o.jpg",
-    linkedin: "https://www.linkedin.com/in/shaurya--jha",
-    twitter: "https://twitter.com/_shaurya35",
-    github: "https://github.com/shaurya35/"
-  },
-  {
-    name: "Swayam Sahoo",
-    position: "Outreach Team",
-    imageUrl: "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//portfolio2.jpeg",
-    github: "https://github.com/PseudoSwayam",
-    linkedin: "https://www.linkedin.com/in/swayamsahoo11/"
-  },
-  {
-    name: "Stuti Mishra",
-    position: "Outreach Team",
-    imageUrl: "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//photo3.jpg",
-    github: "https://github.com/STUTI-MISHRA-8",
-    linkedin: "https://www.linkedin.com/in/stuti86",
-  },
-  {
-    name: "Anubhav Jaiswal",
-    position: "Strategic Partner",
-    imageUrl: "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//img2.jpg",
-    github: "http://github.com/anubhav-auth",
-    linkedin: "http://linkedin.com/in/anubhav-auth/",
-    twitter: "https://x.com/anubhavauth",
-  },
+  
+  // {
+  //   name: "Swayam Sahoo",
+  //   position: "Outreach Team",
+  //   imageUrl: "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//portfolio2.jpeg",
+  //   github: "https://github.com/PseudoSwayam",
+  //   linkedin: "https://www.linkedin.com/in/swayamsahoo11/"
+  // },
+  // {
+  //   name: "Stuti Mishra",
+  //   position: "Outreach Team",
+  //   imageUrl: "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//photo3.jpg",
+  //   github: "https://github.com/STUTI-MISHRA-8",
+  //   linkedin: "https://www.linkedin.com/in/stuti86",
+  // },
+  // {
+  //   name: "Anubhav Jaiswal",
+  //   position: "Strategic Partner",
+  //   imageUrl: "https://cdlsaecoineiohkdextf.supabase.co/storage/v1/object/public/uploads//img2.jpg",
+  //   github: "http://github.com/anubhav-auth",
+  //   linkedin: "http://linkedin.com/in/anubhav-auth/",
+  //   twitter: "https://x.com/anubhavauth",
+  // },
 ];
 
 // Social Button

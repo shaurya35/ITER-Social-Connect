@@ -52,6 +52,13 @@ export function SigninForm() {
       const errorMessage =
         err.response?.data?.message ||
         "Failed to sign in. Please check your credentials and try again.";
+
+      if (errorMessage.includes("Please complete your profile")) {
+        sessionStorage.setItem("pendingPassword", password);
+        router.push(`/complete?email=${encodeURIComponent(email)}`);
+        return;
+      }
+
       setError(errorMessage);
     } finally {
       setIsLoading(false);

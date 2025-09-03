@@ -74,8 +74,8 @@ export async function GET(request) {
     }
 
     // Call your backend user search endpoint
+    // const response = await fetch(`http://localhost:8080/api/chat/search?query=${encodeURIComponent(query)}`, {
     const response = await fetch(
-      // `http://localhost:8080/api/chat/search?query=${encodeURIComponent(query)}`,
       `${
         process.env.NEXT_PUBLIC_BACKEND_URL
       }/api/chat/search?query=${encodeURIComponent(query)}`,

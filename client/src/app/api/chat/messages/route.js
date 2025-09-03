@@ -47,7 +47,7 @@ export async function POST(request) {
     if (!authToken && refreshToken) {
       try {
         const refreshResponse = await fetch(
-          `${process.env.BACKEND_URL}/api/auth/refresh`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/refresh`,
           {
             method: "POST",
             headers: {
@@ -83,7 +83,7 @@ export async function POST(request) {
 
     // Call your actual backend message endpoint
     const response = await fetch(
-      `${process.env.BACKEND_URL}/api/chat/message`,
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/chat/message`,
       {
         method: "POST",
         headers,
@@ -105,14 +105,40 @@ export async function POST(request) {
     // Transform backend response to frontend format
     if (data.status === "sent" && data.result) {
       const transformedMessage = {
-        id: `msg_${data.result.senderId}_${data.result.timestamp.seconds}`,
+        id: `msg_${data.result.senderId}_${
+          data.result.timestamp.seconds
+        }_${Date.now()}`,
         conversationId: body.conversationId,
-        senderId: data.result.senderId, // This comes from your backend (current user)
+        senderId: data.result.senderId,
         content: data.result.text,
         timestamp: convertFirebaseTimestamp(data.result.timestamp),
         type: "text",
         receiverId: data.result.receiverId,
       };
+
+      // 🚀 Broadcast message via WebSocket to all connected clients
+      try {
+        await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/websocket/broadcast`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              type: "new_message",
+              conversationId: body.conversationId,
+              senderId: data.result.senderId,
+              receiverId: data.result.receiverId,
+              content: data.result.text,
+              messageId: transformedMessage.id,
+              timestamp: transformedMessage.timestamp,
+            }),
+          }
+        );
+      } catch (broadcastError) {
+        console.warn("⚠️ Failed to broadcast via WebSocket:", broadcastError);
+      }
 
       return Response.json(transformedMessage);
     }

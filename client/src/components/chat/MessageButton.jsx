@@ -4,9 +4,14 @@ import { useState } from "react";
 import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+// import { useAuth } from "@/contexts/AuthProvider";
+import { API_CONFIG } from "@/configs/api";
 import { useAuth } from "@/contexts/AuthProvider";
+import axios from "axios";
 
 export function MessageButton({ targetUser, className = "" }) {
+  // const { accessToken } = useAuth();
+
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { user: currentUser } = useAuth();
@@ -25,22 +30,50 @@ export function MessageButton({ targetUser, className = "" }) {
 
     try {
       // Create or get conversation with the target user
-      const response = await fetch("/api/chat/conversations/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          targetUserId: targetUser.id,
-          targetUserName: targetUser.name,
-          targetUserEmail: targetUser.email,
-          targetUserAvatar: targetUser.avatar,
-        }),
-      });
+      // const response = await fetch("/api/chat/conversations/create", {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      //   credentials: "include",
+      //   body: JSON.stringify({
+      //     targetUserId: targetUser.id,
+      //     targetUserName: targetUser.name,
+      //     targetUserEmail: targetUser.email,
+      //     targetUserAvatar: targetUser.avatar,
+      //   }),
+      // });
+
+      // const response = await fetch(`${BACKEND_URL}/api/chat/conversations/create`,
+      //   {
+      //     method: "POST",
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //     },
+      //     credentials: "include",
+      //     body: JSON.stringify({
+      //       targetUserId: targetUser.id,
+      //       targetUserName: targetUser.name,
+      //       targetUserEmail: targetUser.email,
+      //       targetUserAvatar: targetUser.avatar,
+      //     }),
+      //   }
+      // );
+
+      const response = await axios.get(
+        `${BACKEND_URL}/api/chat/conversations/create`,
+        {
+          withCredentials: true,
+          headers: accessToken
+            ? { Authorization: `Bearer ${accessToken}` }
+            : {},
+        }
+      );
 
       if (response.ok) {
-        const conversation = await response.json();
+        const conversation = response.data.conversations;
+        console.log(conversation);
+        console.log(conversation.id);
 
         // Navigate to chat page with the conversation
         router.push(`/chat?conversation=${conversation.id}`);
