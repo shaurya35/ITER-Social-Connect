@@ -18,7 +18,7 @@ const {
   setDoc,
 } = require("firebase/firestore");
 require("dotenv").config();
-const { pushNotification } = require("../helpers/liveNotificationService")
+const { pushNotification } = require("../helpers/liveNotificationService");
 
 const jwt = require("jsonwebtoken");
 
@@ -85,20 +85,20 @@ const getAllUserPosts = async (req, res) => {
       message: "Posts retrieved successfully",
       posts,
       hasMore,
-      lastDocId: nextLastDocId
+      lastDocId: nextLastDocId,
     });
   } catch (error) {
     console.error("Error fetching user posts:", error);
-    
+
     // Special handling for index errors
-    if (error.code === 'failed-precondition') {
-      const indexUrl = error.message.match(/https:\/\/[^ ]+/)?.[0] || '';
-      return res.status(400).json({ 
+    if (error.code === "failed-precondition") {
+      const indexUrl = error.message.match(/https:\/\/[^ ]+/)?.[0] || "";
+      return res.status(400).json({
         error: "Index missing",
-        solution: indexUrl
+        solution: indexUrl,
       });
     }
-    
+
     res.status(500).json({ error: "Failed to fetch user posts" });
   }
 };
@@ -397,9 +397,10 @@ const likePost = async (req, res) => {
 
     const postRef = doc(db, "posts", postId);
     const postSnap = await getDoc(postRef);
-    if (!postSnap.exists()) return res.status(404).json({ error: "Post not found" });
+    if (!postSnap.exists())
+      return res.status(404).json({ error: "Post not found" });
 
-    const postData    = postSnap.data();
+    const postData = postSnap.data();
     const postOwnerId = postData.userId;
 
     let likes = Array.isArray(postData.likes) ? [...postData.likes] : [];
@@ -409,7 +410,7 @@ const likePost = async (req, res) => {
     let likerData;
 
     if (alreadyLiked) {
-      likes = likes.filter(id => id !== userId);
+      likes = likes.filter((id) => id !== userId);
       const notifQ = query(
         collection(db, "notifications"),
         where("userId", "==", postOwnerId),
@@ -418,8 +419,7 @@ const likePost = async (req, res) => {
         where("type", "==", "like")
       );
       const snap = await getDocs(notifQ);
-      snap.forEach(d => deleteDoc(d.ref));
-
+      snap.forEach((d) => deleteDoc(d.ref));
     } else {
       likes.push(userId);
       const userSnap = await getDoc(doc(db, "users", userId));
@@ -653,6 +653,33 @@ const updateBannerPhoto = async (req, res) => {
   }
 };
 
+const getUserById = async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    // Use the new Firebase v9+ modular SDK syntax
+    const userRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userData = userDoc.data();
+
+    res.json({
+      id: userId,
+      name: userData.name || "Unknown",
+      avatar: userData.profilePicture || userData.avatar || null,
+      email: userData.email || null,
+      profilePicture: userData.profilePicture || null, // Include both for compatibility
+    });
+  } catch (error) {
+    console.error("🔥 Error fetching user:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 module.exports = {
   likePost,
   getAllUserPosts,
@@ -665,4 +692,5 @@ module.exports = {
   sharePost,
   updateProfilePhoto,
   updateBannerPhoto,
+  getUserById,
 };

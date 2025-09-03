@@ -28,7 +28,7 @@ const interestOptions = [
   { value: "Networking", label: "Networking" },
   { value: "Game Development", label: "Game Development" },
   { value: "DevOps", label: "DevOps" },
-  { value: "UI/UX Design", label: "UI/UX Design" }
+  { value: "UI/UX Design", label: "UI/UX Design" },
 ];
 
 const roleOptions = [
@@ -41,16 +41,16 @@ export function SignupForm() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const { user, login } = useAuth();
-  
+
   // Step 1 states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState(roleOptions[0]);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // Step 2 states
   const [otp, setOtp] = useState("");
-  
+
   // Step 3 states
   const [name, setName] = useState("");
   const [about, setAbout] = useState("");
@@ -60,7 +60,7 @@ export function SignupForm() {
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [profilePictureUrl, setProfilePictureUrl] = useState("");
   const [fieldsOfInterest, setFieldsOfInterest] = useState([]);
-  
+
   // Common states
   const [step, setStep] = useState("signup");
   const [error, setError] = useState("");
@@ -89,8 +89,12 @@ export function SignupForm() {
     option: (base, { isFocused }) => ({
       ...base,
       backgroundColor: isDarkMode
-        ? isFocused ? "#374151" : "#1f2937"
-        : isFocused ? "#e5e7eb" : "#ffffff",
+        ? isFocused
+          ? "#374151"
+          : "#1f2937"
+        : isFocused
+        ? "#e5e7eb"
+        : "#ffffff",
       color: isDarkMode ? "#e5e7eb" : "#111827",
     }),
     singleValue: (base) => ({
@@ -105,7 +109,7 @@ export function SignupForm() {
 
   const uploadProfilePicture = async (file) => {
     if (!file) return "";
-    
+
     setIsUploading(true);
     setError("");
 
@@ -124,7 +128,7 @@ export function SignupForm() {
       if (!data.success || !data.url) {
         throw new Error("Invalid response from upload service");
       }
-      
+
       return data.url;
     } catch (err) {
       setError(err.message);
@@ -157,13 +161,16 @@ export function SignupForm() {
         body: JSON.stringify({
           email,
           password,
-          role: role.value
+          role: role.value,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to sign up. Please try again.");
+
+        throw new Error(
+          errorData.message || "Failed to sign up. Please try again."
+        );
       }
 
       setStep("verify");
@@ -217,10 +224,12 @@ export function SignupForm() {
         ...(github && { github }),
         ...(linkedin && { linkedin }),
         ...(x && { x }),
-        ...(finalProfilePictureUrl && { profilePicture: finalProfilePictureUrl }),
-        ...(fieldsOfInterest.length > 0 && { 
-          fieldsOfInterest: fieldsOfInterest.map(option => option.value) 
-        })
+        ...(finalProfilePictureUrl && {
+          profilePicture: finalProfilePictureUrl,
+        }),
+        ...(fieldsOfInterest.length > 0 && {
+          fieldsOfInterest: fieldsOfInterest.map((option) => option.value),
+        }),
       };
 
       // Send request to complete profile
@@ -238,19 +247,22 @@ export function SignupForm() {
         throw new Error("Unexpected response status");
       }
     } catch (err) {
-    if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
-      const errorMessage = [
-        err.response.data.message,
-        ...err.response.data.errors
-      ].join('\n');
-      
-      setError(errorMessage);
-    } else {
-      setError(
-        err.response?.data?.message || 
-        "Failed to complete profile. Please try again."
-      );
-    }
+      if (
+        err.response?.data?.errors &&
+        Array.isArray(err.response.data.errors)
+      ) {
+        const errorMessage = [
+          err.response.data.message,
+          ...err.response.data.errors,
+        ].join("\n");
+
+        setError(errorMessage);
+      } else {
+        setError(
+          err.response?.data?.message ||
+            "Failed to complete profile. Please try again."
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -264,12 +276,10 @@ export function SignupForm() {
           <h1 className="text-2xl font-semibold text-gray-700 dark:text-gray-300">
             Create Account
           </h1>
-          
+
           {/* Role Selection */}
           <div>
-            <Label className="text-gray-700 dark:text-gray-300">
-              Role
-            </Label>
+            <Label className="text-gray-700 dark:text-gray-300">Role</Label>
             <Select
               options={roleOptions}
               value={role}
@@ -298,7 +308,10 @@ export function SignupForm() {
 
           {/* Password */}
           <div>
-            <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">
+            <Label
+              htmlFor="password"
+              className="text-gray-700 dark:text-gray-300"
+            >
               Password
             </Label>
             <div className="relative">
@@ -352,7 +365,7 @@ export function SignupForm() {
           <h1 className="text-2xl font-semibold text-gray-700 dark:text-gray-300">
             Verify Email
           </h1>
-          
+
           <div>
             <Label htmlFor="otp" className="text-gray-700 dark:text-gray-300">
               Enter OTP sent to {email}
@@ -393,12 +406,10 @@ export function SignupForm() {
           <h1 className="text-2xl font-semibold text-gray-700 dark:text-gray-300">
             Complete Your Profile
           </h1>
-          
+
           {/* Email (read-only) */}
           <div>
-            <Label className="text-gray-700 dark:text-gray-300">
-              Email
-            </Label>
+            <Label className="text-gray-700 dark:text-gray-300">Email</Label>
             <Input
               value={email}
               readOnly
@@ -409,7 +420,7 @@ export function SignupForm() {
           {/* Name (required) */}
           <div>
             <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">
-              Full Name *
+              Full Name <span className="text-red-500">*</span>
             </Label>
             <Input
               id="name"
@@ -424,7 +435,7 @@ export function SignupForm() {
           {/* About (required) */}
           <div>
             <Label htmlFor="about" className="text-gray-700 dark:text-gray-300">
-              About *
+              About <span className="text-red-500">*</span>
             </Label>
             <Input
               id="about"
@@ -440,7 +451,10 @@ export function SignupForm() {
           {/* Social Links (optional) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="github" className="text-gray-700 dark:text-gray-300">
+              <Label
+                htmlFor="github"
+                className="text-gray-700 dark:text-gray-300"
+              >
                 GitHub
               </Label>
               <Input
@@ -453,7 +467,10 @@ export function SignupForm() {
               />
             </div>
             <div>
-              <Label htmlFor="linkedin" className="text-gray-700 dark:text-gray-300">
+              <Label
+                htmlFor="linkedin"
+                className="text-gray-700 dark:text-gray-300"
+              >
                 LinkedIn
               </Label>
               <Input
@@ -549,7 +566,9 @@ export function SignupForm() {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Completing Profile...
                 </>
-              ) : "Complete Profile"}
+              ) : (
+                "Complete Profile"
+              )}
             </Button>
           </div>
         </form>

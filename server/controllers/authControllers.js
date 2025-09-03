@@ -167,12 +167,12 @@ const signup = async (req, res) => {
     if (!emailSnapshot.empty) {
       const existingUser = emailSnapshot.docs[0].data();
 
-      if (existingUser.profileCompleted === false) {
-        return res.status(400).json({
-          message:
-            "Your account has been created, but the profile is incomplete. Please contact the technical team for assistance.",
-        });
-      }
+      // if (existingUser.profileCompleted === false) {
+      //   return res.status(400).json({
+      //     message:
+      //       "Your account has been created, but the profile is incomplete. Please contact the technical team for assistance.",
+      //   });
+      // }
 
       return res.status(400).json({ message: "Email is already taken." });
     }
@@ -187,7 +187,7 @@ const signup = async (req, res) => {
       if (remainingTime > 0) {
         const remainingSeconds = Math.ceil(remainingTime / 1000);
         return res.status(400).json({
-          message: `An OTP request is already pending. Try again in ${remainingSeconds}s or use a different email.`,
+          message: `Please wait ${remainingSeconds}s before requesting a new OTP or register with a different email.`,
         });
       }
     }

@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +32,8 @@ const interestOptions = [
 
 export default function CompleteProfile() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  // const [password, setPassword] = useState("")
+  const password = sessionStorage.getItem("pendingPassword");
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [about, setAbout] = useState("");
@@ -43,8 +45,9 @@ export default function CompleteProfile() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadComplete, setUploadComplete] = useState(false);
+  const [profilePictureUrl, setProfilePictureUrl] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, user } = useAuth();
   const { isDarkMode } = useTheme();
 
@@ -53,7 +56,12 @@ export default function CompleteProfile() {
     if (user) {
       router.push("/explore");
     }
-  }, [user, router]);
+
+    const emailParam = searchParams.get("email");
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+  }, [user, router, searchParams]);
 
   const customStyles = {
     control: (base, state) => ({
@@ -123,33 +131,46 @@ export default function CompleteProfile() {
     setError("");
 
     try {
-      if (isUploading && profilePicture) {
-        await uploadPhoto(profilePicture);
-      }
-
-      if (!uploadComplete) {
-        throw new Error("Failed to complete the upload. Please try again.");
-      }
-
       // Send the profile data to the backend
+      // const response = await axios.post(
+      //   `${BACKEND_URL}/api/auth/complete-profile`,
+      //   {
+      //     email,
+      //     password,
+      //     name,
+      //     about,
+      //     github,
+      //     linkedin,
+      //     x,
+      //     profilePicture: profilePictureUrl, // Use the uploaded URL
+      //     fieldsOfInterest: fieldsOfInterest.map((option) => option.value), // Convert back to values
+      //   },
+      //   { withCredentials: true }
+      // );
+
+      const payload = {
+        email,
+        password,
+        name,
+        about,
+        ...(github && { github }),
+        ...(linkedin && { linkedin }),
+        ...(x && { x }),
+        ...(profilePictureUrl && { profilePicture: profilePictureUrl }),
+        ...(fieldsOfInterest.length > 0 && {
+          fieldsOfInterest: fieldsOfInterest.map((option) => option.value),
+        }),
+      };
+
       const response = await axios.post(
         `${BACKEND_URL}/api/auth/complete-profile`,
-        {
-          email,
-          password,
-          name,
-          about,
-          github,
-          linkedin,
-          x,
-          profilePicture,
-          fieldsOfInterest,
-        },
+        payload,
         { withCredentials: true }
       );
 
       if (response.status === 200) {
         const { accessToken, user } = response.data;
+        sessionStorage.removeItem("pendingPassword");
 
         // Log the user in
         login(user, accessToken);
@@ -171,7 +192,6 @@ export default function CompleteProfile() {
 
   const uploadPhoto = async (file) => {
     setIsUploading(true);
-    setUploadComplete(false);
     setError("");
 
     try {
@@ -188,8 +208,7 @@ export default function CompleteProfile() {
       }
 
       const { imageUrl } = await response.json();
-      setProfilePicture(imageUrl);
-      setUploadComplete(true);
+      setProfilePictureUrl(imageUrl);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -197,11 +216,23 @@ export default function CompleteProfile() {
     }
   };
 
-  const handleIdCardChange = (e) => {
+  const handleProfilePictureChange = (e) => {
     const file = e.target.files ? e.target.files[0] : null;
     setProfilePicture(file);
     if (file) uploadPhoto(file);
   };
+
+  console.log({
+    email,
+    password,
+    name,
+    about,
+    github,
+    linkedin,
+    x,
+    profilePicture: profilePictureUrl,
+    fieldsOfInterest: fieldsOfInterest.map((option) => option.value),
+  });
 
   return (
     <div className="space-y-6">
@@ -211,54 +242,49 @@ export default function CompleteProfile() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Email */}
         <div>
-          <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
-            Email
-          </Label>
+          <Label className="text-gray-700 dark:text-gray-300">Email</Label>
           <Input
-            id="email"
-            type="email"
-            required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+            readOnly={!!searchParams.get("email")}
+            onChange={(e) =>
+              !searchParams.get("email") && setEmail(e.target.value)
+            }
+            className={`mt-1 ${
+              searchParams.get("email")
+                ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                : "bg-white dark:bg-gray-700"
+            } text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700`}
           />
         </div>
 
         {/* Password */}
-        <div>
-          <Label
-            htmlFor="password"
-            className="text-gray-700 dark:text-gray-300"
-          >
-            Password
-          </Label>
-          <div className="relative">
-            <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-600 dark:text-gray-300 focus:outline-none"
-            >
-              {showPassword ? (
-                <EyeOff className="h-5 w-5" />
-              ) : (
-                <Eye className="h-5 w-5" />
-              )}
-            </button>
-          </div>
-        </div>
+        {/* <div>
+            <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">
+              Password
+            </Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-600 dark:text-gray-300 focus:outline-none"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+          </div> */}
 
         {/* Name */}
         <div>
           <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">
-            Name
+            Full Name <span className="text-red-500">*</span>
           </Label>
           <Input
             id="name"
@@ -273,7 +299,7 @@ export default function CompleteProfile() {
         {/* About */}
         <div>
           <Label htmlFor="about" className="text-gray-700 dark:text-gray-300">
-            About
+            About <span className="text-red-500">*</span>
           </Label>
           <Input
             id="about"
@@ -282,103 +308,90 @@ export default function CompleteProfile() {
             value={about}
             onChange={(e) => setAbout(e.target.value)}
             className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+            placeholder="Brief introduction about yourself"
           />
         </div>
 
         {/* GitHub URL */}
-        <div>
-          <Label htmlFor="github" className="text-gray-700 dark:text-gray-300">
-            GitHub URL
-          </Label>
-          <Input
-            id="github"
-            type="url"
-            value={github}
-            onChange={(e) => setGithub(e.target.value)}
-            className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
-          />
-        </div>
-
-        {/* LinkedIn URL */}
-        <div>
-          <Label
-            htmlFor="linkedin"
-            className="text-gray-700 dark:text-gray-300"
-          >
-            LinkedIn URL
-          </Label>
-          <Input
-            id="linkedin"
-            type="url"
-            value={linkedin}
-            onChange={(e) => setLinkedin(e.target.value)}
-            className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
-          />
-        </div>
-
-        {/* X URL */}
-        <div>
-          <Label htmlFor="xUrl" className="text-gray-700 dark:text-gray-300">
-            X (Twitter) URL
-          </Label>
-          <Input
-            id="x"
-            type="url"
-            value={x}
-            onChange={(e) => setX(e.target.value)}
-            className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label
+              htmlFor="github"
+              className="text-gray-700 dark:text-gray-300"
+            >
+              GitHub
+            </Label>
+            <Input
+              id="github"
+              type="url"
+              value={github}
+              onChange={(e) => setGithub(e.target.value)}
+              className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+              placeholder="https://github.com/username"
+            />
+          </div>
+          <div>
+            <Label
+              htmlFor="linkedin"
+              className="text-gray-700 dark:text-gray-300"
+            >
+              LinkedIn
+            </Label>
+            <Input
+              id="linkedin"
+              type="url"
+              value={linkedin}
+              onChange={(e) => setLinkedin(e.target.value)}
+              className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+              placeholder="https://linkedin.com/in/username"
+            />
+          </div>
+          <div>
+            <Label htmlFor="x" className="text-gray-700 dark:text-gray-300">
+              X (Twitter)
+            </Label>
+            <Input
+              id="x"
+              type="url"
+              value={x}
+              onChange={(e) => setX(e.target.value)}
+              className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+              placeholder="https://x.com/username"
+            />
+          </div>
         </div>
 
         {/* Fields of interests */}
         <div>
-          <Label
-            htmlFor="fieldsOfInterest"
-            className="text-gray-900 dark:text-gray-100"
-          >
+          <Label className="text-gray-700 dark:text-gray-300">
             Fields of Interest
           </Label>
           <Select
-            id="fieldsOfInterest"
             isMulti
             options={interestOptions}
+            value={fieldsOfInterest}
+            onChange={setFieldsOfInterest}
             className="mt-1"
             classNamePrefix="select"
             styles={customStyles}
-            value={interestOptions.filter(
-              (option) =>
-                Array.isArray(fieldsOfInterest) &&
-                fieldsOfInterest.includes(option.value)
-            )}
-            onChange={(selected) => {
-              const values =
-                Array.isArray(selected) && selected.length > 0
-                  ? selected
-                      .map((opt) => (opt ? opt.value : null))
-                      .filter((val) => typeof val === "string")
-                  : [];
-              setFieldsOfInterest(values);
-            }}
+            placeholder="Select your interests (optional)"
           />
         </div>
 
+        {/* Profile Photo */}
         <div>
-          <Label htmlFor="idCard" className="text-gray-700 dark:text-gray-300">
+          <Label className="text-gray-700 dark:text-gray-300">
             Profile Photo
           </Label>
           <div className="relative">
             <Input
-              id="idCard"
               type="file"
               accept="image/*"
-              required
-              onChange={handleIdCardChange}
-              disabled={isUploading && !error}
+              onChange={handleProfilePictureChange}
+              disabled={isUploading}
               className={`mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 ${
                 isUploading ? "opacity-50 cursor-not-allowed" : ""
               }`}
-              // className="mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700
-              //   opacity-50 cursor-not-allowed"
             />
             {isUploading && (
               <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -386,6 +399,9 @@ export default function CompleteProfile() {
               </div>
             )}
           </div>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Optional - JPG, PNG or GIF (MAX. 5MB)
+          </p>
         </div>
 
         {/* Error Handling */}
@@ -402,12 +418,12 @@ export default function CompleteProfile() {
           <Button
             type="submit"
             className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
-            disabled={isLoading}
+            disabled={isLoading || isUploading}
           >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Submitting...
+                Completing Profile...
               </>
             ) : (
               "Complete Profile"

@@ -7,7 +7,8 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-router.post("/upload", upload.single("photo"), async (req, res) => {  // Changed "file" to "photo"
+router.post("/upload", upload.single("photo"), async (req, res) => {
+  // Changed "file" to "photo"
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
@@ -15,8 +16,8 @@ router.post("/upload", upload.single("photo"), async (req, res) => {  // Changed
 
     // Compress the image
     const compressedImage = await sharp(req.file.buffer)
-      .resize({ width: 800 }) // Resize width to 800px
-      .toFormat("jpeg", { quality: 80 }) // Convert to JPEG format with 80% quality
+      .resize({ width: 500, height: 500, fit: "cover" }) // Good size for profile images
+      .jpeg({ quality: 80 }) // 75-85% keeps good quality with smaller size
       .toBuffer();
 
     const fileName = `${Date.now()}-${req.file.originalname}`;

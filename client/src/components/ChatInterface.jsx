@@ -7,6 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Send, Phone, Video, Info, MoreVertical } from "lucide-react"
 import { getAuthHeaders, getCurrentUser } from "../utils/auth"
 import { formatMessageTime } from "../utils/timeFormat"
+import { useAuth } from "@/contexts/AuthProvider";
+import axios from "axios";
 
 export function ChatInterface({ selectedUser, selectedConversation }) {
   const [messages, setMessages] = useState([])
@@ -15,6 +17,8 @@ export function ChatInterface({ selectedUser, selectedConversation }) {
   const [sending, setSending] = useState(false)
   const messagesEndRef = useRef(null)
   const currentUser = getCurrentUser()
+    const { accessToken } = useAuth();
+
 
   // Determine receiverId from either selectedUser or selectedConversation
   const receiverId = selectedUser?.id || selectedConversation?.otherUser?.id
@@ -43,18 +47,23 @@ export function ChatInterface({ selectedUser, selectedConversation }) {
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/chat/messages?receiverId=${receiverId}`, {
-        headers: getAuthHeaders(),
-        credentials: "include",
-      })
+      // const response = await fetch(`/api/chat/messages?receiverId=${receiverId}`, {
+      //   headers: getAuthHeaders(),
+      //   credentials: "include",
+      // })
+
+      const response = await axios.get(`/api/chat/messages?receiverId=${receiverId}`, {
+        withCredentials: true,
+        headers: accessToken
+          ? { Authorization: `Bearer ${accessToken}` }
+          : { "Content-Type": "application/json" },
+      });
 
 
-      if (response.ok) {
-        const data = await response.json()
+        const data = response.data
+        console.log("chat interface ",data)
         setMessages(data)
-      } else {
-        console.error("Failed to fetch messages:", response.status)
-      }
+      
     } catch (error) {
       console.error("Error fetching messages:", error)
     } finally {

@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Plus, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, useMemo } from "react";
+import { Search, Smartphone, Wifi, WifiOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NewConversationModal } from "./NewConversationModal";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useWebSocket } from "@/contexts/WebSocketContext";
+
+import { useAuth } from "@/contexts/AuthProvider";
+import axios from "axios";
 
 export function ChatSidebar({
   conversations,
@@ -21,17 +24,150 @@ export function ChatSidebar({
     useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const { isDarkMode } = useTheme();
+  const { isConnected, isUserOnline } = useWebSocket();
+    const { accessToken } = useAuth();
 
-  const filteredConversations = (conversations || []).filter((conv) => {
+
+  // Create unique conversations with proper keys
+  // const processedConversations = useMemo(() => {
+  //   if (!conversations || !Array.isArray(conversations)) return [];
+  //   console.log("conversations : ",conversations)
+
+  //   return conversations.map((conv, index) => {
+  //     // Create a truly unique key using multiple fallbacks
+  //     const uniqueId =
+  //       // conv.id ||
+  //       conv.id
+  //       // || `${conv.otherUser?.id || "unknown"}_${index}` ||
+  //       // `conversation_${index}_${Date.now()}`;
+
+  //     return {
+  //       ...conv,
+  //       uniqueKey: `conv_${uniqueId}_${index}`, // Ensure absolute uniqueness
+  //       otherUser: conv.user || {
+  //         id: `user_${index}`,
+  //         name: "Unknown User",
+  //         avatar: null,
+  //         isOnline: false,
+  //       },
+  //     };
+  //   });
+  // }, [conversations]);
+
+  // Helper: convert proto-style timestamp or ISO to ms
+  const toMillis = (ts) => {
+    if (!ts) return 0;
+    // { seconds: number, nanoseconds: number }
+    if (typeof ts === "object" && ts.seconds != null) {
+      return ts.seconds * 1000 + Math.floor((ts.nanoseconds || 0) / 1e6);
+    }
+    // ISO string or date
+    const parsed = Date.parse(ts);
+    if (!isNaN(parsed)) return parsed;
+    return 0;
+  };
+
+  const processedConversations = useMemo(() => {
+    if (!conversations || !Array.isArray(conversations)) return [];
+
+    const currentUserId = currentUser?.id || currentUser?._id || null;
+    const map = new Map(); // key -> normalized conversation (we'll keep the newest)
+
+    for (let i = 0; i < conversations.length; i++) {
+      const conv = conversations[i];
+
+      // Determine a canonical chat key:
+      // Prefer conv.chatId (server thread id). If not present, use other participant id.
+      const chatKey = conv.chatId || conv.id;
+
+      // Determine other user:
+      let otherUser = conv.user || conv.otherUser || null;
+
+      // If participantIds exists, derive other user's id (exclude current user)
+      if (
+        (!otherUser || !otherUser._id) &&
+        Array.isArray(conv.participantIds)
+      ) {
+        const otherId =
+          conv.participantIds.find((p) => p !== currentUserId) ||
+          conv.participantIds[0];
+        // create minimal otherUser placeholder so UI has an id
+        otherUser = { id: otherId, _id: otherId };
+      }
+
+      // Normalize id/name/avatar fields
+      const otherUserId = otherUser?.id || otherUser?._id || otherUser?._id;
+      const otherUserName =
+        otherUser?.name || otherUser?.displayName || "Unknown User";
+      const otherUserAvatar = otherUser?.avatar || otherUser?.photo || null;
+
+      // Compute a numeric timestamp for sorting: prefer lastMessage.timestamp, then conv.timestamp, then updatedAt
+      const lastMessageTs =
+        conv.lastMessage?.timestamp ||
+        conv.timestamp ||
+        conv.updatedAt ||
+        conv.createdAt;
+      const timeMs = toMillis(lastMessageTs);
+
+      // Compose normalized conversation object
+      const normalized = {
+        ...conv,
+        chatKey,
+        timeMs,
+        otherUser: {
+          id: otherUserId,
+          name: otherUserName,
+          avatar: otherUserAvatar,
+        },
+      };
+
+      // If already have an entry for this chatKey, keep the newest one
+      const existing = map.get(chatKey);
+      if (!existing || normalized.timeMs > existing.timeMs) {
+        map.set(chatKey, normalized);
+      }
+    }
+
+    // Return array sorted by newest first
+    return Array.from(map.values()).sort((a, b) => b.timeMs - a.timeMs);
+  }, [conversations, currentUser]);
+
+  // const filteredConversations = processedConversations.filter((conv) => {
+  //   if (!conv || !conv.otherUser) return false;
+  //   return conv.otherUser.name
+  //     ?.toLowerCase()
+  //     .includes(searchQuery.toLowerCase());
+  // });
+
+  const filteredConversations = processedConversations.filter((conv) => {
     if (!conv || !conv.otherUser) return false;
     return conv.otherUser.name
-      ?.toLowerCase()
+      .toLowerCase()
       .includes(searchQuery.toLowerCase());
   });
 
-  const formatTime = (timestamp) => {
-    if (!timestamp) return "";
-    const date = new Date(timestamp);
+  // const formatTime = (timestamp) => {
+  //   if (!timestamp) return "";
+  //   const date = new Date(timestamp);
+  //   const now = new Date();
+  //   const diff = now.getTime() - date.getTime();
+  //   const hours = Math.floor(diff / (1000 * 60 * 60));
+  //   const minutes = Math.floor(diff / (1000 * 60));
+
+  //   if (minutes < 1) return "now";
+  //   if (minutes < 60) return `${minutes}m`;
+  //   if (hours < 24) return `${hours}h`;
+  //   return date.toLocaleDateString();
+  // };
+
+  const formatTime = (timestampOrMs) => {
+    if (!timestampOrMs) return "";
+    const ms =
+      typeof timestampOrMs === "number"
+        ? timestampOrMs
+        : toMillis(timestampOrMs);
+    if (!ms) return "";
+    const date = new Date(ms);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -52,9 +188,8 @@ export function ChatSidebar({
     if (refreshing || !onRefresh) return;
 
     setRefreshing(true);
-
     try {
-      const success = await onRefresh();
+      await onRefresh();
     } catch (error) {
       console.error("❌ Sidebar refresh failed:", error);
     } finally {
@@ -74,39 +209,38 @@ export function ChatSidebar({
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              Messages
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                Messages
+              </h1>
+              {/* Small WebSocket Status Dot */}
+              {/* <div
+                className={`w-2 h-2 rounded-full ${isConnected ? "bg-green-500" : "bg-red-500"}`}
+                title={isConnected ? "Connected" : "Disconnected"}
+              ></div> */}
+            </div>
+
+            {/* Connection Status Icon on Right */}
             <div className="flex items-center space-x-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                title="Refresh all conversations"
-                className={`hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 ${
-                  refreshing
-                    ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-                    : ""
+              <div
+                className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                  isConnected
+                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                    : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
                 }`}
+                title={
+                  isConnected ? "WebSocket Connected" : "WebSocket Disconnected"
+                }
               >
-                <RotateCcw
-                  className={`h-4 w-4 transition-transform duration-300 ${
-                    refreshing
-                      ? "animate-spin text-blue-600 dark:text-blue-400"
-                      : ""
-                  }`}
-                />
-              </Button>
-              <Button
-                size="sm"
-                className="hidden bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
-                onClick={() => setShowNewConversationModal(true)}
-                title="Start new conversation"
-                disabled
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+                {isConnected ? (
+                  <Wifi className="h-3 w-3" />
+                ) : (
+                  <WifiOff className="h-3 w-3" />
+                )}
+                <span className="hidden sm:inline">
+                  {isConnected ? "Connected" : "Offline"}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -123,27 +257,34 @@ export function ChatSidebar({
         </div>
 
         {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto" >
           {filteredConversations.length === 0 ? (
             <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-              <p>No conversations yet</p>
-              <p className="text-sm mt-1">
-                Click the + button to start a new conversation
-              </p>
+              {processedConversations.length === 0 ? (
+                <>
+                  <p>No conversations yet</p>
+                  <p className="text-sm mt-1">
+                    Click the + button to start a new conversation
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>No conversations match your search</p>
+                  <p className="text-sm mt-1">Try a different search term</p>
+                </>
+              )}
             </div>
-          ) : (
-            filteredConversations.map((conversation) => {
-              const otherUser = conversation.otherUser || {
-                id: "unknown",
-                name: "Unknown User",
-                avatar: null,
-                isOnline: false,
-              };
+          ) : 
+          (
+            filteredConversations.map((conversation,idx) => {
+              const otherUser = conversation.otherUser;
               const isSelected = selectedConversation?.id === conversation.id;
+              const userOnline = isUserOnline(otherUser.id);
+              const key = conversation.id
 
               return (
                 <div
-                  key={conversation.id}
+                  key={key}
                   onClick={() => handleConversationClick(conversation)}
                   className={`p-4 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
                     isSelected
@@ -168,16 +309,25 @@ export function ChatSidebar({
                           {otherUser.name?.charAt(0)?.toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
-                      {otherUser.isOnline && (
-                        <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
-                      )}
+                      {/* Real-time Online Status */}
+                      <div
+                        className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 ${
+                          userOnline
+                            ? "bg-green-500 border-white dark:border-gray-800"
+                            : "bg-gray-400 border-white dark:border-gray-700"
+                        }`}
+                      ></div>
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {otherUser.name || "Unknown User"}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {otherUser.name || "Unknown User"}
+                          </p>
+                          {/* Online indicator text */}
+                          {/* {userOnline && <span className="text-xs text-green-600 dark:text-green-400">●</span>} */}
+                        </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {formatTime(
                             conversation.lastMessage?.timestamp ||
@@ -190,6 +340,7 @@ export function ChatSidebar({
                         <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
                           {conversation.lastMessage?.content ||
                             conversation.lastMessage?.text ||
+                            conversation.lastMessage ||
                             "No messages yet"}
                         </p>
                       </div>
@@ -198,7 +349,38 @@ export function ChatSidebar({
                 </div>
               );
             })
+
+            
+            
           )}
+        </div>
+
+        {/* Compact Mobile Notice */}
+        <div className="border-t border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+          <div className="px-3 py-2">
+            <div className="flex items-center space-x-2">
+              <Smartphone className="h-3 w-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  <span className="font-medium">
+                    Currently best viewed on desktop.{" "}
+                  </span>{" "}
+                  Mobile support is in progress.
+                </p>
+              </div>
+              <div className="flex space-x-1">
+                <div className="w-1 h-1 bg-amber-500 rounded-full animate-pulse"></div>
+                <div
+                  className="w-1 h-1 bg-amber-500 rounded-full animate-pulse"
+                  style={{ animationDelay: "0.3s" }}
+                ></div>
+                <div
+                  className="w-1 h-1 bg-amber-500 rounded-full animate-pulse"
+                  style={{ animationDelay: "0.6s" }}
+                ></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
