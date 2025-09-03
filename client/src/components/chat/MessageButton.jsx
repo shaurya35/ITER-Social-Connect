@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthProvider";
 import axios from "axios";
 
 export function MessageButton({ targetUser, className = "" }) {
-  const { accessToken } = useAuth();
+  // const { accessToken } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const router = useRouter();
