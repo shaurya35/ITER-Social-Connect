@@ -21,6 +21,7 @@ import { useProfileNavigation } from "@/contexts/ProfileNavigation";
 import { BACKEND_URL } from "@/configs/index";
 import axios from "axios";
 import PostsPreloader from "@/components/preloaders/PostsPreloader";
+import { useMediaQuery } from "react-responsive";
 
 // Add CSS animation for gradient shift
 const gradientAnimation = `
@@ -69,6 +70,8 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
+import { initializeApp } from "firebase/app";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 /**
  * Time Handler Function
@@ -176,6 +179,7 @@ export default function MainFeed() {
   const { isDarkMode } = useTheme();
   const redirectToProfile = useProfileNavigation();
   const router = useRouter();
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("general");
@@ -194,6 +198,65 @@ export default function MainFeed() {
       setFetchingUser(false);
     }
   }, [profile]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !isMobile) {
+      e.preventDefault();
+      handlePostSubmit();
+    }
+  };
+  useEffect(() => {
+    if (!accessToken) return;
+    const app = initializeApp({
+      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_SENDER_ID,
+      appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    });
+    const messaging = getMessaging(app);
+
+    // 2) register your merged service worker
+    navigator.serviceWorker
+      .register("/firebase-messaging-sw.js")
+      .then((registration) => {
+        // immediate activation
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
+        navigator.serviceWorker.addEventListener("controllerchange", () =>
+          window.location.reload()
+        );
+
+        // 3) now request notifications & get FCM token
+        Notification.requestPermission().then((perm) => {
+          if (perm !== "granted") return;
+
+          getToken(messaging, {
+            vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+            serviceWorkerRegistration: registration,   // ← pass the SW here
+          })
+            .then((fcmToken) => {
+              if (!fcmToken) {
+                console.error("No FCM token obtained");
+                return;
+              }
+              return axios.post(
+                `${BACKEND_URL}/api/notifications/register-token`,
+                { token: fcmToken },
+                { headers: { Authorization: `Bearer ${accessToken}` } }
+              );
+            })
+            .then(() => console.log("FCM token registered"))
+            .catch(console.error);
+        });
+      })
+      .catch(console.error);
+
+    // 4) optional: handle foreground messages
+    onMessage(messaging, (payload) => {
+      console.log("Foreground push:", payload);
+    });
+  }, [accessToken]);
 
   // /* Fetch The User Feed */
   // const fetchPosts = useCallback(async () => {
