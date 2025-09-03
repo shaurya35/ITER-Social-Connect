@@ -21,6 +21,22 @@ import { useProfileNavigation } from "@/contexts/ProfileNavigation";
 import { BACKEND_URL } from "@/configs/index";
 import axios from "axios";
 import PostsPreloader from "@/components/preloaders/PostsPreloader";
+
+// Add CSS animation for gradient shift
+const gradientAnimation = `
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+`;
+
+// Inject the CSS
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = gradientAnimation;
+  document.head.appendChild(style);
+}
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useMediaQuery } from "react-responsive";
@@ -46,6 +62,7 @@ import {
   ChevronDown,
   ExternalLink,
   Check,
+  Trophy,
 } from "lucide-react";
 import {
   Card,
@@ -117,6 +134,7 @@ const formatLinks = (text) => {
 
 const categories = [
   { value: "general", label: "General", icon: <Tag className="h-4 w-4" /> },
+  { value: "sih", label: "SIH", icon: <Trophy className="h-4 w-4" />},
   { value: "aiml", label: "AI/ML", icon: <Brain className="h-4 w-4" /> },
   { value: "webdev", label: "Web Dev", icon: <Globe className="h-4 w-4" /> },
   {
@@ -339,6 +357,7 @@ export default function MainFeed() {
     } else if (
       [
         "general",
+        "sih",
         "aiml",
         "webdev",
         "mobile",
@@ -669,6 +688,58 @@ export default function MainFeed() {
             ref={navRef}
             style={{ scrollbarWidth: "thin" }}
           >
+            {/* SIH Button - Featured First */}
+            <button
+              onClick={() => setSelectedCategory("sih")}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap flex-shrink-0 relative overflow-hidden group
+      ${
+        selectedCategory === "sih"
+          ? "bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white shadow-xl animate-pulse"
+          : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20 shadow-md hover:shadow-xl hover:scale-105"
+      }`}
+              style={{
+                background: selectedCategory === "sih" 
+                  ? "linear-gradient(45deg, #8b5cf6, #ec4899, #3b82f6, #8b5cf6)"
+                  : undefined,
+                backgroundSize: selectedCategory === "sih" ? "300% 300%" : undefined,
+                animation: selectedCategory === "sih" ? "gradientShift 3s ease infinite" : undefined
+              }}
+            >
+              {/* Rolling gradient border - always visible */}
+              <div className={`absolute inset-0 rounded-full p-[3px] transition-all duration-300 ${
+                selectedCategory === "sih" 
+                  ? "bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 animate-spin"
+                  : "bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 opacity-60 group-hover:opacity-100 group-hover:animate-pulse"
+              }`} style={{
+                background: selectedCategory === "sih" 
+                  ? "conic-gradient(from 0deg, #8b5cf6, #ec4899, #3b82f6, #8b5cf6)"
+                  : "linear-gradient(45deg, #8b5cf6, #ec4899, #3b82f6)"
+              }}>
+                <div className={`w-full h-full rounded-full transition-all duration-300 ${
+                  selectedCategory === "sih" 
+                    ? "bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600" 
+                    : "bg-white dark:bg-gray-800 group-hover:bg-gradient-to-r group-hover:from-purple-50 group-hover:to-pink-50 dark:group-hover:from-purple-900/20 dark:group-hover:to-pink-900/20"
+                }`}></div>
+              </div>
+              
+              {/* Content */}
+              <span className="relative z-10 flex items-center gap-2">
+                <span className={`absolute -top-1 -right-1 w-3 h-3 rounded-full animate-ping ${
+                  selectedCategory === "sih" 
+                    ? "bg-pink-400" 
+                    : "bg-purple-500 dark:bg-purple-400"
+                }`}></span>
+                <span className="font-semibold">SIH</span>
+                <span className={`transition-all duration-300 ${
+                  selectedCategory === "sih" 
+                    ? "animate-bounce text-yellow-300" 
+                    : "group-hover:animate-spin text-purple-500 dark:text-purple-400 group-hover:text-pink-500"
+                }`}>
+                  <Trophy className="h-4 w-4" />
+                </span>
+              </span>
+            </button>
+
             {/* General Button */}
             <button
               onClick={() => setSelectedCategory("general")}
@@ -708,9 +779,9 @@ export default function MainFeed() {
               Alumni
             </button>
 
-            {/* Remaining Categories (excluding "general") */}
+            {/* Remaining Categories (excluding "general" and "sih") */}
             {categories
-              .filter((category) => category.value !== "general")
+              .filter((category) => category.value !== "general" && category.value !== "sih")
               .map((category) => (
                 <button
                   key={category.value}
@@ -723,6 +794,7 @@ export default function MainFeed() {
           }`}
                 >
                   {category.label}
+                  
                 </button>
               ))}
           </div>

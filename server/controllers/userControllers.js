@@ -110,6 +110,7 @@ const createUserPost = async (req, res) => {
 
     const allowedCategories = [
       "general",
+      "sih",
       "aiml",
       "webdev",
       "mobile",

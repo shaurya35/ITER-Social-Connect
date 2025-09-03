@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthProvider";
 import { BACKEND_URL, BOT_URL } from "@/configs/index";
 
 const interestOptions = [
+  { value: "sih", label: "SIH" },
   { value: "aiml", label: "AI/ML" },
   { value: "webdev", label: "Web Development" },
   { value: "mobile", label: "Mobile Development" },

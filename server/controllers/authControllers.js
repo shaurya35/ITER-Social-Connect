@@ -302,6 +302,7 @@ const completeProfile = async (req, res) => {
     }
 
     const predefinedFields = [
+      "SIH",
       "Artificial Intelligence",
       "Machine Learning",
       "Data Science",
