@@ -58,6 +58,31 @@ export default function EventComponent() {
     }
   }, [accessToken]);
 
+  // Function to render text with clickable links
+  const renderTextWithLinks = (text) => {
+    if (!text) return '';
+    
+    // URL regex pattern to match http/https URLs
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    
+    return text.split(urlRegex).map((part, index) => {
+      if (urlRegex.test(part)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline break-all"
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   /* Render an event card with expanded details */
   const renderEventCard = (event) => (
     <Card
@@ -66,51 +91,59 @@ export default function EventComponent() {
     >
       <CardContent className="p-6">
         <div className="flex flex-col gap-4">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-2xl">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-2xl leading-tight break-words">
             {event.eventTitle}
           </h3>
-          <p className="text-base text-gray-700 dark:text-gray-300">
-            {event.eventDescription}
-          </p>
-          <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-            <p>
-              <span className="font-medium">Event Type:</span> {event.eventType}
-            </p>
-            <p>
-              <span className="font-medium">Address:</span> {event.eventAddress}
-            </p>
-            <p>
-              <span className="font-medium">Start Time:</span>{" "}
-              {new Date(event.eventStartTime).toLocaleString(undefined, {
-                dateStyle: "medium",
-                timeStyle: "short",
-              })}
-            </p>
-            <p>
-              <span className="font-medium">End Time:</span>{" "}
-              {new Date(event.eventEndTime).toLocaleString(undefined, {
-                dateStyle: "medium",
-                timeStyle: "short",
-              })}
-            </p>
-            <p>
-              <span className="font-medium">Time Remaining:</span> {event.timeRemaining}
-            </p>
-            <p>
-              <span className="font-medium">Contact:</span> {event.eventContact}
-            </p>
+          <div className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed break-words whitespace-pre-wrap">
+            {renderTextWithLinks(event.eventDescription)}
+          </div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+              <span className="font-medium min-w-[100px]">Event Type:</span>
+              <span className="break-words">{event.eventType}</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-start gap-1">
+              <span className="font-medium min-w-[100px]">Address:</span>
+              <span className="break-words leading-relaxed">{event.eventAddress}</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+              <span className="font-medium min-w-[100px]">Start Time:</span>
+              <span className="break-words">
+                {new Date(event.eventStartTime).toLocaleString(undefined, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+              </span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+              <span className="font-medium min-w-[100px]">End Time:</span>
+              <span className="break-words">
+                {new Date(event.eventEndTime).toLocaleString(undefined, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+              </span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+              <span className="font-medium min-w-[100px]">Time Remaining:</span>
+              <span className="break-words">{event.timeRemaining}</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+              <span className="font-medium min-w-[100px]">Contact:</span>
+              <span className="break-words">{event.eventContact}</span>
+            </div>
             {event.eventLink && (
-              <p>
-                <span className="font-medium">Link:</span>{" "}
+              <div className="flex flex-col sm:flex-row sm:items-start gap-1">
+                <span className="font-medium min-w-[100px]">Link:</span>
                 <a
                   href={event.eventLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
+                  className="text-blue-600 hover:underline break-all leading-relaxed"
                 >
                   {event.eventLink}
                 </a>
-              </p>
+              </div>
             )}
           </div>
           <div className="flex justify-end">
