@@ -132,6 +132,7 @@ const {
   where,
   doc,
   getDoc,
+  getCountFromServer,
 } = require("firebase/firestore");
 
 const getAllPosts = async (req, res) => {
@@ -188,6 +189,31 @@ const getAllPosts = async (req, res) => {
         category: data.category || "Uncategorized",
       };
     });
+
+    // Fetch comment count for each post using count aggregation (more efficient)
+    const postsWithCommentCount = await Promise.all(
+      posts.map(async (post) => {
+        try {
+          const commentsRef = collection(db, "posts", post.id, "comments");
+          const countQuery = query(commentsRef);
+          const countSnapshot = await getCountFromServer(countQuery);
+          const commentCount = countSnapshot.data().count;
+          
+          return {
+            ...post,
+            commentCount,
+          };
+        } catch (error) {
+          console.error(`Error fetching comment count for post ${post.id}:`, error);
+          return {
+            ...post,
+            commentCount: 0,
+          };
+        }
+      })
+    );
+
+    posts = postsWithCommentCount;
 
     // Fetch user details
     const userPromises = posts.map(async (post) => {

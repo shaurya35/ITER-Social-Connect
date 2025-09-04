@@ -314,7 +314,7 @@ export default function MainFeed() {
         ...post,
         category: post.category || "general",
       }));
-
+      // console.log(processedPosts)
       setPosts((prev) => [...prev, ...processedPosts]);
       setHasMore(response.data.hasMore);
     } catch (err) {
@@ -813,12 +813,7 @@ export default function MainFeed() {
                 placeholder="What's on your mind?"
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handlePostSubmit();
-                  }
-                }}
+                onKeyDown={handleKeyDown}
                 className="resize-y bg-gray-100 min-h-[100px] dark:bg-gray-700 border-0 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 rounded-lg text-gray-900 dark:text-gray-100 whitespace-pre-wrap overflow-y-auto"
               />
               <div className="mt-4 flex flex-col md:flex-row gap-3 justify-between items-start md:items-center">
@@ -1020,6 +1015,7 @@ export default function MainFeed() {
                 >
                   <MessageCircleMore className="h-4 w-4" />
                   <div className="hidden md:block">Comments</div>
+                  <div className="block md:hidden">{post.commentCount}</div>
                 </Button>
                 <Button
                   variant="ghost"
