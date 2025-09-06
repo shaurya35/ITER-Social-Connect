@@ -212,7 +212,7 @@ export default function Navbar() {
                   }}
                 >
                   <img
-                    src={user.profilePicture || "/default-avatar.png"}
+                    src={user.profilePicture || "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"}
                     alt={user.name}
                     className="w-10 h-10 rounded-full mr-3 object-cover transition-transform duration-150 hover:scale-105"
                   />

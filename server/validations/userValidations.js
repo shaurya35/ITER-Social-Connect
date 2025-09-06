@@ -3,6 +3,28 @@ const { z } = require("zod");
 
 const userSignupSchema = z.object({
   email: z.string().email("Invalid email format."),
+  role: z.string().optional(),
+}).refine((data) => {
+  // Role-based email validation
+  if (data.role === "student" || data.role === "alumni") {
+    // Allow common email domains for students and alumni
+    const allowedDomains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com", "@icloud.com"];
+    return allowedDomains.some(domain => data.email.endsWith(domain));
+  } else if (data.role === "teacher") {
+    // Teachers must use SOA email
+    return data.email.endsWith("@soa.ac.in");
+  }
+  return true; // No validation for other roles
+}, {
+  message: (data) => {
+    if (data.role === "student" || data.role === "alumni") {
+      return "Student and alumni emails must end with @gmail.com, @yahoo.com, @outlook.com, @hotmail.com, or @icloud.com";
+    } else if (data.role === "teacher") {
+      return "Teacher email must end with @soa.ac.in";
+    }
+    return "Invalid email domain for the selected role";
+  },
+  path: ["email"]
 });
 
 const userSigninSchema = z.object({

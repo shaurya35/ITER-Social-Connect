@@ -52,6 +52,16 @@ const nextConfig = {
   },
   images: {
     domains: ["media.discordapp.net", "res.cloudinary.com", "cdlsaecoineiohkdextf.supabase.co", "media.licdn.com"],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
+    ],
   },
   webpack: (config) => {
     config.resolve.alias = {

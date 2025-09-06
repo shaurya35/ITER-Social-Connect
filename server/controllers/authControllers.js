@@ -142,16 +142,7 @@ const signup = async (req, res) => {
       return res.status(400).json({ message: "Role is required." });
     }
 
-    // Add role-based email validation
-    if (role === "teacher") {
-      if (!email.endsWith("@soa.ac.in")) {
-        return res.status(400).json({
-          message: "Teacher email must end with '@soa.ac.in'",
-        });
-      }
-    }
-
-    // Existing Zod validation (from separate file)
+    // Zod validation with role-based email validation
     const validationResult = userSignupSchema.safeParse(req.body);
     if (!validationResult.success) {
       return res

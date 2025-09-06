@@ -184,6 +184,10 @@ export default function MainFeed() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("general");
   const [categoriesPosting, setCategoriesPosting] = useState(categories[0]);
+  
+  // Track if we're using server-side filtering (for role-based categories)
+  const [isServerFiltered, setIsServerFiltered] = useState(false);
+  const [previousCategory, setPreviousCategory] = useState("general");
 
   // Ref for the sentinel element used for infinite scrolling
   const sentinelRef = useRef(null);
@@ -301,8 +305,15 @@ export default function MainFeed() {
     setLoading(true);
 
     try {
+      // Determine if we need server-side filtering for role-based categories
+      const needsServerFiltering = selectedCategory === 'teacher' || selectedCategory === 'alumni';
+      
       const response = await axios.get(`${BACKEND_URL}/api/feed`, {
-        params: { page, limit: 10 },
+        params: { 
+          page, 
+          limit: 10,
+          ...(needsServerFiltering && { role: selectedCategory })
+        },
         withCredentials: true,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       });
@@ -314,8 +325,19 @@ export default function MainFeed() {
         ...post,
         category: post.category || "general",
       }));
-      // console.log(processedPosts)
-      setPosts((prev) => [...prev, ...processedPosts]);
+      
+      if (needsServerFiltering) {
+        // For server-side filtered posts, replace on first page, append on subsequent pages
+        if (page === 1) {
+          setPosts(processedPosts);
+        } else {
+          setPosts((prev) => [...prev, ...processedPosts]);
+        }
+      } else {
+        // For client-side filtered posts, append to existing posts
+        setPosts((prev) => [...prev, ...processedPosts]);
+      }
+      
       setHasMore(response.data.hasMore);
     } catch (err) {
       setError(err);
@@ -323,14 +345,13 @@ export default function MainFeed() {
       isFetchingRef.current = false;
       setLoading(false);
     }
-  }, [page, accessToken]);
+  }, [page, accessToken, selectedCategory]);
 
-  // Filter posts based on selected category
+  // Filter posts based on selected category (only for client-side filtering)
   const filteredPosts = posts.filter((post) => {
-    if (selectedCategory === "alumni") {
-      return post.role === "alumni";
-    } else if (selectedCategory === "teacher") {
-      return post.role === "teacher";
+    // For role-based categories, posts are already filtered server-side
+    if (selectedCategory === "alumni" || selectedCategory === "teacher") {
+      return true; // All posts are already filtered by role on server
     } else if (
       [
         "general",
@@ -353,8 +374,19 @@ export default function MainFeed() {
 
   // Updated category change handler
   const handleCategoryChange = (category) => {
+    const needsServerFiltering = category === 'teacher' || category === 'alumni';
+    const wasServerFiltered = previousCategory === 'teacher' || previousCategory === 'alumni';
+    
     setSelectedCategory(category);
-    // No need to reset posts/page since we're filtering client-side
+    setPreviousCategory(category);
+    
+    // Reset pagination and posts when switching between different filtering modes
+    if (needsServerFiltering !== wasServerFiltered) {
+      setPage(1);
+      setPosts([]);
+      setHasMore(true);
+      setIsServerFiltered(needsServerFiltering);
+    }
   };
   // Add near your other hooks
   const navRef = useRef(null);
@@ -396,6 +428,13 @@ export default function MainFeed() {
     }
   }, [profile]);
 
+  /* Reset posts and pagination when category changes */
+  useEffect(() => {
+    setPage(1);
+    setPosts([]);
+    setHasMore(true);
+  }, [selectedCategory]);
+
   /* Fetch posts when page changes */
   useEffect(() => {
     fetchPosts();
@@ -426,7 +465,7 @@ export default function MainFeed() {
         observer.unobserve(currentSentinel);
       }
     };
-  }, [loading, hasMore]);
+  }, [loading, hasMore, selectedCategory]);
 
   /* Post Creation */
   const handlePostSubmit = async () => {
@@ -667,7 +706,7 @@ export default function MainFeed() {
           >
             {/* SIH Button - Featured First */}
             <button
-              onClick={() => setSelectedCategory("sih")}
+              onClick={() => handleCategoryChange("sih")}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap flex-shrink-0 relative overflow-hidden group
       ${
         selectedCategory === "sih"
@@ -719,7 +758,7 @@ export default function MainFeed() {
 
             {/* General Button */}
             <button
-              onClick={() => setSelectedCategory("general")}
+              onClick={() => handleCategoryChange("general")}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
       ${
         selectedCategory === "general"
@@ -732,7 +771,7 @@ export default function MainFeed() {
 
             {/* Teacher Posts Button */}
             <button
-              onClick={() => setSelectedCategory("teacher")}
+              onClick={() => handleCategoryChange("teacher")}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
       ${
         selectedCategory === "teacher"
@@ -745,7 +784,7 @@ export default function MainFeed() {
 
             {/* Alumni Posts Button */}
             <button
-              onClick={() => setSelectedCategory("alumni")}
+              onClick={() => handleCategoryChange("alumni")}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
       ${
         selectedCategory === "alumni"
@@ -762,7 +801,7 @@ export default function MainFeed() {
               .map((category) => (
                 <button
                   key={category.value}
-                  onClick={() => setSelectedCategory(category.value)}
+                  onClick={() => handleCategoryChange(category.value)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
           ${
             selectedCategory === category.value
@@ -1014,8 +1053,8 @@ export default function MainFeed() {
                   onClick={() => router.push(`/post/${post.id}`)}
                 >
                   <MessageCircleMore className="h-4 w-4" />
-                  <div className="hidden md:block">Comments</div>
-                  <div className="block md:hidden">{post.commentCount}</div>
+                  {/* <div className="hidden md:block">Comments</div> */}
+                  <div>{post.commentCount}</div>
                 </Button>
                 <Button
                   variant="ghost"
