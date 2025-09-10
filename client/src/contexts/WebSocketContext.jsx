@@ -28,8 +28,19 @@ export function WebSocketProvider({ children }) {
   const connectionAttemptRef = useRef(false);
   const pingIntervalRef = useRef(null);
 
-  // WebSocket URL
-  const WS_URL = process.env.NEXT_PUBLIC_BACKENDWS_URL || "ws://localhost:8080/ws";
+  // WebSocket URL with production-safe defaults
+  const deriveWsUrl = () => {
+    const envUrl = process.env.NEXT_PUBLIC_BACKENDWS_URL;
+    if (envUrl) return envUrl;
+    if (typeof window !== 'undefined') {
+      const loc = window.location;
+      const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
+      // Assume backend ws path at /ws on same host by default
+      return `${protocol}//${loc.host}/ws`;
+    }
+    return "ws://localhost:8080/ws";
+  };
+  const WS_URL = deriveWsUrl();
 
   const connect = useCallback(() => {
     if (!user?.id) {
@@ -109,15 +120,12 @@ export function WebSocketProvider({ children }) {
         }
 
         // Attempt to reconnect if not a normal closure and user still exists
-        if (
-          event.code !== 1000 &&
-          reconnectAttempts.current < maxReconnectAttempts &&
-          user?.id
-        ) {
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
-          
+        if (user?.id) {
+          const baseDelay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+          const jitter = Math.floor(Math.random() * 500);
+          const delay = baseDelay + jitter;
           reconnectTimeoutRef.current = setTimeout(() => {
-            reconnectAttempts.current++;
+            reconnectAttempts.current = Math.min(reconnectAttempts.current + 1, 10);
             connect();
           }, delay);
         }
@@ -152,6 +160,24 @@ export function WebSocketProvider({ children }) {
     setOnlineUsers(new Set());
     setTypingUsers(new Map());
   }, []);
+
+  // Attempt reconnect on browser coming back online or tab visibility change
+  useEffect(() => {
+    const handleOnline = () => {
+      if (!isConnected && user?.id) connect();
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && !isConnected && user?.id) {
+        connect();
+      }
+    };
+    window.addEventListener('online', handleOnline);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [connect, isConnected, user?.id]);
 
   const handleMessage = useCallback((data) => {
     switch (data.type) {

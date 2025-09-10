@@ -213,7 +213,7 @@ export function ChatWindow({
                     className={`flex flex-col max-w-[85%] lg:max-w-[70%] ${isMyMessage ? "items-end" : "items-start"}`}
                   >
                     <div
-                      className={`px-4 py-2 max-w-full break-words transition-all duration-200 hover:shadow-md ${
+                      className={`px-4 py-2 max-w-full break-words break-all transition-all duration-200 hover:shadow-md ${
                         isMyMessage
                           ? `bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white shadow-sm ${
                               isGroupedWithPrevious && isGroupedWithNext
@@ -235,9 +235,9 @@ export function ChatWindow({
                             }`
                       }`}
                     >
-                    <MessageContent 
-                      content={message.content || message.text || "No content"}
-                    />
+                    <p className="whitespace-pre-wrap break-all">
+                      {message.content || message.text || "No content"}
+                    </p>
                     </div>
 
                     {!isGroupedWithNext && (

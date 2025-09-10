@@ -127,7 +127,7 @@ export function ChatSidebar({
                       </div>
                       
                       {lastMessage ? (
-                        <p className="text-sm text-gray-600 dark:text-gray-300 truncate leading-relaxed">
+                        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed break-words break-all">
                           {lastMessage.senderId === currentUser?.id ? "You: " : ""}
                           {lastMessage.content}
                         </p>
