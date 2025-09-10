@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, MessageCircle, Users } from "lucide-react";
+import { Search, MessageCircle, Users, Mail } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -55,7 +55,7 @@ export function ChatSidebar({
             onClick={onRefresh}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
-            <MessageCircle className="h-4 w-4" />
+            <Mail className="h-4 w-4" />
           </Button>
         </div>
         

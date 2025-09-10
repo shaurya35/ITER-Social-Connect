@@ -10,7 +10,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { BACKEND_URL } from "@/configs/index";
 import { useAuth } from "@/contexts/AuthProvider";
-import { ArrowLeft, Menu, X, MessageCircle } from "lucide-react";
+import { ArrowLeft,Mail, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 
@@ -448,7 +448,7 @@ export function ChatLayout({ currentUser, targetUserId, targetUserName }) {
   }
 
   return (
-    <div className="flex h-full bg-gray-50 dark:bg-gray-900 max-w-6xl mx-auto overflow-hidden">
+    <div className="flex h-full fixed w-full bg-gray-50 dark:bg-gray-900 max-w-6xl mx-auto overflow-hidden">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block w-80">
         <ChatSidebar
@@ -476,7 +476,7 @@ export function ChatLayout({ currentUser, targetUserId, targetUserName }) {
                 onClick={handleRefresh}
                 className="p-2"
               >
-                <MessageCircle className="h-5 w-5" />
+                <Mail className="h-5 w-5" />
               </Button>
             </div>
             
@@ -539,7 +539,7 @@ export function ChatLayout({ currentUser, targetUserId, targetUserName }) {
       </div>
 
       {/* Desktop Chat Window */}
-      <div className="hidden lg:flex flex-1 flex flex-col min-w-0">
+      <div className="hidden lg:flex flex-1 h-full flex-col min-w-0">
         <div className="flex-1 min-h-0 overflow-hidden">
           <ChatWindow
             conversation={selectedConversation}

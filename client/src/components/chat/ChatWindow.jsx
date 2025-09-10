@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, MessageCircle } from "lucide-react";
+import { Send, MessageCircle,  Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -119,10 +119,10 @@ export function ChatWindow({
 
   if (!conversation) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-900 p-8">
+      <div className="flex-1 h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-900 p-8">
         <div className="text-center max-w-md">
           <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <MessageCircle className="h-16 w-16 text-white" />
+            <Mail className="h-16 w-16 text-white" />
           </div>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
             Welcome to ITER Social Connect
@@ -151,7 +151,7 @@ export function ChatWindow({
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 h-full max-h-full overflow-hidden" style={{ overscrollBehavior: 'contain', touchAction: 'manipulation' }}>
+    <div className="flex-1 flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 h-full max-h-full overflow-hidden">
       {/* Desktop Chat Header - Hidden on mobile */}
       <div className="hidden lg:flex flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
         <div className="flex items-center justify-between w-full">
@@ -178,7 +178,7 @@ export function ChatWindow({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 lg:p-4 bg-gray-50 dark:bg-gray-900 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="flex-1 overflow-y-auto p-3 lg:p-4 mb-14 bg-gray-50 dark:bg-gray-900 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
         {messages.length === 0 ? (
           <div className="text-center text-gray-500 dark:text-gray-400 mt-8 px-4">
             <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -271,8 +271,8 @@ export function ChatWindow({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input */}
-      <div className="flex-shrink-0 p-3 lg:p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      {/* Message Input - sticky to bottom */}
+      <div className="sticky bottom-16 md:bottom-14 flex-shrink-0 p-3 lg:p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <form onSubmit={handleSendMessage} className="flex items-end space-x-2 lg:space-x-3">
           <div className="flex-1 relative">
             <Input
