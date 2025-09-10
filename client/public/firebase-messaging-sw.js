@@ -15,23 +15,57 @@ firebase.initializeApp({
 });
 const messaging = firebase.messaging();
 
-// 🔔 Background push handler
-messaging.onBackgroundMessage(payload => {
+// 🔔 Background push handler (expects DATA-ONLY messages)
+messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Received background message:', payload);
-  const title = payload.notification?.title || "New Notification";
+  const data = payload.data || {};
+  const title = data.title || 'New Notification';
   const options = {
-    body: payload.notification?.body || "You have a new update",
+    body: data.body || 'You have a new update',
     icon: '/android-192x192.png',
-    data: payload.data
+    data,
+    tag: `${data.type || 'generic'}:${data.senderId || ''}`,
+    renotify: false,
   };
-  self.registration.showNotification(title, options);
+
+  // Prevent duplicate by checking existing notifications with same tag
+  eventWaitUntilShow(title, options);
 });
 
-self.addEventListener('notificationclick', event => {
+function eventWaitUntilShow(title, options) {
+  self.registration.getNotifications({ includeTriggered: true }).then((notifs) => {
+    const duplicate = notifs.some((n) => n.tag && n.tag === options.tag);
+    if (duplicate) {
+      // update existing by closing and re-showing (refresh timestamp)
+      notifs.forEach((n) => {
+        if (n.tag === options.tag) n.close();
+      });
+    }
+    self.registration.showNotification(title, options);
+  });
+}
+
+self.addEventListener('notificationclick', (event) => {
   console.log('[SW] Notification clicked');
   event.notification.close();
-  const urlToOpen = event.notification.data?.url || '/notifications';
-  event.waitUntil(clients.openWindow(urlToOpen));
+  const dataUrl = event.notification.data?.url || '/notifications';
+  const urlToOpen = new URL(dataUrl, self.location.origin).href;
+
+  event.waitUntil((async () => {
+    const allClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    let client = allClients.find((c) => {
+      try {
+        const cUrl = new URL(c.url);
+        const target = new URL(urlToOpen);
+        return cUrl.origin === target.origin && cUrl.pathname === target.pathname;
+      } catch { return false; }
+    });
+    if (client) {
+      client.focus();
+    } else {
+      await clients.openWindow(urlToOpen);
+    }
+  })());
 });
 
 // -----------------------------
@@ -42,8 +76,8 @@ const CACHE_NAME = "iter-social-cache-v1";
 const urlsToCache = [
   "/",
   "/manifest.json",
-  "/android-chrome-192x192.png",
-  "/android-chrome-512x512.png",
+  "/android-192x192.png",
+  "/android-512x512.png",
   "/favicon.ico",
 ];
 

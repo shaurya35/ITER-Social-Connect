@@ -2,6 +2,7 @@ import localFont from "next/font/local";
 import { Poppins } from "next/font/google";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthProvider";
+import { FirebaseMessagingProvider } from "@/contexts/FirebaseMessagingProvider";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 import Navbar from "@/components/home/navbar/Navbar";
 import { Analytics } from '@vercel/analytics/next';
@@ -40,14 +41,16 @@ export default function RootLayout({ children }) {
       >
         <ThemeProvider>
           <AuthProvider>
-            <ProfileProvider>
-              <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-                <Navbar />
-                {children}
-                <Analytics />
-                <SpeedInsights />
-              </div>
-            </ProfileProvider>
+            <FirebaseMessagingProvider>
+              <ProfileProvider>
+                <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+                  <Navbar />
+                  {children}
+                  <Analytics />
+                  <SpeedInsights />
+                </div>
+              </ProfileProvider>
+            </FirebaseMessagingProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

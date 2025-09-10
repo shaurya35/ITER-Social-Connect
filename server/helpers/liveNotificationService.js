@@ -37,14 +37,14 @@ async function pushNotification(userId, opts) {
   const fcmToken = userSnap.data().fcmToken;
   if (!fcmToken) return;  // no token to send to
 
-  // 2) Build the message
+  // 2) Build a DATA-ONLY message to avoid browser auto-notification (prevents duplicates)
   const message = {
     token: fcmToken,
-    notification: {
-      title: opts.title,
-      body: opts.body,
+    data: {
+      title: String(opts.title || "Notification"),
+      body: String(opts.body || "You have a new update"),
+      ...(opts.data || {}),
     },
-    data: opts.data || {},
   };
 
   try {
