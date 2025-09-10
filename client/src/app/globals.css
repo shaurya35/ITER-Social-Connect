@@ -193,3 +193,14 @@ body {
 .dark .scroll-container {
   scrollbar-color: rgba(75, 85, 99, 0.4) transparent;
 }
+
+/* Chat page specific styles to prevent global scrolling */
+.chat-page {
+  height: calc(100vh - 4rem);
+  overflow: hidden;
+  position: relative;
+}
+
+.chat-page * {
+  overscroll-behavior: contain;
+}

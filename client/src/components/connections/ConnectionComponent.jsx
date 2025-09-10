@@ -18,6 +18,7 @@ import {
   BookDown,
   Check,
   X,
+  MessageCircle,
 } from "lucide-react";
 import axios from "axios";
 import LeftPanel from "@/components/panels/LeftPanel";
@@ -148,6 +149,14 @@ export default function ConnectionsComponent() {
     }
   };
 
+  // Handle message button click for pending requests (after accepting)
+  const handleMessageFromRequest = (request) => {
+    if (!request.senderId || !request.name) return;
+    
+    // Navigate to chat with the request sender
+    router.push(`/chat?userId=${request.senderId}&userName=${encodeURIComponent(request.name)}`);
+  };
+
   // Reject a pending connection request
   const handleReject = async (request) => {
     try {
@@ -168,6 +177,14 @@ export default function ConnectionsComponent() {
     } catch (error) {
       console.error("Error rejecting request", error);
     }
+  };
+
+  // Handle message button click
+  const handleMessage = (connection) => {
+    if (!connection.userId || !connection.name) return;
+    
+    // Navigate to chat with the connection
+    router.push(`/chat?userId=${connection.userId}&userName=${encodeURIComponent(connection.name)}`);
   };
 
   // Render connection card for "My Network"
@@ -204,12 +221,11 @@ export default function ConnectionsComponent() {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center sm:gap-2 md:gap-3 w-full sm:w-auto sm:justify-start mt-4 sm:mt-0">
             <Button
-              variant="outline"
+              onClick={() => handleMessage(connection)}
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shrink-0 w-full sm:w-auto"
-              disabled
+              className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white shrink-0 w-full sm:w-auto"
             >
-              <Mail className="h-4 w-4 md:mr-2" />
+              <MessageCircle className="h-4 w-4 md:mr-2" />
               <span className="block sm:hidden md:inline-block text-sm">
                 Message
               </span>
@@ -264,6 +280,14 @@ export default function ConnectionsComponent() {
 
           {/* Action Buttons for Pending Requests */}
           <div className="flex flex-row sm:flex-row items-center justify-end gap-1 md:gap-2 w-full sm:w-auto sm:justify-start mt-4 sm:mt-0">
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white"
+              onClick={() => handleMessageFromRequest(request)}
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span className="sr-only">Message</span>
+            </Button>
             <Button
               size="sm"
               className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"

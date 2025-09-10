@@ -88,6 +88,17 @@ app.get("/", (req, res) => {
   res.json("Test API!!");
 });
 
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    websocket: {
+      connected: wss.clients.size,
+      path: "/ws"
+    }
+  });
+});
+
 const authRoutes = require("./routes/authRoutes");
 const feedRoutes = require("./routes/feedRoutes");
 const userRoutes = require("./routes/userRoutes");
@@ -140,6 +151,7 @@ const wss = new WebSocket.Server({
 });
 
 setWebSocketServer(wss);
+global.wss = wss;
 
 wss.on("connection", (ws) => {
   let userId = null;
@@ -217,12 +229,18 @@ wss.on("connection", (ws) => {
           break;
 
         case "message":
+        case "new_message":
           if (data.conversationId && userId) {
             const messageData = {
               type: "new_message",
-              ...data,
+              conversationId: data.conversationId,
               senderId: userId,
+              receiverId: data.receiverId,
+              content: data.content || data.text,
+              messageId: data.messageId || `msg_${userId}_${Date.now()}`,
               timestamp: new Date().toISOString(),
+              senderName: userInfo?.name || "Unknown User",
+              senderAvatar: userInfo?.avatar || null,
             };
             broadcastToConversation(data.conversationId, messageData, userId);
           }

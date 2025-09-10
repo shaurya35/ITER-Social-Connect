@@ -760,6 +760,44 @@ const teacherSignup = async (req, res) => {
   }
 };
 
+// Get current user profile
+const me = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    // Get user from database
+    const userDoc = await getDoc(doc(db, "users", userId));
+    
+    if (!userDoc.exists()) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userData = userDoc.data();
+    
+    // Return user data
+    res.json({
+      id: userId,
+      userId: userId,
+      name: userData.name || userData.fullName || "Unknown User",
+      email: userData.email || "",
+      avatar: userData.avatar || userData.profilePicture || null,
+      profilePicture: userData.profilePicture || userData.avatar || null,
+      role: userData.role || userData.userType || "student",
+      userType: userData.userType || userData.role || "student",
+      isOnline: true,
+      createdAt: userData.createdAt,
+      updatedAt: userData.updatedAt
+    });
+  } catch (error) {
+    console.error("Error in me endpoint:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 module.exports = {
   signup,
   completeProfile,
@@ -771,4 +809,5 @@ module.exports = {
   verifyOtpForForgetPassword,
   resetPassword,
   teacherSignup,
+  me,
 };

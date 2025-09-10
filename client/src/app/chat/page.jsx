@@ -15,6 +15,7 @@ export default function ChatPage() {
 
   const targetUserId = searchParams.get("userId")
   const targetUserName = searchParams.get("userName")
+  
 
   useEffect(() => {
     if (authLoading) return
@@ -83,5 +84,9 @@ export default function ChatPage() {
     return null // Let router.replace() handle redirection safely
   }
 
-  return <ChatLayout currentUser={currentUser} targetUserId={targetUserId} targetUserName={targetUserName} />
+  return (
+    <div className="chat-page">
+      <ChatLayout currentUser={currentUser} targetUserId={targetUserId} targetUserName={targetUserName} />
+    </div>
+  )
 }
