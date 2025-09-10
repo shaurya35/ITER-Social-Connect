@@ -49,22 +49,38 @@ self.addEventListener('notificationclick', (event) => {
   console.log('[SW] Notification clicked');
   event.notification.close();
   const dataUrl = event.notification.data?.url || '/notifications';
-  const urlToOpen = new URL(dataUrl, self.location.origin).href;
+
+  // Force an in-scope, relative path to keep navigation inside the installed PWA
+  const targetPath = (() => {
+    try {
+      if (typeof dataUrl === 'string' && dataUrl.startsWith('/')) return dataUrl;
+      const u = new URL(dataUrl);
+      if (u.origin === self.location.origin) return u.pathname + u.search + u.hash;
+      return '/notifications';
+    } catch {
+      return '/notifications';
+    }
+  })();
 
   event.waitUntil((async () => {
     const allClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
-    let client = allClients.find((c) => {
-      try {
-        const cUrl = new URL(c.url);
-        const target = new URL(urlToOpen);
-        return cUrl.origin === target.origin && cUrl.pathname === target.pathname;
-      } catch { return false; }
-    });
+    // Prefer any client already controlled by this SW (should be the PWA window)
+    let client = allClients.find((c) => c.url && c.visibilityState !== 'hidden');
+
     if (client) {
-      client.focus();
-    } else {
-      await clients.openWindow(urlToOpen);
+      try {
+        // Navigate existing client if needed, then focus it
+        const clientUrl = new URL(client.url);
+        if (clientUrl.pathname !== targetPath) {
+          await client.navigate(targetPath);
+        }
+        await client.focus();
+        return;
+      } catch {}
     }
+
+    // No suitable client; open a new in-scope window (should open in PWA if installed)
+    await clients.openWindow(targetPath);
   })());
 });
 
