@@ -132,7 +132,7 @@ export function NewConversationModal({
                 >
                   <Avatar className="h-10 w-10">
                     <AvatarImage
-                      src={user.avatar || "/placeholder.svg"}
+                      src={user.avatar || "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"}
                       alt={user.name}
                       className="object-cover"
                     />

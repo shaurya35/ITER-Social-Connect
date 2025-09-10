@@ -125,7 +125,7 @@ export function ChatInterface({ selectedUser, selectedConversation }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={otherUser.avatar || "/placeholder.svg"} />
+              <AvatarImage src={otherUser.avatar || "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"} />
               <AvatarFallback className="bg-blue-600 text-white">
                 {otherUser.name?.charAt(0)?.toUpperCase() || "U"}
               </AvatarFallback>
@@ -176,7 +176,7 @@ export function ChatInterface({ selectedUser, selectedConversation }) {
                   {/* Avatar for received messages */}
                   {!isMyMessage && (
                     <Avatar className="h-8 w-8 flex-shrink-0 mr-2">
-                      <AvatarImage src={otherUser.avatar || "/placeholder.svg"} />
+                      <AvatarImage src={otherUser.avatar || "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"} />
                       <AvatarFallback className="bg-gray-400 text-white text-xs">
                         {otherUser.name?.charAt(0)?.toUpperCase() || "U"}
                       </AvatarFallback>

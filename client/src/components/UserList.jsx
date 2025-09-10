@@ -117,7 +117,7 @@ export function UserList({ onUserSelect, selectedUserId }) {
               <div className="flex items-center space-x-3">
                 <div className="relative">
                   <Avatar className="h-12 w-12">
-                    <AvatarImage src={user.avatar || "/placeholder.svg"} />
+                    <AvatarImage src={user.avatar || "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"} />
                     <AvatarFallback className="bg-blue-600 text-white">
                       {user.name?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>

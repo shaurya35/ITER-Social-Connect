@@ -128,7 +128,7 @@ export default function RightSidebar() {
             requests.slice(0, 2).map((req) => (
               <div key={req.requestId} className="flex items-center gap-3">
                 <Image
-                  src={req.profilePicture || "/placeholder.svg"}
+                  src={req.profilePicture || "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"}
                   alt={req.name || "User profile image"}
                   width={40}
                   height={40}

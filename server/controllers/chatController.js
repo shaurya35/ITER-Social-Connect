@@ -9,8 +9,10 @@ const {
   where,
   orderBy,
   serverTimestamp,
+  setDoc,
 } = require("firebase/firestore");
 const db = require("../firebase/firebaseConfig");
+const { pushNotification } = require("../helpers/liveNotificationService");
 
 // Get conversations for user
 exports.getConversations = async (req, res) => {
@@ -288,6 +290,34 @@ exports.sendMessage = async (req, res) => {
       }
     } catch (error) {
       console.error("Error broadcasting message:", error);
+    }
+
+    // In-app and push notification for receiver
+    try {
+      if (receiverId !== senderId) {
+        const preview = text.trim().slice(0, 80);
+        const notificationRef = doc(collection(db, "notifications"));
+        await setDoc(notificationRef, {
+          userId: receiverId,
+          senderId: senderId,
+          senderName: senderData.name || "Unknown",
+          senderProfilePicture: senderData.profilePicture || senderData.avatar || "",
+          message: `New message from ${senderData.name || "Someone"}: "${preview}"`,
+          timestamp: Date.now(),
+          isRead: false,
+          type: "chat_message",
+          link: "/chat",
+        });
+
+        // Mobile/web push
+        pushNotification(receiverId, {
+          title: `New message from ${senderData.name || "Someone"}`,
+          body: preview,
+          data: { type: "chat_message", url: "/chat", senderId },
+        });
+      }
+    } catch (notifyErr) {
+      // Silent failure for notifications
     }
 
     res.json({

@@ -199,7 +199,7 @@ export default function ConnectionsComponent() {
           <div className="flex items-center gap-4 w-full sm:w-auto">
             <div className="relative h-12 w-12 min-w-[48px] rounded-full overflow-hidden">
               <Image
-                src={connection.profilePicture || "/placeholder.svg"}
+                src={connection.profilePicture || "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"}
                 alt={connection.name|| "User name"}
                 layout="fill"
                 objectFit="cover"
@@ -259,7 +259,7 @@ export default function ConnectionsComponent() {
           <div className="flex items-center gap-4 w-full sm:w-auto">
             <div className="relative h-12 w-12 min-w-[48px] rounded-full overflow-hidden">
               <Image
-                src={request.profilePicture || "/placeholder.svg"}
+                src={request.profilePicture || "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"}
                 alt={request.name || " User name"}
                 layout="fill"
                 objectFit="cover"

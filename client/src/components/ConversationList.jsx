@@ -145,7 +145,7 @@ export function ConversationList({
                 <div className="relative">
                   <Avatar className="h-12 w-12">
                     <AvatarImage
-                      src={conversation.otherUser?.avatar || "/placeholder.svg"}
+                      src={conversation.otherUser?.avatar || "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"}
                     />
                     <AvatarFallback className="bg-blue-600 text-white">
                       {conversation.otherUser?.name?.charAt(0)?.toUpperCase() ||

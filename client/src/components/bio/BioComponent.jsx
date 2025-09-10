@@ -81,7 +81,7 @@ export default function BioComponent() {
         <div className="absolute -top-16 left-6">
           <div className="relative h-32 w-32 rounded-full border-4 border-white dark:border-gray-800 bg-white dark:bg-gray-800">
             <Image
-              src={profile?.profilePicture || "/placeholder.svg"}
+              src={profile?.profilePicture || "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"}
               alt={profile?.name || "User profile"}
               fill
               className="rounded-full object-cover"

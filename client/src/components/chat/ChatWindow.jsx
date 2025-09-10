@@ -159,7 +159,7 @@ export function ChatWindow({
             <div className="relative">
               <Avatar className="h-10 w-10 flex-shrink-0">
                 <AvatarImage
-                  src={otherUser.avatar || "/placeholder.svg"}
+                  src={otherUser.avatar || "https://res.cloudinary.com/dkjsi6iwm/image/upload/v1734123569/profile.jpg"}
                   alt={otherUser.name}
                   className="object-cover"
                 />

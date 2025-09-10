@@ -62,7 +62,6 @@ export default function ChatPage() {
     }
   }
 
-  // Perform redirect after render to avoid React warning
   useEffect(() => {
     if (redirect) {
       router.replace("/signin")
@@ -81,7 +80,7 @@ export default function ChatPage() {
   }
 
   if (!currentUser) {
-    return null // Let router.replace() handle redirection safely
+    return null 
   }
 
   return (
