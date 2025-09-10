@@ -18,7 +18,8 @@ import {
   Globe,
   Send,
   Loader2,
-  UserX
+  UserX,
+  MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -42,6 +43,7 @@ export default function CommunityProfile({ profileId }) {
   const fetchProfile = async () => {
     try {
       setLoading(true);
+      console.log("📥 Fetching profile for:", profileId);
       const response = await axios.get(
         `${BACKEND_URL}/api/profile/${profileId}`,
         {
@@ -140,6 +142,21 @@ export default function CommunityProfile({ profileId }) {
     }
   };
 
+  const handleMessage = () => {
+    // Use profileId from props if profile.id is not available
+    const userId = profile?.id || profileId;
+    const userName = profile?.name || "User";
+    
+    if (!userId) {
+      return;
+    }
+    
+    const chatUrl = `/chat?userId=${userId}&userName=${encodeURIComponent(userName)}`;
+    
+    // Navigate to chat with the target user
+    router.push(chatUrl);
+  };
+
   const renderSocialLink = (href, IconComponent, label) => {
     if (!href) return null;
 
@@ -159,57 +176,106 @@ export default function CommunityProfile({ profileId }) {
   };
 
   const renderConnectButton = () => {
-    if (isOwnProfile) return null;
+    if (isOwnProfile) {
+      return (
+        <Button
+          onClick={() => router.push('/chat')}
+          className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white flex items-center gap-2"
+        >
+          <MessageCircle className="h-4 w-4" />
+          <span>View Messages</span>
+        </Button>
+      );
+    }
 
     switch(connectionStatus) {
       case "none":
       case "rejected":
         return (
-          <Button
-            onClick={handleConnect}
-            disabled={isLoading}
-            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white flex items-center gap-2"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-            <span>Connect</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleConnect}
+              disabled={isLoading}
+              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white flex items-center gap-2"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              <span>Connect</span>
+            </Button>
+            <Button
+              onClick={handleMessage}
+              variant="outline"
+              className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/20 flex items-center gap-2"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>Message</span>
+            </Button>
+          </div>
         );
       case "pending":
         return (
-          <Button
-            disabled
-            className="bg-gray-600 dark:bg-gray-500 text-white flex items-center gap-2"
-          >
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Request Sent</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              disabled
+              className="bg-gray-600 dark:bg-gray-500 text-white flex items-center gap-2"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Request Sent</span>
+            </Button>
+            <Button
+              onClick={handleMessage}
+              variant="outline"
+              className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/20 flex items-center gap-2"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>Message</span>
+            </Button>
+          </div>
         );
       case "connected":
         return (
-          <Button
-            onClick={handleRemoveConnection}
-            disabled={isLoading}
-            variant="destructive"
-            className="flex items-center gap-2"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <UserX className="h-4 w-4" />
-            )}
-            <span>Remove Connection</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleRemoveConnection}
+              disabled={isLoading}
+              variant="destructive"
+              className="flex items-center gap-2"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <UserX className="h-4 w-4" />
+              )}
+              <span>Remove</span>
+            </Button>
+            <Button
+              onClick={handleMessage}
+              className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white flex items-center gap-2"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>Message</span>
+            </Button>
+          </div>
         );
       default:
         return (
-          <Button disabled className="bg-gray-600 dark:bg-gray-500 text-white flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Loading status...</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button disabled className="bg-gray-600 dark:bg-gray-500 text-white flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading...</span>
+            </Button>
+            <Button
+              onClick={handleMessage}
+              variant="outline"
+              className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/20 flex items-center gap-2"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>Message</span>
+            </Button>
+          </div>
         );
     }
   };

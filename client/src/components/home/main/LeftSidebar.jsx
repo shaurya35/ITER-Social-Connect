@@ -31,7 +31,7 @@ export default function LeftSidebar() {
     { icon: User, label: "Profile", route: "/profile" },
     // { icon: MessageCircle, label: "Messages", route: "/chat" },
     { icon: Bell, label: "Notifications", route: "/notifications" },
-    { icon: Mail, label: "Messages", route: "/chat", disabled: true },
+    { icon: Mail, label: "Messages", route: "/chat" },
     { icon: Bookmark, label: "Saved Posts", route: "/bookmarks" },
     { icon: Users, label: "Connections", route: "/connections" },
     { icon: Settings, label: "Settings", route: "/settings" },

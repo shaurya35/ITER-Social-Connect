@@ -257,22 +257,38 @@ exports.sendMessage = async (req, res) => {
         senderId: senderId,
         receiverId: receiverId,
         content: text.trim(),
-        messageId: `msg_${senderId}_${Date.now()}`,
+        messageId: messageRef.id,
         timestamp: new Date().toISOString(),
         senderName: senderData.name || "Unknown User",
         senderAvatar: senderData.profilePicture || senderData.avatar || null,
       };
 
+      console.log("📤 Broadcasting message via WebSocket:", broadcastData);
+
+      // Broadcast to WebSocket clients
       if (global.wss) {
+        let sentCount = 0;
         global.wss.clients.forEach((client) => {
-          if (client.readyState === 1) {
-            try {
-              client.send(JSON.stringify(broadcastData));
-            } catch {}
+          if (client.readyState === 1 && client.userId) {
+            // Send to both sender and receiver
+            if (client.userId === senderId || client.userId === receiverId) {
+              try {
+                client.send(JSON.stringify(broadcastData));
+                sentCount++;
+                console.log(`📤 Message sent to user ${client.userId}`);
+              } catch (error) {
+                console.error("Error sending WebSocket message:", error);
+              }
+            }
           }
         });
+        console.log(`📤 Message broadcasted to ${sentCount} clients`);
+      } else {
+        console.warn("⚠️ WebSocket server not available for broadcasting");
       }
-    } catch {}
+    } catch (error) {
+      console.error("Error broadcasting message:", error);
+    }
 
     res.json({
       status: "sent",

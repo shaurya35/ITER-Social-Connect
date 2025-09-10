@@ -1,18 +1,9 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-} from "react";
+import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "./AuthProvider";
 
 const WebSocketContext = createContext(null);
-const socket = new WebSocket(process.env.NEXT_PUBLIC_BACKENDWS_URL);
-
 
 export const useWebSocket = () => {
   const context = useContext(WebSocketContext);
@@ -27,6 +18,7 @@ export function WebSocketProvider({ children }) {
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [typingUsers, setTypingUsers] = useState(new Map());
+  
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const reconnectAttempts = useRef(0);
@@ -37,16 +29,7 @@ export function WebSocketProvider({ children }) {
   const pingIntervalRef = useRef(null);
 
   // WebSocket URL
-  const WS_URL = 
-    process.env.NODE_ENV === "production"
-      ? `${process.env.NEXT_PUBLIC_BACKENDWS_URL}`
-      : `${process.env.NEXT_PUBLIC_BACKENDWS_URL}`;
-
-  // const WS_URL =
-  // process.env.NODE_ENV === "production"
-  //   ? `wss://${process.env.NEXT_PUBLIC_BACKENDWS_URL}`
-  //   : `ws://${process.env.NEXT_PUBLIC_BACKENDWS_URL}`;
-
+  const WS_URL = process.env.NEXT_PUBLIC_BACKENDWS_URL || "ws://localhost:8080/ws";
 
   const connect = useCallback(() => {
     if (!user?.id) {
@@ -74,7 +57,6 @@ export function WebSocketProvider({ children }) {
       // Connection timeout
       const connectionTimeout = setTimeout(() => {
         if (wsRef.current?.readyState === WebSocket.CONNECTING) {
-          console.error("⏰ WebSocket connection timeout");
           wsRef.current.close();
           connectionAttemptRef.current = false;
         }
@@ -91,7 +73,7 @@ export function WebSocketProvider({ children }) {
           if (wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify({ type: "ping" }));
           }
-        }, 25000); // Ping every 25 seconds
+        }, 30000); // Ping every 30 seconds
 
         // Join WebSocket with user info
         const joinMessage = {
@@ -112,7 +94,7 @@ export function WebSocketProvider({ children }) {
           const data = JSON.parse(event.data);
           handleMessage(data);
         } catch (error) {
-          console.error("❌ Error parsing WebSocket message:", error);
+          // Handle error silently
         }
       };
 
@@ -132,11 +114,8 @@ export function WebSocketProvider({ children }) {
           reconnectAttempts.current < maxReconnectAttempts &&
           user?.id
         ) {
-          const delay = Math.min(
-            1000 * Math.pow(2, reconnectAttempts.current),
-            30000
-          );
-
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+          
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttempts.current++;
             connect();
@@ -146,22 +125,9 @@ export function WebSocketProvider({ children }) {
 
       wsRef.current.onerror = (error) => {
         connectionAttemptRef.current = false;
-
-        // Only log meaningful errors
-        if (wsRef.current?.readyState !== WebSocket.CLOSED) {
-          console.warn("⚠️ WebSocket error - State:", {
-            readyState: wsRef.current?.readyState,
-            url: WS_URL,
-            timestamp: new Date().toISOString(),
-          });
-        }
       };
     } catch (error) {
       connectionAttemptRef.current = false;
-      console.error("❌ Failed to create WebSocket connection:", {
-        error: error.message,
-        url: WS_URL,
-      });
     }
   }, [user, WS_URL]);
 
@@ -187,72 +153,69 @@ export function WebSocketProvider({ children }) {
     setTypingUsers(new Map());
   }, []);
 
-  const handleMessage = useCallback(
-    (data) => {
-      switch (data.type) {
-        case "connected":
-        case "joined":
-          break;
+  const handleMessage = useCallback((data) => {
+    switch (data.type) {
+      case "connected":
+      case "joined":
+        break;
 
-        case "pong":
-          // Handle pong response
-          break;
+      case "pong":
+        // Handle pong response
+        break;
 
-        case "new_message":
-          // Broadcast to message handlers
-          messageHandlers.current.forEach((handler) => {
-            handler(data);
+      case "new_message":
+        // Broadcast to message handlers
+        messageHandlers.current.forEach((handler) => {
+          handler(data);
+        });
+        break;
+
+      case "user_online":
+        if (data.userId !== user?.id) {
+          setOnlineUsers((prev) => new Set([...prev, data.userId]));
+        }
+        break;
+
+      case "user_offline":
+        setOnlineUsers((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(data.userId);
+          return newSet;
+        });
+        break;
+
+      case "typing_start":
+        if (data.userId !== user?.id) {
+          setTypingUsers((prev) => {
+            const newMap = new Map(prev);
+            if (!newMap.has(data.conversationId)) {
+              newMap.set(data.conversationId, new Set());
+            }
+            newMap.get(data.conversationId).add(data.userId);
+            return newMap;
           });
-          break;
+        }
+        break;
 
-        case "user_online":
-          if (data.userId !== user?.id) {
-            setOnlineUsers((prev) => new Set([...prev, data.userId]));
-          }
-          break;
-
-        case "user_offline":
-          setOnlineUsers((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(data.userId);
-            return newSet;
+      case "typing_stop":
+        if (data.userId !== user?.id) {
+          setTypingUsers((prev) => {
+            const newMap = new Map(prev);
+            if (newMap.has(data.conversationId)) {
+              newMap.get(data.conversationId).delete(data.userId);
+              if (newMap.get(data.conversationId).size === 0) {
+                newMap.delete(data.conversationId);
+              }
+            }
+            return newMap;
           });
-          break;
+        }
+        break;
 
-        case "typing_start":
-          if (data.userId !== user?.id) {
-            setTypingUsers((prev) => {
-              const newMap = new Map(prev);
-              if (!newMap.has(data.conversationId)) {
-                newMap.set(data.conversationId, new Set());
-              }
-              newMap.get(data.conversationId).add(data.userId);
-              return newMap;
-            });
-          }
-          break;
-
-        case "typing_stop":
-          if (data.userId !== user?.id) {
-            setTypingUsers((prev) => {
-              const newMap = new Map(prev);
-              if (newMap.has(data.conversationId)) {
-                newMap.get(data.conversationId).delete(data.userId);
-                if (newMap.get(data.conversationId).size === 0) {
-                  newMap.delete(data.conversationId);
-                }
-              }
-              return newMap;
-            });
-          }
-          break;
-
-        // default:
-        //   console.log("❓ Unknown WebSocket message type:", data.type);
-      }
-    },
-    [user?.id]
-  );
+      default:
+        // Handle unknown message types silently
+    }
+  }, [user?.id]);
 
   // Send message through WebSocket
   const sendMessage = useCallback((message) => {
@@ -260,63 +223,50 @@ export function WebSocketProvider({ children }) {
       wsRef.current.send(JSON.stringify(message));
       return true;
     }
-    console.warn("⚠️ WebSocket not connected, cannot send message");
     return false;
   }, []);
 
   // Join a conversation room
-  const joinConversation = useCallback(
-    (conversationId) => {
-      sendMessage({
-        type: "join_conversation",
-        conversationId,
-      });
-    },
-    [sendMessage]
-  );
+  const joinConversation = useCallback((conversationId) => {
+    sendMessage({
+      type: "join_conversation",
+      conversationId,
+    });
+  }, [sendMessage]);
 
   // Send typing indicators
-  const startTyping = useCallback(
-    (conversationId) => {
-      sendMessage({
-        type: "typing_start",
-        conversationId,
-      });
-    },
-    [sendMessage]
-  );
+  const startTyping = useCallback((conversationId) => {
+    sendMessage({
+      type: "typing_start",
+      conversationId,
+    });
+  }, [sendMessage]);
 
-  const stopTyping = useCallback(
-    (conversationId) => {
-      sendMessage({
-        type: "typing_stop",
-        conversationId,
-      });
-    },
-    [sendMessage]
-  );
+  const stopTyping = useCallback((conversationId) => {
+    sendMessage({
+      type: "typing_stop",
+      conversationId,
+    });
+  }, [sendMessage]);
 
   // Debounced typing handler
-  const handleTyping = useCallback(
-    (conversationId) => {
-      // Clear existing timeout
-      if (typingTimeouts.current.has(conversationId)) {
-        clearTimeout(typingTimeouts.current.get(conversationId));
-      }
+  const handleTyping = useCallback((conversationId) => {
+    // Clear existing timeout
+    if (typingTimeouts.current.has(conversationId)) {
+      clearTimeout(typingTimeouts.current.get(conversationId));
+    }
 
-      // Start typing
-      startTyping(conversationId);
+    // Start typing
+    startTyping(conversationId);
 
-      // Set timeout to stop typing
-      const timeout = setTimeout(() => {
-        stopTyping(conversationId);
-        typingTimeouts.current.delete(conversationId);
-      }, 2000);
+    // Set timeout to stop typing
+    const timeout = setTimeout(() => {
+      stopTyping(conversationId);
+      typingTimeouts.current.delete(conversationId);
+    }, 2000);
 
-      typingTimeouts.current.set(conversationId, timeout);
-    },
-    [startTyping, stopTyping]
-  );
+    typingTimeouts.current.set(conversationId, timeout);
+  }, [startTyping, stopTyping]);
 
   // Register message handler
   const onMessage = useCallback((handler) => {
@@ -329,35 +279,14 @@ export function WebSocketProvider({ children }) {
   }, []);
 
   // Check if user is online
-  const isUserOnline = useCallback(
-    (userId) => {
-      return onlineUsers.has(userId);
-    },
-    [onlineUsers]
-  );
+  const isUserOnline = useCallback((userId) => {
+    return onlineUsers.has(userId);
+  }, [onlineUsers]);
 
   // Get typing users for a conversation
-  const getTypingUsers = useCallback(
-    (conversationId) => {
-      return typingUsers.get(conversationId) || new Set();
-    },
-    [typingUsers]
-  );
-
-  // Test connection function
-  const testConnection = useCallback(() => {
-    // fetch("http://localhost:8080/api/health")
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/health`)
-      .then((response) => {
-        return response.json();
-      })
-      .then((data) => {
-        console.log("🏥 Backend health data:", data);
-      })
-      .catch((error) => {
-        console.error("❌ Backend health check failed:", error);
-      });
-  }, []);
+  const getTypingUsers = useCallback((conversationId) => {
+    return typingUsers.get(conversationId) || new Set();
+  }, [typingUsers]);
 
   // Connect when user is available
   useEffect(() => {
@@ -378,7 +307,6 @@ export function WebSocketProvider({ children }) {
       // Clear all typing timeouts
       typingTimeouts.current.forEach((timeout) => clearTimeout(timeout));
       typingTimeouts.current.clear();
-
       disconnect();
     };
   }, [disconnect]);
@@ -396,7 +324,6 @@ export function WebSocketProvider({ children }) {
     getTypingUsers,
     connect,
     disconnect,
-    testConnection,
   };
 
   return (
